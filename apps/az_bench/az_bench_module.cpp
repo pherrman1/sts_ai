@@ -281,7 +281,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
-                         bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon) {
+                         bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
+                         bool searchEmaHp) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -333,6 +334,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.forceRewards = forceRewards;
                  c.forcePotions = forcePotions;
                  c.oocCanon = oocCanon;
+                 c.searchEmaHp = searchEmaHp;
                  c.explorePerOffer = explorePerOffer;
                  c.exploreGapSearch = exploreGapSearch;
                  c.exploreDeckOnly = exploreDeckOnly;
@@ -358,7 +360,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0,
              py::arg("force_rewards") = false, py::arg("explore_per_offer") = false,
              py::arg("explore_gap_search") = false, py::arg("explore_deck_only") = false,
-             py::arg("force_potions") = false, py::arg("ooc_canon") = false)
+             py::arg("force_potions") = false, py::arg("ooc_canon") = false,
+             py::arg("search_ema_hp") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -448,7 +451,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                 py::array_t<float, py::array::c_style | py::array::forcecast> logits,
                 py::array_t<float, py::array::c_style | py::array::forcecast> F,
                 py::array_t<float, py::array::c_style | py::array::forcecast> ehp, py::object hpfObj,
-                std::uint32_t version, py::object distObj) {
+                std::uint32_t version, py::object distObj, py::object hpDistObj) {
                  if (logits.ndim() != 2 || F.ndim() != 1 || ehp.ndim() != 1 || ticket.ndim() != 1 ||
                      logits.shape(0) != ticket.shape(0) || F.shape(0) != ticket.shape(0) ||
                      ehp.shape(0) != ticket.shape(0))
@@ -470,16 +473,25 @@ PYBIND11_MODULE(az_bench_native, m) {
                          throw std::invalid_argument("submit: want dist [B, 57] (outcome softmax)");
                      dp = dist.data();
                  }
+                 py::array_t<float, py::array::c_style | py::array::forcecast> hpDist;
+                 const float *hdp = nullptr;
+                 if (!hpDistObj.is_none()) {
+                     hpDist = py::array_t<float, py::array::c_style | py::array::forcecast>::ensure(hpDistObj);
+                     if (!hpDist || hpDist.ndim() != 2 || hpDist.shape(0) != ticket.shape(0) ||
+                         hpDist.shape(1) != azbench::kHpClasses)
+                         throw std::invalid_argument("submit: want hp_dist [B, 256] (floor HP softmax)");
+                     hdp = hpDist.data();
+                 }
                  const int rows = static_cast<int>(ticket.shape(0)), actions = static_cast<int>(logits.shape(1));
                  const auto *t = ticket.data();
                  const auto *l = logits.data();
                  const auto *f = F.data();
                  const auto *h = ehp.data();
                  py::gil_scoped_release r;
-                 d.submit(t, rows, actions, l, f, h, hp, version, dp);
+                 d.submit(t, rows, actions, l, f, h, hp, version, dp, hdp);
              },
              py::arg("ticket"), py::arg("logits"), py::arg("F"), py::arg("ehp"), py::arg("hpf") = py::none(),
-             py::arg("version") = 0, py::arg("dist") = py::none())
+             py::arg("version") = 0, py::arg("dist") = py::none(), py::arg("hp_dist") = py::none())
         .def("take_samples",
              [](azbench::RunDriver &d, int maxSamples) -> py::object {
                  // Ragged arrays: sample i owns tokens tok_off[i] .. tok_off[i + 1] and actions act_off[i] ..
@@ -527,6 +539,11 @@ PYBIND11_MODULE(az_bench_native, m) {
                  const bool ema = !v[0].outcomeTarget.empty();   // searchEmaLambda > 0: every sample has its targets
                  const std::size_t C = azbench::kOutcomeClasses;
                  std::vector<float> searchDist(ema ? S * C : 0), outcomeTarget(ema ? S * C : 0), emaRealW(ema ? S : 0);
+                 // searchEmaHp: floor HP targets as round(255 p) [S, 256]; per-floor targets [S, 56] (utility AMBER)
+                 const bool hpT = !v[0].hpTargetQ.empty(), hpfT = !v[0].hpFloorTarget.empty();
+                 const std::size_t H = azbench::kHpClasses, NF = azbench::kFloors;
+                 std::vector<std::uint8_t> hpTarget(hpT ? S * H : 0);
+                 std::vector<float> hpFloorTarget(hpfT ? S * NF : 0);
                  for (std::size_t i = 0; i < S; ++i) {
                      const auto &x = v[i];
                      if (compact) {
@@ -566,6 +583,16 @@ PYBIND11_MODULE(az_bench_native, m) {
                          std::copy(x.outcomeTarget.begin(), x.outcomeTarget.end(), outcomeTarget.begin() + i * C);
                          emaRealW[i] = x.emaRealWeight;
                      }
+                     if (hpT) {
+                         if (x.hpTargetQ.empty() || x.hpTargetLo < 0 || x.hpTargetLo + x.hpTargetQ.size() > H)
+                             throw std::runtime_error("take_samples: sample without a floor HP target");
+                         std::copy(x.hpTargetQ.begin(), x.hpTargetQ.end(), hpTarget.begin() + i * H + x.hpTargetLo);
+                     }
+                     if (hpfT) {
+                         if (x.hpFloorTarget.size() != NF)
+                             throw std::runtime_error("take_samples: sample without per-floor HP targets");
+                         std::copy(x.hpFloorTarget.begin(), x.hpFloorTarget.end(), hpFloorTarget.begin() + i * NF);
+                     }
                  }
                  const auto nT = static_cast<py::ssize_t>(tokType.size()), nA = static_cast<py::ssize_t>(aType.size());
                  py::dict o;
@@ -589,6 +616,10 @@ PYBIND11_MODULE(az_bench_native, m) {
                      o["outcome_target"] = toArray(outcomeTarget).reshape(sh);
                      o["ema_real_weight"] = toArray(emaRealW);
                  }
+                 if (hpT)
+                     o["hp_target"] = toArray(hpTarget).reshape({static_cast<py::ssize_t>(S), static_cast<py::ssize_t>(H)});
+                 if (hpfT)
+                     o["hp_floor_target"] = toArray(hpFloorTarget).reshape({static_cast<py::ssize_t>(S), static_cast<py::ssize_t>(NF)});
                  return o;
              },
              py::arg("max_samples") = 1 << 20)

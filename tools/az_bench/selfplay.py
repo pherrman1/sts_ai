@@ -57,6 +57,22 @@ move, full and fast (H counts searched moves, ~4x as many at --full-prob 0.25). 
 fast move under "full" takes the next full move's target. No extra forward pass of the training net. The HP heads keep
 their labels. Selection is unchanged.
 
+--hp-ema-search (2026-11-21, default off; needs --value-ema-search and Amber's search rules: --chance-on-reveal,
+--cross-combat or --sim-help) trains both HP heads on search-backed EMA targets too, built by the driver
+(RunConfig::searchEmaHp in apps/az_bench/az_run_driver.h has the definitions). Amber Eye's page does not name the HP
+heads' targets: it stores "labels for the outcome and HP distributions, per-floor HP" with the value distributions in
+8-bit fixed point, and its value labels are the search / EMA combination; Philipp decided 2026-11-21 to read that as
+both HP heads. The search backs up the floor HP softmax (256 classes) and, with --utility amber*, the per-floor
+E[HP_f] / 255 next to the outcome distribution (a leaf past the root's floor counts the real HP its path left that
+floor with; a run-ending leaf its real HP, 0 on death). The chains use the outcome chain's moves and half-life. Where
+the page is silent (Philipp 2026-11-21): the floor HP chain ends with the floor in the real HP (the head asks about
+this floor only), and a per-floor target is the real HP once the run has left that floor. The floor HP target is
+kept as round(255 p) over its nonzero interval (the driver rounds; read back renormalised), the per-floor targets as
+float16. Losses: "hp" and "hp_floor" stay the losses against the real labels (comparable across settings, as
+"outcome"); "hp_ema" (soft cross-entropy) and "hp_floor_ema" (masked MSE) are the trained ones. Inference sends the
+driver 256 more floats per row. A window saved without the flag has another layout (--replay-load starts empty).
+Selection is unchanged.
+
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
 cap randomization 0.25, utility F + H first, the 0.44M net first, no teacher. Our choices: the loss weights, the
 optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
@@ -120,7 +136,9 @@ class Replay:
 
     def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, hp_floors=0, soft_outcome=False,
                  compact=False, dict_tokens_per_sample=8, token_store=None, compress_targets=False,
-                 soft_bytes_per_sample=64, hp_runs_per_sample=0.125):
+                 soft_bytes_per_sample=64, hp_runs_per_sample=0.125, hp_soft=False, hp_bytes_per_sample=96):
+        if hp_soft and not soft_outcome:
+            raise ValueError("replay: hp_soft needs soft_outcome")
         self.cs = samples
         self.compact = compact
         if compress_targets and not compact:
@@ -163,6 +181,20 @@ class Replay:
         self.hpr = np.zeros((self.cr, hp_floors if self.hp_runs else 0), np.int16)   # run ring: HP at the end of floor f
         self.hp_ref = np.zeros(self.cs if self.hp_runs else 0, np.int64)            # sample -> its run (absolute)
         self.r_head = 0
+        # --hp-ema-search (hp_soft): the floor HP target of a sample [256] as round(255 p) and, with hp_floors, its
+        # per-floor targets [56] (float16, -1 = masked). Both arrive with the chunk ("hp_target", "hp_floor_target").
+        # compress_targets: the floor HP target's nonzero interval (hq_lo, hq_len) follows the sample's outcome bytes
+        # in the byte ring (written by set_soft_outcome); otherwise one dense row per sample.
+        self.hp_soft = hp_soft
+        self.hq_lo = self.hq_len = None   # no arrays without the option: a saved window's layout stays the same
+        if hp_soft and self.soft_q:
+            self.hq_lo = np.zeros(self.cs, np.uint8)
+            self.hq_len = np.zeros(self.cs, np.uint16)
+            soft_bytes_per_sample += hp_bytes_per_sample
+        elif hp_soft:
+            self.meta["hp_target"] = np.zeros((self.cs, HP_CLASSES), np.uint8)
+        if hp_soft and hp_floors:
+            self.meta["hp_floor_target"] = np.zeros((self.cs, hp_floors), np.float16)
         self.cq = samples * soft_bytes_per_sample if self.soft_q else 0
         self.sq = np.zeros(self.cq, np.uint8)                                       # quantized targets, byte ring
         self.sq_start = np.zeros(self.cs if self.soft_q else 0, np.int64)
@@ -204,6 +236,7 @@ class Replay:
         arrs = [self.a_type, self.a_src, self.a_tgt, self.a_f, self.policy,
                 self.tok_start, self.ntok, self.act_start, self.nact, self.tok_idx, self.idx_start,
                 self.hpr, self.hp_ref, self.sq, self.sq_start, self.sq_lo, self.sq_len, *self.meta.values()]
+        arrs += [self.hq_lo, self.hq_len] if self.hq_lo is not None else []
         arrs += [] if self.compact else [self.tok_type, self.ids, self.f]
         if self.soft_outcome is not None:
             arrs.append(self.soft_outcome)
@@ -469,17 +502,20 @@ class Replay:
             self.s_tail += 1
         return first
 
-    def set_soft_outcome(self, first, targets):
+    def set_soft_outcome(self, first, targets, hp_q=None):
         """Stores the EMA outcome targets of the samples first .. first + len(targets) - 1 (absolute counters, as
-        add returned); samples already evicted are skipped."""
+        add returned); samples already evicted are skipped. hp_soft with compress_targets: hp_q [S, 256] (uint8,
+        the chunk's "hp_target") are their floor HP targets, stored with them."""
+        if self.hq_lo is not None and hp_q is None:
+            raise ValueError("replay: hp_soft with compress_targets needs the floor HP targets (hp_q)")
         if self.soft_q:
-            return self._set_soft_q(first, targets)
+            return self._set_soft_q(first, targets, hp_q if self.hq_lo is not None else None)
         with self.lock:
             lo = max(first, self.s_tail)
             if lo < first + len(targets):
                 self._put(self.soft_outcome, lo, np.asarray(targets[lo - first:], np.float16))
 
-    def _set_soft_q(self, first, targets):
+    def _set_soft_q(self, first, targets, hp_q=None):
         C = OUTCOME_CLASSES
         q = np.rint(np.asarray(targets, np.float32) * 255.0).clip(0, 255).astype(np.uint8)
         nz = q > 0
@@ -488,7 +524,20 @@ class Replay:
         b = C - 1 - np.argmax(nz[:, ::-1], 1)
         ln = np.where(has, b - a + 1, 0)
         cols = np.arange(C)
-        data = q[(cols[None, :] >= a[:, None]) & (cols[None, :] <= b[:, None]) & has[:, None]]
+        keep = (cols[None, :] >= a[:, None]) & (cols[None, :] <= b[:, None]) & has[:, None]
+        ln_out = ln
+        if hp_q is not None:   # each sample's bytes: its outcome interval, then its floor HP interval
+            hp_q = np.asarray(hp_q, np.uint8)
+            if hp_q.shape != (len(q), HP_CLASSES) or not has.all() or not (hp_q > 0).any(1).all():
+                raise ValueError("replay: floor HP targets need one nonzero [256] row per sample with an outcome target")
+            hz = hp_q > 0
+            ha = np.argmax(hz, 1)
+            hb = HP_CLASSES - 1 - np.argmax(hz[:, ::-1], 1)
+            hcols = np.arange(HP_CLASSES)
+            keep = np.concatenate([keep, (hcols[None, :] >= ha[:, None]) & (hcols[None, :] <= hb[:, None])], 1)
+            q = np.concatenate([q, hp_q], 1)
+            ln = ln + (hb - ha + 1)
+        data = q[keep]
         if len(data) > self.cq:
             raise ValueError("replay: one chunk's quantized targets larger than the byte ring")
         with self.lock:
@@ -509,7 +558,10 @@ class Replay:
             self._put(self.sq, self.q_head, data)
             self._put(self.sq_start, lo, starts)
             self._put(self.sq_lo, lo, a[k0:].astype(np.uint8))
-            self._put(self.sq_len, lo, ln[k0:].astype(np.uint8))
+            self._put(self.sq_len, lo, ln_out[k0:].astype(np.uint8))
+            if hp_q is not None:
+                self._put(self.hq_lo, lo, ha[k0:].astype(np.uint8))
+                self._put(self.hq_len, lo, (hb - ha + 1)[k0:].astype(np.uint16))
             self.q_head += n
             self.soft_stats[0] += len(ln) - k0
             self.soft_stats[1] += n
@@ -606,6 +658,20 @@ class Replay:
             so[r, np.repeat(self.sq_lo[j].astype(np.int64), ln) + c] = (
                 self.sq[(np.repeat(self.sq_start[j], ln) + c) % self.cq].astype(np.float32) / 255.0)
             b["soft_outcome"] = so / so.sum(-1, keepdims=True)
+            if self.hq_lo is not None:   # floor HP targets: the bytes after the sample's outcome bytes
+                ht = np.zeros((B, HP_CLASSES), np.float32)
+                ht[unset, b["hp_end"][unset].astype(np.int64).clip(0, HP_CLASSES - 1)] = 1.0   # not set yet: real HP
+                hl = np.where(ln > 0, self.hq_len[j].astype(np.int64), 0)
+                r = np.repeat(np.arange(B), hl)
+                c = np.arange(int(hl.sum())) - np.repeat(np.cumsum(hl) - hl, hl)
+                ht[r, np.repeat(self.hq_lo[j].astype(np.int64), hl) + c] = (
+                    self.sq[(np.repeat(self.sq_start[j] + ln, hl) + c) % self.cq].astype(np.float32))
+                b["hp_target"] = ht / ht.sum(-1, keepdims=True)
+        if "hp_target" in self.meta:   # dense rows of round(255 p)
+            ht = b["hp_target"].astype(np.float32)
+            b["hp_target"] = ht / ht.sum(-1, keepdims=True)
+        if "hp_floor_target" in b:
+            b["hp_floor_target"] = b["hp_floor_target"].astype(np.float32)
         return b
 
 
@@ -683,6 +749,12 @@ def hp_floor_loss(pred, label):
     return (((pred.float() - t) ** 2) * m).sum() / m.sum().clamp(min=1)
 
 
+def hp_floor_target_loss(pred, target):
+    """hp_floor_loss against --hp-ema-search targets [B, 56], already HP / 255 (-1 = masked)."""
+    m = (target >= 0).float()
+    return (((pred.float() - target.float().clamp(0, 1)) ** 2) * m).sum() / m.sum().clamp(min=1)
+
+
 def soft_policy_target(policy, a_mask):
     """Amber Eye / KataGo soft policy target: the policy target p raised to the power 1/4 and renormalised over the
     legal actions (rows without a policy target stay 0)."""
@@ -708,14 +780,20 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0)
         l_ema = -(b["soft_outcome"] * torch.log_softmax(outcome.float(), -1)).sum(-1).mean()
         parts["outcome_ema"] = l_ema.detach()
         l_out = l_ema
+    if "hp_target" in b:   # --hp-ema-search: train on the search EMA target; "hp" stays the real-HP CE
+        l_hp = -(b["hp_target"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
+        parts["hp_ema"] = l_hp.detach()
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
     if l_soft is not None:
         total = total + w_soft_policy * l_soft
         parts["soft_policy"] = l_soft.detach()
     if "hp_floor" in b:
         l_hpf = hp_floor_loss(hpf, b["hp_floor"])
-        total = total + w_hp_floor * l_hpf
         parts["hp_floor"] = l_hpf.detach()
+        if "hp_floor_target" in b:   # --hp-ema-search: train on the search EMA targets; "hp_floor" stays the real one
+            l_hpf = hp_floor_target_loss(hpf, b["hp_floor_target"])
+            parts["hp_floor_ema"] = l_hpf.detach()
+        total = total + w_hp_floor * l_hpf
     return total, parts
 
 
@@ -1066,6 +1144,13 @@ def main(argv=None):
     ap.add_argument("--value-ema-search", action="store_true",
                     help="EMA outcome labels from the search-backed root outcome distributions (Amber Eye), computed "
                          "by the driver (needs --value-ema-halflife)")
+    ap.add_argument("--hp-ema-search", action="store_true",
+                    help="both HP heads train on search-backed EMA targets too (floor HP distribution; per-floor HP "
+                         "with --utility amber*), same chain and half-life as the outcome (needs --value-ema-search "
+                         "and --chance-on-reveal / --cross-combat / --sim-help)")
+    ap.add_argument("--replay-hp-bytes", type=int, default=96,
+                    help="--hp-ema-search with --compress-targets: bytes per window sample added to the target byte "
+                         "ring for the floor HP targets (metric replay_soft_bytes_mean counts both)")
     ap.add_argument("--value-ema-moves", choices=("full", "all"), default="full",
                     help="--value-ema-search: the EMA chain over full-search moves only (Amber Eye; half-life in full "
                          "moves) or over all searched moves (half-life in searched moves)")
@@ -1093,6 +1178,10 @@ def main(argv=None):
         ap.error("--force-keys curriculum needs --curriculum")
     if args.value_ema_search and not args.value_ema_halflife > 0:
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
+    if args.hp_ema_search and not args.value_ema_search:
+        ap.error("--hp-ema-search needs --value-ema-search")
+    if args.hp_ema_search and not (args.chance_on_reveal or args.cross_combat or args.sim_help):
+        ap.error("--hp-ema-search needs Amber's search rules (--chance-on-reveal, --cross-combat or --sim-help)")
     amber = args.utility in ("amber", "amber2", "amber2-root")   # Amber's per-floor H (heads, labels)
     amber2 = args.utility in ("amber2", "amber2-root")
     hp_floors = 56 if amber else 1
@@ -1191,6 +1280,7 @@ def main(argv=None):
               "argmax (Gumbel MuZero / mctx use --c-scale 0.1)", file=sys.stderr, flush=True)
     ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
     ema_search = bool(args.value_ema_search)
+    hp_ema = bool(args.hp_ema_search)
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
@@ -1206,6 +1296,7 @@ def main(argv=None):
         explore_amber=args.explore_amber, explore_temp=args.explore_temp,
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}),
+        **({"search_ema_hp": True} if hp_ema else {}),
         **({"force_keys": True} if force_keys else {}),
         **({"force_rewards": True} if args.force_rewards else {}),
         **({"force_potions": True} if args.force_potions else {}),
@@ -1243,7 +1334,8 @@ def main(argv=None):
                     token_store=az_bench_native.TokenStore if args.compact_samples else None,
                     tokens_per_sample=args.replay_tokens_per_sample, actions_per_sample=args.replay_actions_per_sample,
                     compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
-                    hp_runs_per_sample=args.replay_hp_runs)
+                    hp_runs_per_sample=args.replay_hp_runs, hp_soft=hp_ema,
+                    hp_bytes_per_sample=args.replay_hp_bytes)
     replay_loaded = 0
     if args.replay_load and os.path.exists(os.path.join(args.replay_load, "state.json")):
         t_load = time.time()
@@ -1269,7 +1361,8 @@ def main(argv=None):
                             tokens_per_sample=args.replay_tokens_per_sample,
                             actions_per_sample=args.replay_actions_per_sample,
                             compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
-                            hp_runs_per_sample=args.replay_hp_runs)
+                            hp_runs_per_sample=args.replay_hp_runs, hp_soft=hp_ema,
+                            hp_bytes_per_sample=args.replay_hp_bytes)
     elif args.replay_load:
         print(f"# replay-load {args.replay_load}: no saved window there; the window starts empty", flush=True)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
@@ -1278,7 +1371,8 @@ def main(argv=None):
     weights_lock = threading.Lock()
     new_weights = [None]          # (state tensors on the GPU, event) published by the trainer
     loss_keys = (("policy", "outcome", "hp") + (("hp_floor",) if amber else ())
-                 + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ()))
+                 + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ())
+                 + (("hp_ema",) if hp_ema else ()) + (("hp_floor_ema",) if hp_ema and amber else ()))
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     counters.setdefault("nonfinite_skips", 0)
@@ -1348,6 +1442,8 @@ def main(argv=None):
                 out["hpf"] = torch.zeros(R * 56, dtype=torch.float32, pin_memory=cuda)
             if ema_search or amber2:   # amber2: P(win) = class 0
                 out["dist"] = torch.zeros(R * OUTCOME_CLASSES, dtype=torch.float32, pin_memory=cuda)
+            if hp_ema:   # the floor HP softmax
+                out["hpd"] = torch.zeros(R * HP_CLASSES, dtype=torch.float32, pin_memory=cuda)
             return h, {k: v.numpy() for k, v in h.items()}, out
 
         sets = [buffers(), buffers()]
@@ -1364,7 +1460,8 @@ def main(argv=None):
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
                        version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
-                       if ema_search or amber2 else None)
+                       if ema_search or amber2 else None,
+                       *((out["hpd"][:rows * HP_CLASSES].numpy().reshape(rows, HP_CLASSES),) if hp_ema else ()))
             lap(infer_s, "submit", t)
 
         while not stop.is_set():
@@ -1511,6 +1608,9 @@ def main(argv=None):
                     if ema_search or amber2:
                         out["dist"][:rows * OUTCOME_CLASSES].view(rows, OUTCOME_CLASSES).copy_(
                             torch.softmax(outcome[:rows].float(), -1), non_blocking=True)
+                    if hp_ema:
+                        out["hpd"][:rows * HP_CLASSES].view(rows, HP_CLASSES).copy_(
+                            torch.softmax(hp[:rows].float(), -1), non_blocking=True)
                     ev = None
                     if stream is not None:
                         ev = torch.cuda.Event(enable_timing=ev0 is not None)
@@ -1544,7 +1644,7 @@ def main(argv=None):
             if ch is not None:
                 first = replay.add(ch)
                 if ema_search:   # search-backed EMA targets from the driver (whole runs)
-                    replay.set_soft_outcome(first, ch["outcome_target"])
+                    replay.set_soft_outcome(first, ch["outcome_target"], ch["hp_target"] if hp_ema else None)
                     ema_stats["samples"] += len(ch["outcome"])
                     ema_stats["real_weight"] += float(ch["ema_real_weight"].sum())
                 elif ema_lam > 0:
@@ -1854,7 +1954,7 @@ def main(argv=None):
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
             if ema_lam > 0:
                 row["value_ema"] = {"halflife": args.value_ema_halflife, "search": ema_search,
-                                    "moves": args.value_ema_moves if ema_search else None,
+                                    "moves": args.value_ema_moves if ema_search else None, "hp": hp_ema,
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
             if args.heart_log > 0:

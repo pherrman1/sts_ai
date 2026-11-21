@@ -19,12 +19,19 @@
 //
 // --ema-all: the EMA chain over all searched moves (default with --ema: full moves only).
 //
+// --ema-hp (RunConfig::searchEmaHp; needs --ema and --amber-search): the net also gives a floor HP distribution.
+// Then also: (1) the same moves and samples (all other fields) as without it; (2) every sample has a floor HP target
+// (8-bit fixed point, sum 1 up to the rounding) and, with --utility amber, per-floor targets in [0, 1] from its floor
+// on and -1 before; (3) the cache returns the HP distributions too (the digest includes the targets); (4) the chains
+// end in the real labels: replayed with lambda = 1 - 1e-9 every floor HP target is the one-hot of the sample's real
+// hpEnd and every per-floor target its real hpFloor / 255.
+//
 // --compact (RunConfig::compactSamples): also plays the runs with compact samples (tokens in the run's dictionary)
 // and checks that they are the same runs and the same samples, token for token (the digest reads the tokens through
 // Sample::expandToken), that every compact sample refers to a dictionary and that the dictionaries hold fewer tokens
 // than the samples do (the point of it).
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--amber-search] [--compact]
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact]
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -52,6 +59,9 @@ namespace {
         std::uint64_t baseDigest = 0;   // without the search EMA fields
         double maxValueGap = 0;         // --ema: max |searchValue - F(searchDist)|
         double maxSumGap = 0;           // --ema: max |sum - 1| of searchDist and outcomeTarget
+        double maxHpSumGap = 0;         // --ema-hp: max |sum - 1| of the floor HP target
+        double maxHpRealGap = 0;        // --ema-hp: max distance of the HP targets from the real labels
+        bool hpOk = true;               // --ema-hp: every sample has well-formed HP targets
         azbench::RunStats stats;
         std::size_t samples = 0;
         int batches = 0;
@@ -76,7 +86,7 @@ namespace {
         Result res;
         std::uint32_t version = 0;
         d.start();
-        std::vector<float> logits, F, ehp, hpf, dist;
+        std::vector<float> logits, F, ehp, hpf, dist, hpd;
         const bool ema = cfg.searchEmaLambda > 0;
         distNet = distNet || ema;   // the fake net's F comes from its outcome distribution
         auto floorValue = [](int k) { return (k == 0 ? 57.0 : k) / 57.0; };
@@ -94,6 +104,7 @@ namespace {
             ehp.resize(B);
             hpf.resize(static_cast<std::size_t>(B) * azbench::kFloors);
             dist.resize(static_cast<std::size_t>(B) * azbench::kOutcomeClasses);
+            if (cfg.searchEmaHp) hpd.resize(static_cast<std::size_t>(B) * azbench::kHpClasses);
             for (int r = 0; r < B; ++r) {
                 std::uint64_t h = version;
                 for (int t = 0; t < Tn; ++t) {
@@ -122,9 +133,16 @@ namespace {
                     for (int k = 0; k < azbench::kOutcomeClasses; ++k) { p[k] = static_cast<float>(p[k] / z); Fr += p[k] * floorValue(k); }
                     F[r] = static_cast<float>(Fr);
                 }
+                if (cfg.searchEmaHp) {   // a peaked distribution around a hashed HP
+                    float *p = hpd.data() + static_cast<std::size_t>(r) * azbench::kHpClasses;
+                    const double c = 100.0 * unit(mix(h, 500));
+                    double z = 0;
+                    for (int k = 0; k < azbench::kHpClasses; ++k) { p[k] = static_cast<float>(std::exp(-0.02 * (k - c) * (k - c)) * (0.5 + unit(mix(h, 600 + k)))); z += p[k]; }
+                    for (int k = 0; k < azbench::kHpClasses; ++k) p[k] = static_cast<float>(p[k] / z);
+                }
             }
             d.submit(tickets.data(), B, An, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr, version,
-                     ema ? dist.data() : nullptr);
+                     ema ? dist.data() : nullptr, cfg.searchEmaHp ? hpd.data() : nullptr);
             d.takeSamples(1 << 20, samples);
         }
         d.stop();
@@ -184,6 +202,35 @@ namespace {
             std::memcpy(&u, &s.emaRealWeight, 4);
             h = mix(h, u);
         }
+        for (const auto &s : samples) {
+            if (!cfg.searchEmaHp) break;
+            double sum = 0;
+            for (auto q : s.hpTargetQ) sum += q / 255.0;
+            const int lo = s.hpTargetLo, n = static_cast<int>(s.hpTargetQ.size());
+            res.hpOk = res.hpOk && n > 0 && lo >= 0 && lo + n <= azbench::kHpClasses && s.hpTargetQ.front() && s.hpTargetQ.back();
+            res.maxHpSumGap = std::max(res.maxHpSumGap, std::abs(sum - 1));
+            // distance from the one-hot of the real HP at the end of the floor
+            const int real = std::clamp<int>(s.hpEnd, 0, azbench::kHpClasses - 1);
+            for (int k = 0; k < n; ++k)
+                res.maxHpRealGap = std::max(res.maxHpRealGap, std::abs(s.hpTargetQ[k] / 255.0 - (lo + k == real ? 1.0 : 0.0)));
+            if (n > 0 && (real < lo || real >= lo + n)) res.maxHpRealGap = 1;
+            h = mix(h, static_cast<std::uint64_t>(lo));
+            for (auto q : s.hpTargetQ) h = mix(h, q);
+            if (amber) {
+                res.hpOk = res.hpOk && s.hpFloorTarget.size() == static_cast<std::size_t>(azbench::kFloors) &&
+                           s.hpFloor.size() == s.hpFloorTarget.size();
+                if (!res.hpOk) break;
+                const int fl = std::clamp<int>(s.floor, 1, azbench::kFloors);
+                for (int f = 1; f <= azbench::kFloors; ++f) {
+                    const float x = s.hpFloorTarget[f - 1];
+                    res.hpOk = res.hpOk && (f < fl ? x == -1.f : (x >= 0.f && x <= 1.f)) && (f < fl) == (s.hpFloor[f - 1] < 0);
+                    if (f >= fl) res.maxHpRealGap = std::max(res.maxHpRealGap, std::abs(x - std::clamp<int>(s.hpFloor[f - 1], 0, 255) / 255.0));
+                    std::uint32_t u;
+                    std::memcpy(&u, &x, 4);
+                    h = mix(h, u);
+                }
+            }
+        }
         res.digest = h;
         return res;
     }
@@ -207,6 +254,7 @@ int main(int argc, char **argv) {
         else if (a == "--amber-search") cfg.chanceOnReveal = cfg.crossCombat = cfg.simHelp = true;
         else if (a == "--ema") { cfg.searchEmaLambda = std::stod(next()); cfg.hpWeightCombat = cfg.hpWeightOoc = 0; }
         else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
+        else if (a == "--ema-hp") cfg.searchEmaHp = true;
         else if (a == "--compact") compact = true;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
@@ -256,6 +304,7 @@ int main(int argc, char **argv) {
     if (cfg.searchEmaLambda > 0) {
         azbench::RunConfig plain = cfg;
         plain.searchEmaLambda = 0;
+        plain.searchEmaHp = false;
         const Result p = play(plain, false, true);   // the same fake net, distributions not submitted
         std::printf("{\"ema\": {\"lambda\": %g, \"max_value_gap\": %.3g, \"max_sum_gap\": %.3g, \"full_only\": %d, \"base_digest\": \"%016llx\", "
                     "\"plain_digest\": \"%016llx\"}}\n", cfg.searchEmaLambda, a.maxValueGap, a.maxSumGap, cfg.searchEmaFullOnly ? 1 : 0,
@@ -267,6 +316,22 @@ int main(int argc, char **argv) {
         if (a.maxValueGap > 1e-5) { std::fprintf(stderr, "FAIL: searchValue != F(searchDist)\n"); fail = 1; }
         // Targets come from float16 chain distributions (~1e-3 relative per term).
         if (a.maxSumGap > 5e-3) { std::fprintf(stderr, "FAIL: distributions do not sum to 1\n"); fail = 1; }
+    }
+    if (cfg.searchEmaHp) {
+        azbench::RunConfig plain = cfg, real = cfg;
+        plain.searchEmaHp = false;
+        real.searchEmaLambda = 1.0 - 1e-9;   // the chains keep (almost) only their ends: the real labels
+        const Result p = play(plain, false), r = play(real, false);
+        std::printf("{\"ema_hp\": {\"samples\": %zu, \"max_sum_gap\": %.3g, \"real_gap\": %.3g, \"real_gap_lambda_1\": %.3g, "
+                    "\"base_digest\": \"%016llx\", \"plain_digest\": \"%016llx\"}}\n", a.samples, a.maxHpSumGap,
+                    a.maxHpRealGap, r.maxHpRealGap, static_cast<unsigned long long>(a.baseDigest),
+                    static_cast<unsigned long long>(p.baseDigest));
+        if (p.baseDigest != a.baseDigest || p.samples != a.samples) { std::fprintf(stderr, "FAIL: the HP search targets changed the moves or samples\n"); fail = 1; }
+        if (!a.hpOk || !b.hpOk || !r.hpOk) { std::fprintf(stderr, "FAIL: a sample without well-formed HP targets\n"); fail = 1; }
+        // 256 classes rounded to 1 / 255 each: the sum is 1 up to the rounding.
+        if (a.maxHpSumGap > 0.1) { std::fprintf(stderr, "FAIL: floor HP targets do not sum to 1\n"); fail = 1; }
+        if (r.baseDigest != a.baseDigest || r.maxHpRealGap > 1e-6) { std::fprintf(stderr, "FAIL: the HP chains do not end in the real labels\n"); fail = 1; }
+        if (!(a.maxHpRealGap > 1e-3)) { std::fprintf(stderr, "FAIL: the HP targets are the real labels (no search in them)\n"); fail = 1; }
     }
     return fail;
 }

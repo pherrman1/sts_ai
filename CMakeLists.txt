@@ -275,6 +275,12 @@ set_tests_properties(az_run_driver_amber_search PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search)
 set_tests_properties(az_eval_cache_amber_search PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_hp COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --amber-search --ema 0.9 --ema-hp)
+set_tests_properties(az_eval_cache_ema_hp PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_hp_amber COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --utility amber --amber-search --ema 0.9 --ema-hp --compact)
+set_tests_properties(az_eval_cache_ema_hp_amber PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search --ema 0.9)
 set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smoke")
