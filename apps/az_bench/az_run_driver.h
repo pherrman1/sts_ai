@@ -219,7 +219,8 @@ namespace sts::azbench {
     // RunConfig::forceKeys: restricts v (the legal out-of-combat actions of gc) by the ADR-0063 key backstops
     // (search::heartKeyAction / heartKeyActionAllowed, keys collected). Returns -1 when nothing was removed, 0 / 1 / 2
     // when a Sapphire / Ruby / Emerald backstop left a single action, 3 when the Emerald rule narrowed the Act-3 route
-    // to the edges that still reach the burning elite, or when the act-3 Secret Portal (missing key) lost its accept.
+    // to the edges that still reach the burning elite, or when the act-3 Secret Portal (missing key) lost its accept or
+    // Face Trader its trade (keyHoles2Closed). A chest forced open to spend a charged Hungry Face returns 0.
     int keyBackstopActions(const GameContext &gc, std::vector<search::GameAction> &v);
 
     // Key-hole closures of forceKeys (2026-11-21, on unless STS_AZ_KEY_HOLES=0): an act-3 Secret Portal with a key
