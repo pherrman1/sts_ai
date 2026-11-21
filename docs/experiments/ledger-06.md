@@ -28572,7 +28572,7 @@ P x candidates encoded inputs (~60 KB each; `mem.flights`), so the live run shou
 decision on the main run.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`; `apps/az_bench/az_run_driver.h` header.
 
-## §TBD — Pick-rate exploration started empty after every restart: first live minutes of §830's flag with the all-runs rule forced 7-9 picks per run; `--explore-resume` (default off) keeps the state in the checkpoint (PC + cloud, 2026-11-21)
+## §831 — Pick-rate exploration started empty after every restart: first live minutes of §830's flag with the all-runs rule forced 7-9 picks per run; `--explore-resume` (default off) keeps the state in the checkpoint (PC + cloud, 2026-11-21)
 
 **Observation (owner of the stage-1 run, PC, start 13:57 CET, A10, 64/16 sims, `--explore-amber
 --explore-clean-keys --pick-target 0.01` without `--explore-per-offer`, started together with other changes):** in
