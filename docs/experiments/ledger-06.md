@@ -28492,7 +28492,7 @@ throughput is not comparable with this entry's.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
 
-## §TBD — `--parallel-nodes` (Amber Eye's virtual visits, built as the linked paper's virtual loss; up to 4 evaluations in flight per root candidate): round trips to the net per searched move 24.7 → 5.1 with the same simulations; off bit-identical; live moves/s not measured yet → BUILT, default off (cloud, 2026-11-21)
+## §829 — `--parallel-nodes` (Amber Eye's virtual visits, built as the linked paper's virtual loss; up to 4 evaluations in flight per root candidate): round trips to the net per searched move 24.7 → 5.1 with the same simulations; off bit-identical; live moves/s not measured yet → BUILT, default off (cloud, 2026-11-21)
 
 **Question:** §827 found the stage-1 run saturated nowhere: an answer's round trip (17.7 ms) limits it, and a run
 has one evaluation in flight. Amber Eye ("Efficient search"): "we additionally allow multiple searches in the same

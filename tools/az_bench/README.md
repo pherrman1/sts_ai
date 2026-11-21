@@ -142,7 +142,7 @@ Where page and paper are silent (ours): a simulation that reaches a node still b
 evaluated waits for the next wave; a wave's answers are handled together in start order, so the games do not depend
 on answer timing (`az_parallel_nodes` tests). Off is bit-identical to before (digests of `az-eval-cache-test`
 against main 56b8fd43). Cloud, fake net, 64 / 16 simulations: 24.7 -> 5.1 round trips per searched move, 6.0-6.9
-evaluations per wave (ledger §TBD). Metrics row `parallel_nodes`: `flights_per_wave`, `collisions_per_k` (waiting
+evaluations per wave (ledger §829). Metrics row `parallel_nodes`: `flights_per_wave`, `collisions_per_k` (waiting
 simulations per 1,000 evaluations), `flight_slots` (encoded inputs held, ~60 KB each: a run keeps up to
 P x candidates, so run it with fewer `--games`).
 
