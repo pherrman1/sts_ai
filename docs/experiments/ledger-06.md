@@ -29025,3 +29025,28 @@ both without encounter parts: the fp16 floor of the comparison) and `train_step_
 with the bias in the first part only; all net paths agree with gate and bias; gate 0 = net without parts on the
 stripped states); test_selfplay enemy / check tests pass. **Not measured:** the PC check again.
 **Knowledge impact:** this entry.
+
+## §TBD — §839 passed the PC check (inference differences below the fp16 noise floor, training step 1.17x) but the live run collapsed again within 5 min and the driver stopped with `empty floor HP target`; gates and bias now get their own optimizer group at 1 % of --lr, the check counts non-finite outputs → BUILT, default off (cloud, 2026-11-21)
+
+**PC check of §839** (gatecheck2_20261121): inference rows with encounter tokens policy 0.016 / outcome 0.063 / HP
+0.125 / per-floor HP 0.004 against the fp16 noise floor 0.045 / 0.168 / 0.494 / 0.015; training net 1.1e-4 on
+those rows, exactly 0 on the others; training step 80.2 vs 68.8 ms (1.17x). **Live 22:15-22:21 CET** (ckpt_952346,
+`--enemy-tokens --enemy-map-bias`, aux fights on) against the 22:06 restart without them, minutes after the start:
+1 min 0 % / floor 7 vs 0 % / 15; 2.5 min 0 % / 14 vs 5 % / 33; 5 min 0-0.5 % / 15 vs 58 % / 50. Gates 0 in the
+first metrics row, 0.31 after 5 min; trainer ~165 steps / min. At ~22:20:50 the driver stopped with
+`std::logic_error: run driver: empty floor HP target` (--hp-ema-search: an HP target with no class >= 1/510 can
+only come from a non-finite HP distribution of the net). Rolled back at 22:21 (attempt checkpoint and window kept).
+**Checks in the cloud since:** the driver's token and action streams with and without `--enemy-tokens` (745 rows of
+the same games, 147 with encounter tokens) are identical except for the new tokens, and every action's source /
+target points at the same token; a CPU self-play smoke with the live flag set (`--hp-ema-search --replay-hp-bytes
+96 --parallel-nodes 4 --aux-fights --savescum`, EMA search, Amber search rules) plus both flags, 60 runs: no error.
+**Reading (not proven):** the first minute's runs are few and short, so its floor gap may be noise; the gates then
+opened fast: Adam moves each parameter by about lr per step whatever the gradient's size, so at --lr 1e-3 a gate
+with a small noisy gradient opens like one with a real gain, and the rest of the net had no time to adapt to the new
+inputs. The non-finite HP output is not explained; it may come from the trained gates / table on the GPU path.
+**Change:** gates and table in their own optimizer group (`--enemy-lr-scale`, default 0.01 of --lr; no weight
+decay); `load_opt_state` keeps any group whose parameter count matches and starts the others fresh.
+`--check-enemy-gate` reports `nonfinite_outputs` of the gated nets. **Next:** the check on the attempt's checkpoint
+(gates 0.31) and window, to see whether the GPU path gives non-finite outputs with trained gates; a live test only
+if it is clean.
+**Knowledge impact:** this entry.
