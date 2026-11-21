@@ -1940,6 +1940,7 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertLess(sum(r["train_ms_per_s"].values()), 1300)
             self.assertGreaterEqual(r["pack_s_per_s"], 0)
             self.assertEqual(r["infer_early_per_batch"], 0)   # --early-finish is off by default
+            self.assertEqual(r["infer_early_packed_per_batch"], 0)
             # batches per token bucket and live tokens per row (2026-11-20): only buckets of --tok-buckets, and
             # batches exactly when rows were evaluated
             tb = r["infer_tok_bucket_batches"]
@@ -2007,6 +2008,40 @@ class SelfplaySmoke(unittest.TestCase):
         self.assertTrue(busy)
         self.assertTrue(all(0 <= r["infer_early_per_batch"] <= 1.5 for r in rows))
         self.assertGreater(max(r["infer_early_per_batch"] for r in busy), 0.9)
+        # on the CPU every batch is done before the loop comes back, so the second point (after packing) never fires
+        self.assertTrue(all(r["infer_early_packed_per_batch"] == 0 for r in rows))
+
+    def test_early_finish_all_hand_back_points(self):
+        """--early-finish with a batch that is "done" on 40 % of the looks: results go back while the loop waits
+        for rows, right after packing, or after the launch as without the flag; the run plays and trains with all
+        three mixed."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16", "--train-packed",
+                "--early-finish"]
+        coin = np.random.default_rng(5)
+        real = sp.batch_done
+
+        def fake(ev):
+            return coin.random() < 0.4
+        sp.batch_done = fake
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+        finally:
+            sp.batch_done = real
+        self.assertGreaterEqual(rows[-1]["runs_done"], 16)
+        busy = [r for r in rows if r["infer_batches_per_s"] > 0]
+        self.assertTrue(busy)
+        self.assertGreater(max(r["infer_early_per_batch"] for r in busy), 0)
+        self.assertGreater(max(r["infer_early_packed_per_batch"] for r in busy), 0)
+        # and some batches went back the old way, after the next launch
+        self.assertLess(min(r["infer_early_per_batch"] + r["infer_early_packed_per_batch"] for r in busy), 1)
+        self.assertTrue(any(r["train_ms_per_s"]["fwd_bwd"] > 0 for r in rows))
         self.assertTrue(any(r["train_ms_per_s"]["fwd_bwd"] > 0 for r in rows))
 
     def test_pin_inference_run(self):

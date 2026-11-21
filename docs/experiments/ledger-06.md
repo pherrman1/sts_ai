@@ -28463,3 +28463,31 @@ packed heads read only the live ones.
 **Decision:** none taken; (1) proposed to Philipp first, one change per restart.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
+## §828 — `--early-finish` live: 11,490 → 11,887 moves/s (+3.5 %), GPU load 67 → 73 %, workers asleep 32 → 28 %; only 23 % of the batches are handed back early, the rest are not done yet when the next rows arrive → GAIN, small; second hand-back point after packing added (PC, 2026-11-21)
+
+**Question:** §827 proposed to hand a finished inference batch to the workers while the loop waits for the next
+rows (PR #1144). What does it give in the live run?
+**Data:** [EARLY-FINISH](evidence/infer_profile_20261120/EARLY-FINISH.md): amber_scratch, A5, 11 workers x 450
+games, same flags except `--early-finish`. Before: six rows 00:15:44-00:18:15 CET (main ddd64152). The run was then
+stopped for another test (00:18-01:30 CET) and resumed from ckpt_776248 on main f17f1e21 with the flag. After: six
+rows around 02:05 CET, 35 minutes after the start. Other programs on the GPU closed in both windows.
+**Result:**
+
+| | moves/s (sd of the 6 rows) | net positions/s | GPU load | workers asleep | inference thread running |
+|---|---|---|---|---|---|
+| before | 11,490 (124) | 225.4k | 66.8 % | 32 % | 75.3 % |
+| `--early-finish` | 11,887 (81) | 233.2k | 72.7 % | 28 % | 72.6 % |
+
+**+3.5 % moves/s.** `infer_early_per_batch` 0.23; no errors, no new nonfinite skips, losses in their usual range.
+**Interpretation:** the direction is as §827 expected (workers sleep less, GPU load up), the size is far below the
++10 to +25 % guessed there. The flag only looks at the previous batch while the loop waits for rows, and in 77 %
+of the cycles the rows are there first: the loop then packs (1.45 ms), copies and launches (2.4 ms) before it
+collects the previous batch, as without the flag. §827's budget had the wait for rows (1.1 ms) and the time until
+the GPU is done (about 1.5 ms after the launch, after 0.6 ms for collecting the batch before) close together; that
+the rows usually win was not foreseen. PR (this one): a second look right after packing, where the previous batch
+has had 1.45 ms more; counted in `infer_early_packed_per_batch`. Not measured yet.
+**Decision:** kept default off; the live run keeps the flag. The second hand-back point goes into the run at a
+restart of its owner's choosing, with rows before and after. The run switches to a 1.22M net on 2026-11-21; its
+throughput is not comparable with this entry's.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
