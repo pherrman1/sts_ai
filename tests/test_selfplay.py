@@ -1223,6 +1223,16 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertLessEqual(ex["c_zero"], max(1, ex["attempts"] // 20))
         with tempfile.TemporaryDirectory() as d, self.assertRaises(Exception):
             sp.main(common + ["--out-dir", d, "--seed-base", "950", "--explore-amber", "--explore-c", "0.5"])
+        # --explore-clean-keys (2026-11-21) reaches the driver: the run explores, and without an exploration rule
+        # the driver refuses it.
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--seed-base", "960", "--explore-amber",
+                                               "--explore-clean-keys", "--pick-target", "0.2"]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertGreater(rows[-1]["forced_picks"], 0)
+        with tempfile.TemporaryDirectory() as d, self.assertRaises(Exception):
+            sp.main(common + ["--out-dir", d, "--seed-base", "970", "--explore-clean-keys"])
 
     def test_search_flags(self):
         """--no-fast-noise / --q-rescale / --c-scale reach the driver; the OOC search diagnostics are logged."""
