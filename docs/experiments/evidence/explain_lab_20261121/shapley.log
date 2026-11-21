@@ -1,0 +1,62 @@
+[select remove] remove Defend over remove Strike (C +1.61); exact (8 evals, efficiency gap +0.000); Spearman vs LOO +nan
+    Bash -0.27 (LOO -0.21), Ascender's Bane -0.15 (LOO -0.07), Burning Blood +0.10 (LOO +0.10)
+[select bottle] bottle Immolate over bottle Iron Wave (C +1.84); exact (960 evals, efficiency gap -0.000); Spearman vs LOO +0.86
+    Strike +0.64 (LOO +0.12), Defend +0.43 (LOO +0.08), Burning Blood +0.14 (LOO +0.11), Rage +0.09 (LOO +0.08), Ascender's Bane +0.09 (LOO +0.03)
+[card reward] take Pommel Strike over take Heavy Blade (C +4.18); exact (960 evals, efficiency gap +0.000); Spearman vs LOO +0.89
+    Demon Form -4.62 (LOO -4.17), Strike +1.48 (LOO +0.45), Defend +1.03 (LOO +0.31), Burning Blood +0.87 (LOO +0.93), Ancient Potion +0.14 (LOO +0.05)
+[Neow] Neow: Upgrade a card. over Neow: Obtain 100 gold. (C +0.18); exact (240 evals, efficiency gap -0.000); Spearman vs LOO +1.00
+    Bash -0.16 (LOO -0.12), Burning Blood +0.12 (LOO +0.14), Defend +0.04 (LOO +0.00), Strike +0.02 (LOO -0.01), Ascender's Bane -0.01 (LOO -0.01)
+[card reward] take Iron Wave over skip / leave rewards (C +0.38); sampled (1034 evals, efficiency gap +0.000); Spearman vs LOO +0.58
+    Reaper -2.06 (LOO -1.92), Uppercut+ -1.32 (LOO -1.12), Inflame +0.89 (LOO -0.09), Shrug It Off -0.47 (LOO -0.37), Metallicize -0.34 (LOO -0.45)
+[card reward] take Headbutt over take Clothesline (C +0.84); exact (960 evals, efficiency gap +0.000); Spearman vs LOO +0.82
+    Spot Weakness -0.67 (LOO -0.42), Defend -0.65 (LOO -0.07), Strike +0.23 (LOO +0.02), Bash +0.11 (LOO +0.06), Burning Blood -0.04 (LOO -0.09)
+[card reward] skip / leave rewards over take Headbutt (C +0.20); sampled (1308 evals, efficiency gap +0.000); Spearman vs LOO +0.75
+    Spot Weakness +1.06 (LOO +1.71), Strike -0.66 (LOO -0.18), Burning Blood -0.66 (LOO -0.04), Disarm +0.56 (LOO +0.40), Mercury Hourglass +0.53 (LOO +0.93)
+[event] World of Goop option 0 over World of Goop option 1 (C +1.00); exact (1920 evals, efficiency gap -0.000); Spearman vs LOO +0.50
+    Anger +0.36 (LOO +0.31), Strike +0.13 (LOO -0.07), Ascender's Bane -0.12 (LOO -0.11), Clothesline +0.08 (LOO +0.11), Defend -0.08 (LOO -0.05)
+[map] map: monster x5 y0 over map: monster x1 y0 (C +0.07); exact (240 evals, efficiency gap -0.000); Spearman vs LOO +0.90
+    Defend +0.03 (LOO +0.00), Bash -0.02 (LOO -0.02), Burning Blood -0.01 (LOO -0.01), Strike -0.01 (LOO -0.00), Ascender's Bane -0.00 (LOO -0.00)
+[card reward] take Spot Weakness over take Ghostly Armor (C +9.28); exact (1920 evals, efficiency gap +0.000); Spearman vs LOO +0.71
+    Defend +2.04 (LOO +0.27), Strike +0.90 (LOO +0.07), Burning Blood +0.78 (LOO +0.67), Anger -0.45 (LOO -0.10), Clothesline -0.23 (LOO -0.36)
+[card reward] take Barricade over skip / leave rewards (C +2.22); sampled (2238 evals, efficiency gap +0.000); Spearman vs LOO +0.83
+    Impervious +1.24 (LOO +1.45), Shrug It Off +0.45 (LOO +0.13), Feel No Pain +0.40 (LOO +0.29), True Grit+ +0.32 (LOO +0.20), Brimstone -0.27 (LOO -0.45)
+[map] map: monster x4 y2 over map: shop x2 y2 (C +0.87); sampled (2290 evals, efficiency gap +0.000); Spearman vs LOO +0.82
+    Tiny House +0.62 (LOO +0.53), The Courier -0.33 (LOO -0.30), Defend +0.32 (LOO +0.01), Burning Blood +0.25 (LOO +0.15), Meat On The Bone +0.22 (LOO +0.24)
+[campfire] campfire: rest over campfire: smith (C +0.85); sampled (892 evals, efficiency gap +0.000); Spearman vs LOO +0.68
+    Strike +0.20 (LOO +0.05), Defend +0.11 (LOO +0.03), Happy Flower -0.10 (LOO -0.05), Anger +0.09 (LOO +0.12), Burning Blood -0.06 (LOO +0.01)
+[event] Cursed Tome option 5 over Cursed Tome option 6 (C +1.62); sampled (1304 evals, efficiency gap +0.000); Spearman vs LOO +0.57
+    Red Skull -0.43 (LOO -1.04), Defend +0.33 (LOO +0.13), Burning Blood +0.15 (LOO -0.14), Anger+ +0.14 (LOO +0.07), Happy Flower -0.11 (LOO -0.38)
+[card reward] skip / leave rewards over take Pommel Strike (C +1.34); sampled (1510 evals, efficiency gap +0.000); Spearman vs LOO +0.88
+    Snecko Eye +1.54 (LOO +2.54), Perfected Strike -0.91 (LOO -0.50), Pommel Strike+ +0.86 (LOO +0.77), Reaper +0.85 (LOO +0.71), Happy Flower -0.49 (LOO -0.10)
+[card reward] take Pommel Strike over skip / leave rewards (C +0.14); sampled (1842 evals, efficiency gap +0.000); Spearman vs LOO +0.70
+    Feed+ -0.60 (LOO -0.51), Fusion Hammer +0.59 (LOO +0.31), Feed -0.49 (LOO -0.40), Offering -0.44 (LOO -0.26), Kunai +0.43 (LOO +0.11)
+[card reward] take Headbutt over take Feel No Pain (C +0.98); exact (960 evals, efficiency gap +0.000); Spearman vs LOO +0.89
+    Happy Flower -2.13 (LOO -1.50), Defend +1.92 (LOO +0.48), Strike +1.35 (LOO +0.30), Power Potion -1.23 (LOO -0.94), Burning Blood -0.62 (LOO -0.49)
+[card reward] take Pommel Strike over take Twin Strike (C +2.70); exact (3840 evals, efficiency gap -0.000); Spearman vs LOO +0.88
+    Happy Flower +0.88 (LOO +0.65), Burning Blood +0.34 (LOO +0.18), Headbutt -0.34 (LOO -0.31), Bash -0.15 (LOO -0.18), Twin Strike -0.13 (LOO -0.21)
+[shop] buy Fossilized Helix (331 g) over buy Ghostly Armor (44 g) (C +2.26); sampled (1642 evals, efficiency gap +0.000); Spearman vs LOO +0.90
+    Runic Pyramid -0.67 (LOO -0.59), Strike +0.53 (LOO +0.07), Uppercut+ +0.40 (LOO +0.11), Defend +0.40 (LOO +0.05), Fiend Fire +0.29 (LOO +0.07)
+[campfire] campfire: smith over campfire: recall (C +2.42); sampled (2672 evals, efficiency gap +0.000); Spearman vs LOO +0.47
+    Runic Pyramid +0.42 (LOO -0.38), Fiend Fire+ -0.33 (LOO -0.51), Cultist Potion +0.32 (LOO -0.08), Battle Trance +0.29 (LOO +0.02), Burning Blood +0.27 (LOO +0.17)
+[campfire] campfire: smith over campfire: rest (C +1.60); sampled (2298 evals, efficiency gap +0.000); Spearman vs LOO +0.55
+    Runic Pyramid +1.27 (LOO +2.61), Regen Potion +0.48 (LOO +1.22), Bludgeon+ -0.17 (LOO -0.21), Defend +0.15 (LOO -0.00), Warped Tongs -0.15 (LOO +0.20)
+[campfire] campfire: smith over campfire: rest (C +2.71); sampled (2762 evals, efficiency gap +0.000); Spearman vs LOO +0.58
+    Runic Pyramid +0.90 (LOO +1.15), Reaper +0.75 (LOO +1.03), Spot Weakness +0.32 (LOO +0.47), Burning Blood +0.22 (LOO +0.25), Uppercut +0.20 (LOO +0.16)
+[card reward] take Barricade+ over skip / leave rewards (C +5.29); sampled (1302 evals, efficiency gap +0.000); Spearman vs LOO +0.60
+    Panic Button +3.17 (LOO +3.07), Strike Dummy -0.70 (LOO -0.63), Defend +0.56 (LOO +0.08), Disarm +0.50 (LOO +0.23), Uppercut+ -0.23 (LOO -0.29)
+[shop] buy Disarm (58 g) over leave shop (C +1.90); sampled (3334 evals, efficiency gap +0.000); Spearman vs LOO +0.70
+    Dark Embrace+ +0.82 (LOO -0.01), Feel No Pain+ +0.81 (LOO +0.04), Burning Blood +0.39 (LOO +0.19), Strength Potion -0.35 (LOO -0.16), Philosophers Stone +0.29 (LOO +0.25)
+[reward relic/sapphire key] take Oddly Smooth Stone (sapphire key pair) over skip / leave rewards (C +5.61); exact (960 evals, efficiency gap +0.000); Spearman vs LOO +0.89
+    Reaper -1.70 (LOO -1.40), Burning Blood +1.06 (LOO +0.95), Spot Weakness +0.40 (LOO +0.27), Strike +0.28 (LOO -0.01), Ascender's Bane +0.22 (LOO +0.09)
+[shop] buy Strength Potion (56 g) over buy Bandage Up (91 g) (C +0.85); sampled (2226 evals, efficiency gap +0.000); Spearman vs LOO +0.92
+    Reaper +2.10 (LOO +1.47), Spot Weakness+ -2.06 (LOO -2.27), Dark Embrace -0.55 (LOO -0.60), Corruption -0.55 (LOO -0.68), Defend+ +0.49 (LOO +0.06)
+[card reward] take Limit Break over skip / leave rewards (C +5.26); sampled (3008 evals, efficiency gap +0.000); Spearman vs LOO +0.62
+    Spot Weakness+ +2.42 (LOO +0.04), Reaper +1.30 (LOO +1.35), Limit Break -1.04 (LOO -1.67), Fusion Hammer +0.56 (LOO +0.39), Battle Trance +0.56 (LOO +0.13)
+[card reward] take Battle Trance over take Juzu Bracelet (C +0.70); sampled (1828 evals, efficiency gap +0.000); Spearman vs LOO +0.94
+    Demon Form+ +1.98 (LOO +3.42), Battle Trance+ -0.75 (LOO -0.31), Reaper -0.66 (LOO -0.23), Battle Trance -0.48 (LOO -0.27), Inflame +0.27 (LOO +0.16)
+[reward potion] skip / leave rewards over take Distilled Chaos (C +0.13); sampled (2886 evals, efficiency gap +0.000); Spearman vs LOO +0.15
+    Sozu +1.26 (LOO +1.04), Reaper +0.09 (LOO +0.07), White Beast Statue -0.07 (LOO -0.05), Disarm+ -0.07 (LOO +0.00), Eternal Feather +0.06 (LOO -0.14)
+[map] map: rest x1 y14 over map: rest x3 y14 (C +0.02); sampled (1376 evals, efficiency gap +0.000); Spearman vs LOO +0.62
+    Heart Of Iron +0.02 (LOO +0.00), Defend +0.01 (LOO +0.00), Spot Weakness -0.01 (LOO -0.01), Strike +0.01 (LOO +0.00), Omamori +0.01 (LOO +0.01)
+
+mean Spearman(Shapley, LOO) +0.73 over 30 decisions

@@ -1,0 +1,256 @@
+# 11725 positions, 32 runs, 1485 out-of-combat decisions, 489 card rewards
+
+[select remove] floor 2  P(win) 0.273  HP 79  deck 11  relics 1
+    0.815  remove Defend                                 +1.61 vs remove Strike
+    0.163  remove Strike                                 -1.61 vs remove Defend
+    0.022  remove Bash                                   -3.61 vs remove Defend
+   remove Defend over remove Strike:
+     for:     Defend +0.41 (z +1.9), Burning Blood +0.10 (z +0.7), Ascender's Bane -0.07 (z +0.0), Bash -0.21 (z -0.5)
+     against: Strike -0.27 (z -0.8), Bash -0.21 (z -0.5), Ascender's Bane -0.07 (z +0.0)
+     value:   Burning Blood +0.031 P(win) +0.0 HP, Ascender's Bane -0.020 P(win) +0.0 HP, Defend -0.008 P(win) -0.0 HP, Strike -0.007 P(win) -0.0 HP
+
+[select bottle] floor 6  P(win) 0.170  HP 36  deck 14  relics 2
+    0.688  bottle Immolate                               +1.84 vs bottle Iron Wave
+    0.109  bottle Iron Wave                              -1.84 vs bottle Immolate
+    0.108  bottle Strike                                 -1.85 vs bottle Immolate
+    0.095  bottle Bash                                   -1.98 vs bottle Immolate
+   bottle Immolate over bottle Iron Wave:
+     for:     Strike +0.12 (z +0.7), Burning Blood +0.11 (z +0.6), Rage +0.08 (z +0.0), Defend +0.08 (z +0.0)
+     against: Bash -0.09 (z -2.8), Bottled Flame -0.08 (z -2.6)
+     value:   Immolate +0.069 P(win) +0.0 HP, Burning Blood +0.028 P(win) -0.0 HP, Ascender's Bane -0.027 P(win) +0.0 HP, Strike -0.012 P(win) +0.0 HP
+
+[map] floor 0  P(win) 0.282  HP 68  deck 11  relics 1
+    0.353  map: monster x0 y0                            +0.09 vs map: monster x2 y0
+    0.324  map: monster x2 y0                            -0.09 vs map: monster x0 y0
+    0.323  map: monster x1 y0                            -0.09 vs map: monster x0 y0
+   map: monster x0 y0 over map: monster x2 y0:
+     for:     Burning Blood +0.06 (z +1.1), Bash +0.01 (z +0.1), Strike +0.00 (z +0.0), Defend -0.00 (z -0.1)
+     against: Ascender's Bane -0.03 (z -0.6), Defend -0.00 (z -0.1)
+     value:   Burning Blood +0.048 P(win) -0.0 HP, Ascender's Bane -0.030 P(win) +0.0 HP, Defend -0.018 P(win) -0.0 HP, Strike -0.011 P(win) -0.0 HP
+
+[card reward] floor 8  P(win) 0.307  HP 30  deck 17  relics 2
+    0.496  take Iron Wave                                +0.38 vs skip / leave rewards
+    0.341  skip / leave rewards                          -0.38 vs take Iron Wave
+    0.139  take Infernal Blade                           -0.90 vs skip / leave rewards
+    0.024  take Clash                                    -2.67 vs skip / leave rewards
+   take Iron Wave over skip / leave rewards:
+     for:     Ascender's Bane +0.19 (z +1.1), Defend +0.09 (z +0.7), Strike +0.08 (z +0.6), The Boot -0.00 (z +0.3)
+     against: Reaper -1.92 (z -7.5), Uppercut+ -1.12 (z -4.2), Metallicize -0.45 (z -1.5), Shrug It Off -0.37 (z -1.2)
+     value:   Uppercut+ +0.111 P(win) -0.0 HP, Reaper +0.102 P(win) +0.0 HP, Burning Blood +0.072 P(win) -0.0 HP, Ascender's Bane -0.055 P(win) +0.0 HP
+
+[map] floor 2  P(win) 0.254  HP 62  deck 13  relics 2
+    0.580  map: monster x4 y2                            +0.32 vs map: shop x5 y2
+    0.420  map: shop x5 y2                               -0.32 vs map: monster x4 y2
+   map: monster x4 y2 over map: shop x5 y2:
+     for:     Burning Blood +0.46 (z +2.5), Smiling Mask +0.14 (z +0.6), Clothesline +0.11 (z +0.3), Strike +0.06 (z +0.1)
+     against: Bash -0.24 (z -1.8), Spot Weakness -0.23 (z -1.7), Ascender's Bane -0.08 (z -0.8)
+     value:   Burning Blood +0.061 P(win) -0.0 HP, Spot Weakness +0.058 P(win) -0.0 HP, Ascender's Bane -0.033 P(win) +0.0 HP, Defend -0.017 P(win) -0.0 HP
+     top action changes without: Burning Blood
+
+[campfire] floor 15  P(win) 0.473  HP 46  deck 16  relics 5
+    0.996  campfire: smith                               +5.60 vs campfire: rest
+    0.004  campfire: rest                                -5.60 vs campfire: smith
+    0.000  campfire: recall                             -12.94 vs campfire: smith
+   campfire: smith over campfire: rest:
+     for:     Disarm +2.46 (z +8.4), Spot Weakness +1.10 (z +3.7), Mercury Hourglass +0.59 (z +1.9), Colorless Potion +0.51 (z +1.6)
+     against: Battle Trance -0.30 (z -1.2), Ascender's Bane -0.23 (z -1.0), Eternal Feather -0.21 (z -0.9), Bash -0.15 (z -0.7)
+     value:   Spot Weakness +0.122 P(win) -0.0 HP, Mercury Hourglass +0.084 P(win) -0.1 HP, Offering +0.055 P(win) -0.0 HP, Ascender's Bane -0.041 P(win) +0.0 HP
+
+[shop] floor 4  P(win) 0.144  HP 35  deck 14  relics 1
+    0.466  buy remove a card (75 g)                      +3.57 vs leave shop
+    0.326  buy Shrug It Off (53 g)                       +3.22 vs leave shop
+    0.097  buy Swift Potion (53 g)                       +2.00 vs leave shop
+    0.079  buy Essence Of Steel (87 g)                   +1.80 vs leave shop
+    0.013  leave shop                                    -3.57 vs buy remove a card (75 g)
+    0.009  buy Liquid Bronze (85 g)                      -0.40 vs leave shop
+    0.006  buy Fiend Fire (176 g)                        -0.85 vs leave shop
+    0.003  buy Havoc (56 g)                              -1.42 vs leave shop
+   buy remove a card (75 g) over buy Shrug It Off (53 g):
+     for:     Berserk +1.58 (z +10.4), Burning Blood +0.09 (z +0.8), Defend +0.07 (z +0.7), Bash -0.03 (z +0.0)
+     against: Clothesline -0.17 (z -0.9), Ascender's Bane -0.14 (z -0.7), Anger -0.14 (z -0.7), Strike -0.04 (z -0.0)
+     value:   Anger +0.042 P(win) -0.0 HP, Burning Blood +0.039 P(win) -0.0 HP, Berserk -0.035 P(win) +0.0 HP, Ascender's Bane -0.032 P(win) +0.0 HP
+     top action changes without: Berserk
+
+[shop] floor 2  P(win) 0.269  HP 63  deck 12  relics 1
+    0.925  buy Inflame (41 g)                            +5.11 vs leave shop
+    0.055  buy Twin Strike (55 g)                        +2.28 vs leave shop
+    0.006  buy Skill Potion (54 g)                       +0.00 vs leave shop
+    0.006  leave shop                                    -5.11 vs buy Inflame (41 g)
+    0.005  buy remove a card (75 g)                      -0.11 vs leave shop
+    0.003  buy Flex Potion (55 g)                        -0.58 vs leave shop
+    0.000  buy Ancient Potion (81 g)                     -2.66 vs leave shop
+    0.000  buy Good Instincts (95 g)                     -3.16 vs leave shop
+   buy Inflame (41 g) over buy Twin Strike (55 g):
+     for:     Pommel Strike +1.40 (z +17.8), Burning Blood +0.03 (z +0.3), Ascender's Bane +0.01 (z +0.1), Bash +0.00 (z -0.1)
+     against: Defend -0.11 (z -1.5), Strike -0.08 (z -1.1)
+     value:   Burning Blood +0.052 P(win) -0.0 HP, Ascender's Bane -0.029 P(win) +0.0 HP, Pommel Strike +0.022 P(win) -0.0 HP, Defend -0.018 P(win) -0.0 HP
+
+[card reward] floor 35  P(win) 0.069  HP 65  deck 26  relics 12
+    0.964  take Second Wind                              +3.84 vs skip / leave rewards
+    0.021  skip / leave rewards                          -3.84 vs take Second Wind
+    0.015  take Headbutt                                 -0.35 vs skip / leave rewards
+    0.000  take Dual Wield                               -4.25 vs skip / leave rewards
+   take Second Wind over skip / leave rewards:
+     for:     Barricade +1.17 (z +7.8), Feel No Pain +0.79 (z +5.3), Unceasing Top +0.57 (z +3.8), Bag Of Preparation +0.38 (z +2.5)
+     against: Anger -0.38 (z -2.5), Impervious -0.37 (z -2.4), Sever Soul+ -0.33 (z -2.2), True Grit+ -0.18 (z -1.2)
+     value:   Slavers Collar +0.031 P(win) -0.0 HP, Shockwave +0.029 P(win) -0.0 HP, Fossilized Helix +0.029 P(win) -0.0 HP, Bag Of Preparation +0.028 P(win) -0.0 HP
+
+[map] floor 0  P(win) 0.303  HP 75  deck 11  relics 1
+    0.351  map: monster x6 y0                            +0.07 vs map: monster x1 y0
+    0.326  map: monster x1 y0                            -0.07 vs map: monster x6 y0
+    0.324  map: monster x3 y0                            -0.08 vs map: monster x6 y0
+   map: monster x6 y0 over map: monster x1 y0:
+     for:     Burning Blood +0.07 (z +1.5), Defend -0.01 (z +0.0), Strike -0.01 (z +0.0), Ascender's Bane -0.01 (z -0.1)
+     against: Bash -0.02 (z -0.2), Ascender's Bane -0.01 (z -0.1), Strike -0.01 (z +0.0), Defend -0.01 (z +0.0)
+     value:   Burning Blood +0.056 P(win) +0.0 HP, Ascender's Bane -0.031 P(win) -0.0 HP, Defend -0.016 P(win) -0.0 HP, Bash +0.011 P(win) +0.0 HP
+
+[campfire] floor 11  P(win) 0.258  HP 58  deck 14  relics 3
+    0.807  campfire: smith                               +1.44 vs campfire: rest
+    0.192  campfire: rest                                -1.44 vs campfire: smith
+    0.002  campfire: recall                              -6.28 vs campfire: smith
+   campfire: smith over campfire: rest:
+     for:     Red Skull +1.35 (z +4.1), Happy Flower +0.34 (z +0.9), Pommel Strike+ +0.28 (z +0.7), Burning Blood +0.27 (z +0.7)
+     against: Decay -0.42 (z -1.5), Ascender's Bane -0.18 (z -0.7), Anger -0.09 (z -0.5), Strike -0.07 (z -0.4)
+     value:   Red Skull +0.146 P(win) -3.5 HP, Decay -0.068 P(win) +0.3 HP, Happy Flower +0.053 P(win) -0.5 HP, Pommel Strike+ +0.040 P(win) -0.1 HP
+
+[card reward] floor 24  P(win) 0.396  HP 33  deck 20  relics 7
+    0.500  skip / leave rewards                          +0.21 vs take Armaments+
+    0.405  take Armaments+                               -0.21 vs skip / leave rewards
+    0.064  take Intimidate                               -2.05 vs skip / leave rewards
+    0.030  take Thunderclap                              -2.80 vs skip / leave rewards
+   skip / leave rewards over take Armaments+:
+     for:     Snecko Eye +1.22 (z +5.6), Perfected Strike +1.08 (z +4.9), Red Skull +1.03 (z +4.7), Uppercut+ +0.60 (z +2.7)
+     against: Reaper -0.39 (z -1.9), Ascender's Bane -0.39 (z -1.9), Pommel Strike -0.26 (z -1.3), Anger+ -0.15 (z -0.8)
+     value:   Snecko Eye +0.286 P(win) -0.0 HP, Red Skull +0.138 P(win) -0.0 HP, Reaper +0.092 P(win) -0.0 HP, Enchiridion +0.071 P(win) +0.0 HP
+     top action changes without: Pommel Strike+, Uppercut+, Perfected Strike, Red Skull, Snecko Eye
+
+[reward relic/sapphire key] floor 26  P(win) 0.523  HP 79  deck 23  relics 8
+    0.495  sapphire key                                  +0.34 vs skip / leave rewards
+    0.352  skip / leave rewards                          -0.34 vs sapphire key
+    0.153  take Blue Candle (sapphire key pair)          -0.83 vs skip / leave rewards
+   sapphire key over skip / leave rewards:
+     for:     Offering +0.06 (z +1.0), Fusion Hammer +0.05 (z +1.0), Uppercut+ +0.05 (z +1.0), White Beast Statue +0.03 (z +0.5)
+     against: Burning Blood -0.13 (z -2.7), Smoke Bomb -0.07 (z -1.5), Feed+ -0.05 (z -1.0), Brimstone -0.04 (z -0.9)
+     value:   Brimstone +0.255 P(win) +0.0 HP, Self Forming Clay +0.138 P(win) +0.0 HP, Fusion Hammer +0.099 P(win) +0.0 HP, Offering +0.082 P(win) -0.0 HP
+
+[card reward] floor 4  P(win) 0.299  HP 57  deck 14  relics 2
+    0.718  take Headbutt                                 +2.48 vs skip / leave rewards
+    0.222  take Thunderclap                              +1.31 vs skip / leave rewards
+    0.060  skip / leave rewards                          -2.48 vs take Headbutt
+    0.000  take Searing Blow                             -7.75 vs skip / leave rewards
+   take Headbutt over take Thunderclap:
+     for:     Ascender's Bane +0.28 (z +1.2), Defend +0.14 (z +0.8), Strike +0.09 (z +0.6), Bash +0.06 (z +0.5)
+     against: Pommel Strike -0.56 (z -1.4), Headbutt -0.49 (z -1.2), Twin Strike -0.34 (z -0.7), Power Potion -0.24 (z -0.4)
+     value:   Happy Flower +0.056 P(win) -0.0 HP, Burning Blood +0.034 P(win) +0.0 HP, Ascender's Bane -0.026 P(win) -0.0 HP, Defend -0.014 P(win) -0.0 HP
+
+[campfire] floor 6  P(win) 0.261  HP 58  deck 15  relics 2
+    0.678  campfire: rest                                +0.75 vs campfire: smith
+    0.322  campfire: smith                               -0.75 vs campfire: rest
+    0.000  campfire: recall                             -11.28 vs campfire: rest
+   campfire: rest over campfire: smith:
+     for:     Ascender's Bane +0.36 (z +1.2), Strike +0.20 (z +0.7), Defend +0.12 (z +0.5), Headbutt +0.02 (z +0.2)
+     against: Pommel Strike -0.91 (z -2.7), Power Potion -0.84 (z -2.5), Happy Flower -0.81 (z -2.4), Burning Blood -0.24 (z -0.6)
+     value:   Happy Flower +0.095 P(win) -4.2 HP, Burning Blood +0.047 P(win) -6.5 HP, Ascender's Bane -0.036 P(win) +1.9 HP, Defend -0.019 P(win) +0.7 HP
+
+[select upgrade] floor 21  P(win) 0.534  HP 53  deck 22  relics 7
+    0.586  upgrade Fiend Fire                            +1.16 vs upgrade Battle Trance
+    0.183  upgrade Battle Trance                         -1.16 vs upgrade Fiend Fire
+    0.082  upgrade Spot Weakness                         -1.97 vs upgrade Fiend Fire
+    0.055  upgrade Pommel Strike                         -2.36 vs upgrade Fiend Fire
+    0.027  upgrade Metallicize                           -3.07 vs upgrade Fiend Fire
+    0.021  upgrade Defend                                -3.33 vs upgrade Fiend Fire
+    0.014  upgrade Twin Strike                           -3.75 vs upgrade Fiend Fire
+    0.013  upgrade Bash                                  -3.77 vs upgrade Fiend Fire
+   upgrade Fiend Fire over upgrade Battle Trance:
+     for:     Runic Pyramid +1.94 (z +6.9), Fossilized Helix +0.38 (z +1.3), Burning Blood +0.37 (z +1.3), Pommel Strike +0.20 (z +0.7)
+     against: Spot Weakness+ -0.80 (z -2.8), Happy Flower -0.46 (z -1.6), Spot Weakness -0.24 (z -0.9), Sentinel+ -0.22 (z -0.8)
+     value:   Runic Pyramid +0.314 P(win) +0.1 HP, Fossilized Helix +0.179 P(win) +0.0 HP, Happy Flower +0.123 P(win) +0.0 HP, Fiend Fire +0.107 P(win) +0.1 HP
+     top action changes without: Spot Weakness+, Runic Pyramid
+
+[card reward] floor 46  P(win) 0.478  HP 34  deck 32  relics 15
+    0.944  take Battle Trance+                           +6.14 vs skip / leave rewards
+    0.049  take Spot Weakness                            +3.19 vs skip / leave rewards
+    0.004  take Pommel Strike+                           +0.65 vs skip / leave rewards
+    0.002  skip / leave rewards                          -6.14 vs take Battle Trance+
+    0.001  take Ghostly Armor                            -1.11 vs skip / leave rewards
+   take Battle Trance+ over take Spot Weakness:
+     for:     Spot Weakness+ +3.27 (z +15.9), Spot Weakness +2.61 (z +12.8), Coffee Dripper +0.74 (z +4.0), Cultist Potion +0.63 (z +3.5)
+     against: Runic Pyramid -2.37 (z -10.7), Battle Trance -1.38 (z -6.0), Fossilized Helix -0.91 (z -3.8), Feel No Pain+ -0.36 (z -1.2)
+     value:   Runic Pyramid +0.366 P(win) +0.1 HP, Self Forming Clay +0.138 P(win) +0.0 HP, Feel No Pain+ +0.115 P(win) -0.0 HP, Fiend Fire+ +0.112 P(win) +0.0 HP
+     top action changes without: Spot Weakness+
+
+[card reward] floor 35  P(win) 0.377  HP 62  deck 26  relics 13
+    0.896  skip / leave rewards                          +2.22 vs take Headbutt
+    0.097  take Headbutt                                 -2.22 vs skip / leave rewards
+    0.006  take Hemokinesis+                             -5.02 vs skip / leave rewards
+    0.001  take Wild Strike                              -6.93 vs skip / leave rewards
+   skip / leave rewards over take Headbutt:
+     for:     Runic Pyramid +1.56 (z +20.5), Spot Weakness +0.69 (z +9.1), Reaper +0.26 (z +3.5), Warped Tongs +0.24 (z +3.3)
+     against: Toxic Egg -0.22 (z -2.8), Strike -0.12 (z -1.6), Ascender's Bane -0.12 (z -1.6), White Beast Statue -0.10 (z -1.3)
+     value:   Runic Pyramid +0.327 P(win) -0.0 HP, Runic Dome +0.137 P(win) -0.0 HP, Spot Weakness +0.129 P(win) +0.0 HP, Reaper +0.126 P(win) +0.0 HP
+
+[shop] floor 48  P(win) 0.455  HP 84  deck 44  relics 13
+    0.576  leave shop                                    +0.96 vs buy remove a card (60 g)
+    0.221  buy remove a card (60 g)                      -0.96 vs leave shop
+    0.072  buy Ghostly Armor (63 g)                      -2.08 vs leave shop
+    0.062  buy Bloodletting (65 g)                       -2.23 vs leave shop
+    0.029  discard Power Potion                          -2.99 vs leave shop
+    0.023  buy Sword Boomerang (21 g)                    -3.21 vs leave shop
+    0.009  buy Dramatic Entrance (74 g)                  -4.14 vs leave shop
+    0.007  discard Strength Potion                       -4.38 vs leave shop
+   leave shop over buy remove a card (60 g):
+     for:     Corruption+ +1.56 (z +15.9), The Courier +0.45 (z +4.3), Barricade+ +0.33 (z +3.1), Uppercut+ +0.26 (z +2.3)
+     against: Burning Blood -0.35 (z -3.9), Power Potion -0.34 (z -3.8), Strength Potion -0.28 (z -3.2), Dollys Mirror -0.19 (z -2.2)
+     value:   Corruption+ +0.154 P(win) -0.0 HP, Barricade+ +0.124 P(win) +0.0 HP, Feel No Pain+ +0.093 P(win) -0.0 HP, Dark Embrace+ +0.079 P(win) +0.0 HP
+     top action changes without: Corruption+
+
+[card reward] floor 6  P(win) 0.516  HP 41  deck 15  relics 3
+    0.983  take Fiend Fire                               +4.55 vs skip / leave rewards
+    0.010  skip / leave rewards                          -4.55 vs take Fiend Fire
+    0.005  take Perfected Strike                         -0.69 vs skip / leave rewards
+    0.001  take Cleave                                   -2.39 vs skip / leave rewards
+   take Fiend Fire over skip / leave rewards:
+     for:     Burning Blood +0.57 (z +2.6), Spot Weakness +0.41 (z +1.8), Defend +0.08 (z +0.2), Ceramic Fish +0.05 (z +0.0)
+     against: Reaper -1.80 (z -9.1), Uppercut -0.32 (z -1.8), Strike -0.18 (z -1.1), Disarm -0.09 (z -0.7)
+     value:   Spot Weakness +0.178 P(win) +0.0 HP, Reaper +0.158 P(win) +0.0 HP, Burning Blood +0.067 P(win) -0.0 HP, Ascender's Bane -0.054 P(win) +0.0 HP
+     top action changes without: Spot Weakness
+
+[map] floor 31  P(win) 0.724  HP 47  deck 31  relics 8
+    0.503  map: rest x3 y14                              +0.01 vs map: rest x4 y14
+    0.497  map: rest x4 y14                              -0.01 vs map: rest x3 y14
+   map: rest x3 y14 over map: rest x4 y14:
+     for:     Reaper +0.02 (z +0.4), Spot Weakness+ +0.02 (z +0.3), Fusion Hammer +0.01 (z +0.3), Corruption +0.01 (z +0.2)
+     against: Darkstone Periapt -0.01 (z -0.2), Ascender's Bane -0.01 (z -0.1), Uppercut -0.00 (z -0.1), Bash -0.00 (z -0.1)
+     value:   Spot Weakness+ +0.383 P(win) +0.0 HP, Corruption +0.169 P(win) +0.0 HP, Fusion Hammer +0.151 P(win) +0.0 HP, Dark Embrace +0.132 P(win) +0.0 HP
+     top action changes without: Reaper, Spot Weakness+, Fusion Hammer
+
+[card reward] floor 31  P(win) 0.697  HP 30  deck 25  relics 7
+    0.809  take Dark Embrace                             +3.38 vs skip / leave rewards
+    0.163  take Shockwave                                +1.78 vs skip / leave rewards
+    0.028  skip / leave rewards                          -3.38 vs take Dark Embrace
+    0.000  take Fire Breathing                           -5.42 vs skip / leave rewards
+   take Dark Embrace over take Shockwave:
+     for:     Shockwave+ +5.60 (z +21.5), Second Wind +0.99 (z +3.7), Panic Button +0.45 (z +1.6), Limit Break +0.37 (z +1.3)
+     against: Feel No Pain+ -0.94 (z -3.7), Demon Form+ -0.92 (z -3.6), Demon Form -0.88 (z -3.5), Reaper -0.60 (z -2.4)
+     value:   Reaper +0.190 P(win) -0.2 HP, Feel No Pain+ +0.092 P(win) +0.3 HP, Shockwave+ +0.073 P(win) +0.1 HP, Red Skull +0.055 P(win) +0.2 HP
+     top action changes without: Shockwave+
+
+[card reward] floor 47  P(win) 0.782  HP 64  deck 35  relics 13
+    0.381  take Pummel+                                  +0.22 vs skip / leave rewards
+    0.304  skip / leave rewards                          -0.22 vs take Pummel+
+    0.209  take Regen Potion                             -0.38 vs skip / leave rewards
+    0.069  take Thunderclap+                             -1.49 vs skip / leave rewards
+    0.037  take Reckless Charge                          -2.11 vs skip / leave rewards
+   take Pummel+ over skip / leave rewards:
+     for:     Dark Embrace +0.12 (z +2.6), Inflame +0.09 (z +2.0), Eternal Feather +0.07 (z +1.7), Dark Embrace+ +0.06 (z +1.5)
+     against: Sozu -1.36 (z -23.4), Reaper -1.26 (z -21.7), Limit Break+ -0.58 (z -9.8), Shockwave+ -0.25 (z -4.0)
+     value:   Reaper +0.114 P(win) -0.0 HP, Shockwave+ +0.114 P(win) -0.0 HP, Sozu +0.065 P(win) -0.1 HP, Feel No Pain+ +0.055 P(win) +0.0 HP
+     top action changes without: Shockwave+
+
+[event] floor 19  P(win) 0.133  HP 49  deck 22  relics 3
+    0.728  Vampires(?) option 1                          +0.99 vs Vampires(?) option 2
+    0.272  Vampires(?) option 2                          -0.99 vs Vampires(?) option 1
+   Vampires(?) option 1 over Vampires(?) option 2:
+     for:     Ascender's Bane +0.18 (z +1.1), Spot Weakness +0.17 (z +1.1), Disarm +0.09 (z +0.7), Strike +0.09 (z +0.7)
+     against: Cursed Key -0.97 (z -4.6), Carnage -0.30 (z -1.3), Burning Blood -0.25 (z -1.1), Impervious -0.24 (z -1.0)
+     value:   Shockwave +0.070 P(win) +0.5 HP, Spot Weakness +0.070 P(win) +0.0 HP, Corruption +0.068 P(win) -0.2 HP, Cursed Key +0.063 P(win) +0.7 HP

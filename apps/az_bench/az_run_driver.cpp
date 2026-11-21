@@ -560,6 +560,13 @@ namespace sts::azbench {
         // RunConfig::compactSamples: this run's token dictionary (shared with its samples) and its content index.
         std::shared_ptr<TokenDict> dict;
         std::unordered_map<std::uint64_t, std::uint32_t> dictIndex;
+        // RunConfig::probeRoots: this run's root (-1 = a normal run), its result so far and, per root edge, the sums
+        // of its simulations' leaf outcome distributions [k][57] and expected HP at the end of the root's floor, and
+        // the simulation counts.
+        std::int64_t probe = -1;
+        ProbeResult probeRes;
+        std::vector<double> probeDist, probeHp, probeHpf;   // probeHpf [k][56]: utility AMBER / AMBER2
+        std::vector<std::int32_t> probeCnt;
     };
 
     struct RunDriver::Worker {
@@ -998,6 +1005,16 @@ namespace sts::azbench {
             throw std::invalid_argument("run driver: exploreAmber and exploreC are exclusive");
         if (cfg_.exploreAmber && !(cfg_.exploreT > 0 && cfg_.pickTarget > 0))
             throw std::invalid_argument("run driver: exploreAmber needs exploreT > 0 and pickTarget > 0");
+        if (!cfg_.probeRoots.empty()) {
+            if (!(cfg_.searchEmaLambda > 0) || !cfg_.searchEmaHp)
+                throw std::invalid_argument("run driver: probeRoots need searchEmaLambda > 0 and searchEmaHp");
+            if (cfg_.savescum || !cfg_.heartArms.empty() || cfg_.exploreAmber || cfg_.exploreC > 0)
+                throw std::invalid_argument("run driver: probeRoots exclude savescum, heartArms and exploration");
+            for (const auto &r : cfg_.probeRoots)
+                if (!r) throw std::invalid_argument("run driver: null probe root");
+        }
+        if (!(cfg_.captureRate >= 0 && cfg_.captureRate <= 1))
+            throw std::invalid_argument("run driver: captureRate in [0, 1]");
         int maxSims = std::max(cfg_.fullSims, cfg_.fastSims);
         int maxCand = std::max(cfg_.fullCandidates, cfg_.fastCandidates);
         if (cfg_.heartReps < 1) throw std::invalid_argument("run driver: heartReps >= 1");
@@ -1504,6 +1521,17 @@ namespace sts::azbench {
                     throw std::logic_error("run driver: leaf without an outcome distribution");
                 for (int k = 0; k < kOutcomeClasses; ++k) g.rootDist[k] += leaf.dist[k];
                 if (hpOn) addHp(g, leaf);
+                if (g.probe >= 0 && path.front().node == 0 && path.front().edge >= 0) {   // probe: per root edge
+                    const int e = path.front().edge;
+                    for (int k = 0; k < kOutcomeClasses; ++k) g.probeDist[static_cast<std::size_t>(e) * kOutcomeClasses + k] += leaf.dist[k];
+                    double eh = 0;
+                    if (leaf.hpHot >= 0) eh = leaf.hpHot;
+                    else for (int k = 0; k < kHpClasses; ++k) eh += k * static_cast<double>(leaf.hpd[k]);
+                    g.probeHp[e] += eh;
+                    if (hpfOn)
+                        for (int f = 0; f < kFloors; ++f) g.probeHpf[static_cast<std::size_t>(e) * kFloors + f] += leaf.hpfv[f];
+                    ++g.probeCnt[e];
+                }
             }
             for (const auto &p : path) {
                 Node &n = g.pool[p.node];
@@ -1612,18 +1640,68 @@ namespace sts::azbench {
         };
 
 
+        // RunConfig::probeRoots: records g's probe result (status, the root state's facts) and counts the root done.
+        auto recordProbe = [&](Run &g, int status) {
+            ProbeResult &r = g.probeRes;
+            r.probe = g.probe;
+            r.status = status;
+            r.floor = g.gc.floorNum;
+            r.act = g.gc.act;
+            r.screen = static_cast<int>(g.gc.screenState);
+            r.hp = g.gc.curHp;
+            r.maxHp = g.gc.maxHp;
+            {
+                std::lock_guard<std::mutex> l(probeM_);
+                probeResults_.push_back(std::move(r));
+            }
+            g.probeRes = ProbeResult{};
+            probesDone_.fetch_add(1);
+        };
+        // The probe status of g's state before any search: SEARCHED when the driver would search it (only then
+        // gacts holds its actions), else why not (FORCED: *only = the one action).
+        auto probeStatus = [&](Run &g, std::uint32_t *only) -> int {
+            if (g.gc.outcome != GameOutcome::UNDECIDED) return ProbeResult::GAME_OVER;
+            if (g.gc.screenState == ScreenState::BATTLE) return ProbeResult::COMBAT;
+            if (goldToTake(g.gc)) { *only = takeGoldBits; return ProbeResult::FORCED; }
+            gacts = oocActions(g.gc, g.forceKeys);
+            if (gacts.empty()) return ProbeResult::NO_ACTION;
+            if (gacts.size() == 1) { *only = gacts[0].bits; return ProbeResult::FORCED; }
+            return ProbeResult::SEARCHED;
+        };
+
         auto startRun = [&](Run &g, int gi) {
-            const std::uint64_t seed = nextSeed();
-            if (seed == std::numeric_limits<std::uint64_t>::max()) { g.active = false; return; }
+            std::uint64_t seed = 0;
+            std::int64_t probe = -1;
+            if (!cfg.probeRoots.empty()) {
+                // Probe roots: take the next one the driver would search; record the others without a search.
+                while (true) {
+                    probe = probeNext_.fetch_add(1);
+                    if (probe >= static_cast<std::int64_t>(cfg.probeRoots.size())) { g.active = false; return; }
+                    g.probe = probe;
+                    g.gc = search::detachedGameCopy(*cfg.probeRoots[probe]);
+                    g.forceKeys = forceKeys_.load(std::memory_order_relaxed);
+                    std::uint32_t only = 0;
+                    const int st = probeStatus(g, &only);
+                    if (st == ProbeResult::SEARCHED) break;
+                    g.probeRes.pickBits = only;
+                    g.probeRes.pick = st == ProbeResult::FORCED ? 0 : -1;
+                    recordProbe(g, st);
+                }
+                seed = g.gc.seed;
+            } else {
+                seed = nextSeed();
+                if (seed == std::numeric_limits<std::uint64_t>::max()) { g.active = false; return; }
+            }
             g.active = true;
             g.seed = seed;
-            g.asc = ascension_.load(std::memory_order_relaxed);
+            g.probe = probe;
+            g.asc = probe >= 0 ? g.gc.ascension : ascension_.load(std::memory_order_relaxed);
             g.forceKeys = forceKeys_.load(std::memory_order_relaxed);
-            g.savescum = savescum_.load(std::memory_order_relaxed);
+            g.savescum = probe < 0 && savescum_.load(std::memory_order_relaxed);
             if (g.savescum) ++wk.st.savescumRuns;
             g.expectValid = false;
-            g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc, cfg.rngFix);
-            if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
+            if (probe < 0) g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc, cfg.rngFix);
+            if (cfg.testMaxHp > 0 && probe < 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
             g.inBattle = false;
             g.cache.clear();
             g.moves = g.fightMoves = 0;
@@ -2024,6 +2102,12 @@ namespace sts::azbench {
             g.budget = arm ? (g.full ? arm->fullSims : arm->fastSims) : g.full ? cfg.fullSims : cfg.fastSims;
             g.candidates = arm ? (g.full ? arm->fullCandidates : arm->fastCandidates)
                                : g.full ? cfg.fullCandidates : cfg.fastCandidates;
+            if (g.probe >= 0) {   // probe root: the full budget, no sample
+                g.full = true;
+                g.keep = false;
+                g.budget = cfg.fullSims;
+                g.candidates = cfg.fullCandidates;
+            }
             g.cand.clear();
             g.phaseQueue.clear();
             g.nFlights = g.waiting = 0;
@@ -2047,6 +2131,18 @@ namespace sts::azbench {
                 }
             } else {
                 setGc(root, search::detachedGameCopy(g.gc));
+                if (cfg.captureRate > 0 && g.probe < 0) {   // a hash of seed and move decides (not the search RNG)
+                    const std::uint64_t h = mix64(g.seed ^ mix64(0x63617074ull + static_cast<std::uint64_t>(g.moves)));
+                    if (static_cast<double>(h >> 11) * 0x1.0p-53 < cfg.captureRate) {
+                        Capture c;
+                        c.seed = g.seed;
+                        c.move = g.moves;
+                        c.floor = g.gc.floorNum;
+                        c.state = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
+                        std::lock_guard<std::mutex> l(probeM_);
+                        captures_.push_back(std::move(c));
+                    }
+                }
             }
             g.rootKeys.clear();
             g.rootClass.clear();
@@ -2099,7 +2195,7 @@ namespace sts::azbench {
             // cfg.fastNoise false (Amber Eye: no exploration noise on fast moves): a fast move's Gumbel draws stay 0,
             // so it takes the top logits as candidates and plays the best logit + sigma(Q). The draws are still made,
             // so the worker RNG stream (resampling, keep decisions) is the same with and without the flag.
-            const bool noisy = g.full || cfg.fastNoise;
+            const bool noisy = (g.full || cfg.fastNoise) && (g.probe < 0 || cfg.probeNoise);
             for (int i = 0; i < k; ++i) { const double x = G(wk.rng); g.gumbel[i] = noisy ? x : 0.0; order[i] = i; }
             std::sort(order.begin(), order.end(), [&](int a, int b) {
                 return g.gumbel[a] + root.edges[a].logit > g.gumbel[b] + root.edges[b].logit;
@@ -2111,6 +2207,14 @@ namespace sts::azbench {
                     if (order[i] < static_cast<int>(g.rootUnder.size()) && g.rootUnder[order[i]]) g.cand.push_back(order[i]);
             const int mc = static_cast<int>(g.cand.size());
             g.phasesLeft = mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
+            if (g.probe >= 0) {   // probe root: per-edge sums of the simulations' leaves; the initial candidates
+                g.probeDist.assign(static_cast<std::size_t>(k) * kOutcomeClasses, 0.0);
+                g.probeHp.assign(k, 0.0);
+                g.probeHpf.assign(hpfOn ? static_cast<std::size_t>(k) * kFloors : 0, 0.0);
+                g.probeCnt.assign(k, 0);
+                g.probeRes.edges.assign(k, ProbeEdge{});
+                for (int e : g.cand) g.probeRes.edges[e].candidate = true;
+            }
         };
 
         auto fillPhase = [&](Run &g) {
@@ -2178,6 +2282,66 @@ namespace sts::azbench {
                         }
                     }
                 }
+            }
+            if (g.probe >= 0) {   // probe root: record the search, take the next root; nothing is played
+                ProbeResult &r = g.probeRes;
+                const int k = static_cast<int>(root.edges.size());
+                r.pick = pick;
+                r.pickBits = root.edges[pick].bits;
+                r.rootN = root.n;
+                r.searchValue = root.n ? root.w / root.n : root.value;
+                r.sigma = sigma;
+                const double inv = 1.0 / std::max(1, root.n);
+                r.searchDist.assign(moveResult.begin(), moveResult.end());
+                r.searchPWin = moveResult[0];
+                double eh = 0;
+                for (int c = 0; c < kHpClasses; ++c) eh += c * g.rootHpd[c];
+                r.searchEhp = eh * inv;
+                if (hpfOn) {
+                    r.searchHpf.resize(kFloors);
+                    for (int f = 0; f < kFloors; ++f) r.searchHpf[f] = static_cast<float>(g.rootHpf[f] * inv);
+                }
+                std::vector<double> z(k);
+                double mx = -1e300, sum = 0;
+                for (int i = 0; i < k; ++i) { z[i] = root.edges[i].logit + sigma * q[i]; mx = std::max(mx, z[i]); }
+                for (auto &x : z) { x = std::exp(x - mx); sum += x; }
+                const double nan = std::numeric_limits<double>::quiet_NaN();
+                for (int i = 0; i < k; ++i) {
+                    ProbeEdge &pe = r.edges[i];
+                    const Edge &x = root.edges[i];
+                    pe.bits = x.bits;
+                    pe.logit = x.logit;
+                    pe.n = x.n;
+                    pe.q = x.n ? x.w / x.n : nan;
+                    pe.qCompleted = q[i];
+                    pe.policy = z[i] / sum;
+                    pe.score = rootScore(g, root, i, sigma, q);
+                    const int c = g.probeCnt[i];
+                    if (c > 0) {
+                        pe.dist.resize(kOutcomeClasses);
+                        for (int j = 0; j < kOutcomeClasses; ++j)
+                            pe.dist[j] = static_cast<float>(g.probeDist[static_cast<std::size_t>(i) * kOutcomeClasses + j] / c);
+                        pe.pWin = pe.dist[0];
+                        pe.ehp = g.probeHp[i] / c;
+                        if (hpfOn) {
+                            pe.hpf.resize(kFloors);
+                            for (int f = 0; f < kFloors; ++f)
+                                pe.hpf[f] = static_cast<float>(g.probeHpf[static_cast<std::size_t>(i) * kFloors + f] / c);
+                        }
+                    } else {
+                        pe.pWin = pe.ehp = nan;
+                    }
+                }
+                const int na = static_cast<int>(r.sample.aType.size());   // the encoded actions (a cut tail is rare)
+                r.sample.policy.assign(na, 0.f);
+                double kept = 0;
+                for (int i = 0; i < std::min(k, na); ++i) kept += z[i];
+                if (kept <= 0) kept = sum;
+                for (int i = 0; i < std::min(k, na); ++i) r.sample.policy[i] = static_cast<float>(z[i] / kept);
+                r.sample.searchValue = static_cast<float>(r.searchValue);
+                recordProbe(g, ProbeResult::SEARCHED);
+                startRun(g, gi);
+                return;
             }
             if (cfg.heartLogRate > 0) {   // Heart log: the first searched move of each act and of the Heart fight
                 constexpr int kHeartFloor = 55;   // Act 4: 52 rest, 53 shop, 54 elite, 55 the Heart
@@ -2833,6 +2997,20 @@ namespace sts::azbench {
                             g.cur.floor = static_cast<std::int16_t>(g.gc.floorNum);
                             g.cur.run = g.seed;
                             if (cfg.auxFights && !g.inBattle) auxFightStarts(g, g.cur);
+                        }
+                        if (g.probe >= 0) {   // probe: the root's tokens and net evaluation
+                            ProbeResult &pr = g.probeRes;
+                            pr.sample = Sample{};
+                            flattenInto(fl.tokens, pr.sample);
+                            pr.sample.combat = 0;
+                            pr.sample.maxHp = static_cast<std::int16_t>(g.gc.maxHp);
+                            pr.sample.floor = static_cast<std::int16_t>(g.gc.floorNum);
+                            pr.sample.run = g.seed;
+                            pr.rootValue = n.value;
+                            pr.rootF = fl.resF;
+                            pr.rootEhp = fl.resEhp;
+                            pr.rootDist.assign(fl.resDist.begin(), fl.resDist.end());
+                            pr.rootHpd = fl.resHpd;
                         }
                         g.pool[0].n = 1;
                         g.pool[0].w = n.value;

@@ -1,0 +1,1551 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "ckpt2": null,
+ "replay": "gen/replay",
+ "mode": "counterfactual",
+ "seed": 0,
+ "report": {
+  "summary": {
+   "decisions": 40,
+   "with_minimal_set": 18,
+   "mean_set_size": 1.6111111111111112,
+   "set_size_hist": {
+    "1": 12,
+    "2": 3,
+    "3": 2,
+    "5": 1
+   },
+   "hp_flip_share": 0.425,
+   "median_hp_distance": 11.0
+  },
+  "decisions": [
+   {
+    "sample": 14,
+    "kind": "select remove",
+    "best": "remove Defend",
+    "minimal_set": [
+     "Defend"
+    ],
+    "choice_without_set": "remove Strike",
+    "sarfa": [
+     [
+      "Defend",
+      0.1343003041977851,
+      0.07198545944808665
+     ],
+     [
+      "Burning Blood",
+      0.04309743782363814,
+      0.02202571616952731
+     ],
+     [
+      "Ascender's Bane",
+      0.0,
+      -0.013069092491350798
+     ],
+     [
+      "Strike",
+      0.0,
+      -0.03117384020303393
+     ],
+     [
+      "Bash",
+      0.0,
+      -0.04534973949570398
+     ]
+    ],
+    "hp": 79,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 96,
+    "kind": "select bottle",
+    "best": "bottle Immolate",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.07627486246780063,
+      0.03965191864394624
+     ],
+     [
+      "Strike",
+      0.056131393261267565,
+      0.02887620120670742
+     ],
+     [
+      "Defend",
+      0.03224301097257554,
+      0.016385669491565613
+     ],
+     [
+      "Rage",
+      0.03171179250593406,
+      0.016111394736874063
+     ],
+     [
+      "Ascender's Bane",
+      0.003180532252959627,
+      0.0015927997130990024
+     ]
+    ],
+    "hp": 36,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 126,
+    "kind": "Neow",
+    "best": "Neow: Max Hp +20%. Take 30% Hp damage.",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.01224714827350877,
+      0.006161391736502653
+     ],
+     [
+      "Defend",
+      0.00037010575252227173,
+      0.0001850871297115475
+     ],
+     [
+      "Ascender's Bane",
+      0.0,
+      -0.0006395777556844617
+     ],
+     [
+      "Strike",
+      0.0,
+      -0.00019566152757799493
+     ],
+     [
+      "Bash",
+      0.0,
+      -0.0009889442410447868
+     ]
+    ],
+    "hp": 68,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 231,
+    "kind": "card reward",
+    "best": "take Pommel Strike",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.045826752666304184,
+      0.023455071055325183
+     ],
+     [
+      "Strike",
+      0.016741210684343397,
+      0.008441832489556211
+     ],
+     [
+      "Defend",
+      0.010917836911996801,
+      0.0054889436911130796
+     ],
+     [
+      "Ancient Potion",
+      0.0019686615702443934,
+      0.00098530072950187
+     ],
+     [
+      "Ascender's Bane",
+      0.0,
+      -0.0016842084455377382
+     ]
+    ],
+    "hp": 44,
+    "hp_flip_at": 4,
+    "choice_at_flip_hp": "take Warcry"
+   },
+   {
+    "sample": 317,
+    "kind": "Neow",
+    "best": "Neow: Upgrade a card.",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.06233350275638149,
+      0.03216958124373864
+     ],
+     [
+      "Defend",
+      0.004225888588003057,
+      0.002117418510177105
+     ],
+     [
+      "Ascender's Bane",
+      0.0,
+      -0.008004559068969741
+     ],
+     [
+      "Strike",
+      0.0,
+      -0.0017428629867899947
+     ],
+     [
+      "Bash",
+      0.0,
+      -0.03888223034974986
+     ]
+    ],
+    "hp": 68,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 624,
+    "kind": "map",
+    "best": "map: elite x2 y7",
+    "minimal_set": [
+     "Uppercut+",
+     "Explosive Potion"
+    ],
+    "choice_without_set": "map: monster x3 y7",
+    "sarfa": [
+     [
+      "Uppercut+",
+      0.39742504608483364,
+      0.24799154954587643
+     ],
+     [
+      "Explosive Potion",
+      0.2322613667848606,
+      0.13138897482962553
+     ],
+     [
+      "Metallicize",
+      0.08936463241088151,
+      0.04677220673646576
+     ],
+     [
+      "Burning Blood",
+      0.04793902991588973,
+      0.024558162193993427
+     ],
+     [
+      "Inflame",
+      0.031138233908318592,
+      0.015815347956159465
+     ]
+    ],
+    "hp": 60,
+    "hp_flip_at": 37,
+    "choice_at_flip_hp": "map: monster x3 y7"
+   },
+   {
+    "sample": 696,
+    "kind": "map",
+    "best": "map: monster x6 y2",
+    "minimal_set": [
+     "Defend"
+    ],
+    "choice_without_set": "map: event x5 y2",
+    "sarfa": [
+     [
+      "Weak Potion",
+      0.09683856930904089,
+      0.050883003274127314
+     ],
+     [
+      "Defend",
+      0.03869844965881784,
+      0.019731004471028935
+     ],
+     [
+      "Strike",
+      0.02906380051986277,
+      0.0147461904284516
+     ],
+     [
+      "Burning Blood",
+      0.020373255218683023,
+      0.010291462909556515
+     ],
+     [
+      "Ascender's Bane",
+      0.020170512694194436,
+      0.01018800498907757
+     ]
+    ],
+    "hp": 75,
+    "hp_flip_at": 13,
+    "choice_at_flip_hp": "map: event x5 y2"
+   },
+   {
+    "sample": 749,
+    "kind": "reward relic/sapphire key",
+    "best": "take Pen Nib (sapphire key pair)",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.0013473397298780618,
+      0.0006741240236436408
+     ],
+     [
+      "Carnage+",
+      0.00034343256739703497,
+      0.0001717457793636301
+     ],
+     [
+      "Battle Trance",
+      0.00024170134704767617,
+      0.00012086528088284254
+     ],
+     [
+      "Bash",
+      0.0001875196806056218,
+      9.376863210353026e-05
+     ],
+     [
+      "Whirlwind+",
+      0.00011701048345270888,
+      5.850866606604832e-05
+     ]
+    ],
+    "hp": 51,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 1511,
+    "kind": "map",
+    "best": "map: monster x2 y0",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.00498646763995946,
+      0.002499466286977392
+     ],
+     [
+      "Defend",
+      0.0029452639072361487,
+      0.0014748038134133612
+     ],
+     [
+      "Smiling Mask",
+      0.0006874879895080555,
+      0.0003438621953727461
+     ],
+     [
+      "Strike",
+      0.0003033256185170183,
+      0.0001516858143671973
+     ],
+     [
+      "Ascender's Bane",
+      0.0,
+      -0.0006098344107702824
+     ]
+    ],
+    "hp": 68,
+    "hp_flip_at": 63,
+    "choice_at_flip_hp": "map: monster x5 y0"
+   },
+   {
+    "sample": 1552,
+    "kind": "event",
+    "best": "Scrap Ooze option 0",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.0074290296473940335,
+      0.0037283638866220103
+     ],
+     [
+      "Spot Weakness",
+      0.0067715204913655815,
+      0.0033972625622100683
+     ],
+     [
+      "Perfected Strike",
+      0.005670519548403269,
+      0.0028433213287902825
+     ],
+     [
+      "Bash",
+      0.0020076121937290486,
+      0.0010048147360227633
+     ],
+     [
+      "Swift Potion",
+      0.0007623784764794893,
+      0.0003813345988850081
+     ]
+    ],
+    "hp": 61,
+    "hp_flip_at": 53,
+    "choice_at_flip_hp": "Scrap Ooze option 1"
+   },
+   {
+    "sample": 2334,
+    "kind": "card reward",
+    "best": "take Spot Weakness",
+    "minimal_set": [
+     "Pummel"
+    ],
+    "choice_without_set": "take Disarm",
+    "sarfa": [
+     [
+      "Pummel",
+      0.47370918697895625,
+      0.3106971400593181
+     ],
+     [
+      "Offering",
+      0.24708410320570287,
+      0.141203538994218
+     ],
+     [
+      "Burning Blood",
+      0.2360380948627198,
+      0.13419702124145805
+     ],
+     [
+      "Dramatic Entrance",
+      0.11520148988702175,
+      0.06113589892058924
+     ],
+     [
+      "Gremlin Horn",
+      0.08894948929463335,
+      0.04656411352660483
+     ]
+    ],
+    "hp": 13,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 2470,
+    "kind": "card reward",
+    "best": "take Iron Wave",
+    "minimal_set": [
+     "Berserk"
+    ],
+    "choice_without_set": "take Clothesline",
+    "sarfa": [
+     [
+      "Berserk",
+      0.1224637713299077,
+      0.06522609301891535
+     ],
+     [
+      "Bash",
+      0.08726106308730956,
+      0.04562181089608219
+     ],
+     [
+      "Ascender's Bane",
+      0.0,
+      -0.006523288794085702
+     ],
+     [
+      "Strike",
+      0.0,
+      -0.0025794233672324918
+     ],
+     [
+      "Defend",
+      0.0,
+      -0.07368735360309986
+     ]
+    ],
+    "hp": 62,
+    "hp_flip_at": 73,
+    "choice_at_flip_hp": "take Clothesline"
+   },
+   {
+    "sample": 2627,
+    "kind": "map",
+    "best": "drink Fruit Juice",
+    "minimal_set": [
+     "Clockwork Souvenir"
+    ],
+    "choice_without_set": "map: monster x3 y4",
+    "sarfa": [
+     [
+      "Clockwork Souvenir",
+      0.17847334571486625,
+      0.09798009010464298
+     ],
+     [
+      "Bag Of Preparation",
+      0.13709920300414896,
+      0.0735944733209829
+     ],
+     [
+      "Impervious",
+      0.10754347620196496,
+      0.05682744879450774
+     ],
+     [
+      "Anger",
+      0.07703258972318444,
+      0.040059227895128724
+     ],
+     [
+      "Shrug It Off+",
+      0.06640526804339407,
+      0.034342909062541005
+     ]
+    ],
+    "hp": 75,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 2693,
+    "kind": "card reward",
+    "best": "take Pummel",
+    "minimal_set": [
+     "Demon Form"
+    ],
+    "choice_without_set": "take Anger",
+    "sarfa": [
+     [
+      "Demon Form",
+      0.5981891253663352,
+      0.4688663178799905
+     ],
+     [
+      "Uppercut",
+      0.1271578895443249,
+      0.06874477072954238
+     ],
+     [
+      "Anger",
+      0.10477930460405396,
+      0.05605272835652925
+     ],
+     [
+      "Clothesline",
+      0.06248236402416555,
+      0.032310752285161726
+     ],
+     [
+      "Ascender's Bane",
+      0.04898375057492403,
+      0.02510685614722985
+     ]
+    ],
+    "hp": 60,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 3671,
+    "kind": "card reward",
+    "best": "take Clothesline",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.04836037476492014,
+      0.024781697417366577
+     ],
+     [
+      "Defend",
+      0.013045574616025634,
+      0.006565643426654555
+     ],
+     [
+      "Ascender's Bane",
+      0.007341310947422146,
+      0.0036844819865445855
+     ],
+     [
+      "Strike",
+      0.0,
+      -0.0018275466437494003
+     ],
+     [
+      "Bash",
+      0.0,
+      -0.005506024080099925
+     ]
+    ],
+    "hp": 68,
+    "hp_flip_at": 5,
+    "choice_at_flip_hp": "take Entrench"
+   },
+   {
+    "sample": 4023,
+    "kind": "card reward",
+    "best": "take Battle Trance",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Panic Button",
+      0.0016120037609946678,
+      0.0008067956376822671
+     ],
+     [
+      "Burning Blood",
+      0.001122102322305896,
+      0.0005613699340610845
+     ],
+     [
+      "Ascender's Bane",
+      0.0004117619243763581,
+      0.00020592338155001055
+     ],
+     [
+      "Defend",
+      0.00015586590661938835,
+      7.793903614927711e-05
+     ],
+     [
+      "Duplication Potion",
+      9.475239463380718e-05,
+      4.7378463155167694e-05
+     ]
+    ],
+    "hp": 66,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 4611,
+    "kind": "map",
+    "best": "map: shop x0 y2",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "The Courier",
+      0.23165549511244163,
+      0.1310013373933444
+     ],
+     [
+      "Ascender's Bane",
+      0.018260625604570906,
+      0.00921444355423462
+     ],
+     [
+      "Bash",
+      0.014741126576141845,
+      0.007425291871744011
+     ],
+     [
+      "Feel No Pain",
+      0.012040474737619123,
+      0.006056700141332083
+     ],
+     [
+      "Defend",
+      0.007447308035690684,
+      0.003737571440757703
+     ]
+    ],
+    "hp": 19,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 4690,
+    "kind": "map",
+    "best": "map: monster x6 y12",
+    "minimal_set": [
+     "Blessing Of The Forge",
+     "Feed+",
+     "Meat On The Bone"
+    ],
+    "choice_without_set": "map: event x5 y12",
+    "sarfa": [
+     [
+      "Blessing Of The Forge",
+      0.15194129859034464,
+      0.0822167058191644
+     ],
+     [
+      "Feed+",
+      0.1273847156208881,
+      0.06802503252189573
+     ],
+     [
+      "Burning Blood",
+      0.09819148313456252,
+      0.05163058334411175
+     ],
+     [
+      "Meat On The Bone",
+      0.07081223354160734,
+      0.03670572391800131
+     ],
+     [
+      "Tiny House",
+      0.05957787018702572,
+      0.030703561493997222
+     ]
+    ],
+    "hp": 58,
+    "hp_flip_at": 8,
+    "choice_at_flip_hp": "map: event x5 y12"
+   },
+   {
+    "sample": 4752,
+    "kind": "boss relic",
+    "best": "boss relic Slavers Collar",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Fossilized Helix",
+      0.022645510938287237,
+      0.011452584880359717
+     ],
+     [
+      "Impervious",
+      0.014196338687116327,
+      0.007148913790993472
+     ],
+     [
+      "Bag Of Preparation",
+      0.012708898173435103,
+      0.006395093421118991
+     ],
+     [
+      "Shockwave",
+      0.01196959966810974,
+      0.006020842175333052
+     ],
+     [
+      "Unceasing Top",
+      0.011414538263507624,
+      0.005740034084432133
+     ]
+    ],
+    "hp": 42,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 5290,
+    "kind": "card reward",
+    "best": "skip / leave rewards",
+    "minimal_set": [
+     "Anger",
+     "Pommel Strike",
+     "Smoke Bomb",
+     "Strike",
+     "Defend"
+    ],
+    "choice_without_set": "take Heavy Blade",
+    "sarfa": [
+     [
+      "Anger",
+      0.19733967908042047,
+      0.11037659512314058
+     ],
+     [
+      "Pommel Strike",
+      0.07547984840379611,
+      0.03927784180094973
+     ],
+     [
+      "Smoke Bomb",
+      0.027862934878558464,
+      0.014128750767062548
+     ],
+     [
+      "Dexterity Potion",
+      0.015968055314946692,
+      0.00804836588000446
+     ],
+     [
+      "Strike",
+      0.013267828530029413,
+      0.006678358754633185
+     ]
+    ],
+    "hp": 62,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 5320,
+    "kind": "reward relic/sapphire key",
+    "best": "take Red Skull (sapphire key pair)",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.0008844112608417685,
+      0.00044240318368338194
+     ],
+     [
+      "Liquid Bronze",
+      0.00018732702504119516,
+      9.367228621492973e-05
+     ],
+     [
+      "Defend",
+      6.784698924078522e-05,
+      3.392464546292384e-05
+     ],
+     [
+      "Bash",
+      6.148230437219516e-05,
+      3.0742097309244265e-05
+     ],
+     [
+      "Ascender's Bane",
+      5.3973445789154106e-05,
+      2.6987451199445012e-05
+     ]
+    ],
+    "hp": 63,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 5361,
+    "kind": "select upgrade",
+    "best": "upgrade Uppercut",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.0009785284033067847,
+      0.0004895059038892979
+     ],
+     [
+      "Defend",
+      0.0003332525625246432,
+      0.00016665410617400234
+     ],
+     [
+      "Strike",
+      0.0002680945780316344,
+      0.00013406526353543224
+     ],
+     [
+      "Ascender's Bane",
+      0.00015045648007522405,
+      7.523391420583003e-05
+     ],
+     [
+      "Happy Flower",
+      0.00010766204697335153,
+      5.3833925062307664e-05
+     ]
+    ],
+    "hp": 39,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 5421,
+    "kind": "card reward",
+    "best": "skip / leave rewards",
+    "minimal_set": [
+     "Snecko Eye",
+     "Uppercut+",
+     "Clothesline"
+    ],
+    "choice_without_set": "take Intimidate",
+    "sarfa": [
+     [
+      "Snecko Eye",
+      0.3462019444610834,
+      0.2097993987429536
+     ],
+     [
+      "Uppercut+",
+      0.14830944983342126,
+      0.08012826088565361
+     ],
+     [
+      "Clothesline",
+      0.032474083158085934,
+      0.016505149895990723
+     ],
+     [
+      "Defend",
+      0.0027377840621048205,
+      0.001370768495397745
+     ],
+     [
+      "Burning Blood",
+      0.0026901554640669303,
+      0.0013468914286104416
+     ]
+    ],
+    "hp": 46,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 5884,
+    "kind": "select transform",
+    "best": "transform Perfected Strike",
+    "minimal_set": [
+     "Brimstone",
+     "Fiend Fire"
+    ],
+    "choice_without_set": "transform Strike",
+    "sarfa": [
+     [
+      "Brimstone",
+      0.49339698079708033,
+      0.35252494076911806
+     ],
+     [
+      "Fiend Fire",
+      0.16884042333363156,
+      0.09222214440433585
+     ],
+     [
+      "Feel No Pain",
+      0.12216254789584759,
+      0.06506400911677479
+     ],
+     [
+      "Feed+",
+      0.10139954402357894,
+      0.05344208381647664
+     ],
+     [
+      "Burning Blood",
+      0.08209395960194651,
+      0.04280989050160111
+     ]
+    ],
+    "hp": 64,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 6220,
+    "kind": "map",
+    "best": "map: elite x3 y12",
+    "minimal_set": [
+     "Slavers Collar"
+    ],
+    "choice_without_set": "map: monster x5 y12",
+    "sarfa": [
+     [
+      "Slavers Collar",
+      0.22680404016264563,
+      0.12790692359994388
+     ],
+     [
+      "Brimstone",
+      0.12887793408904347,
+      0.0688773524918585
+     ],
+     [
+      "Uppercut+",
+      0.08979111610553538,
+      0.04700591483088096
+     ],
+     [
+      "Energy Potion",
+      0.08384886699476563,
+      0.043759004992085127
+     ],
+     [
+      "Red Skull",
+      0.07704286845597699,
+      0.04006478729669655
+     ]
+    ],
+    "hp": 41,
+    "hp_flip_at": 38,
+    "choice_at_flip_hp": "map: monster x5 y12"
+   },
+   {
+    "sample": 6266,
+    "kind": "event",
+    "best": "Mindbloom option 3",
+    "minimal_set": [
+     "Dark Embrace+"
+    ],
+    "choice_without_set": "Mindbloom option 0",
+    "sarfa": [
+     [
+      "Dark Embrace+",
+      0.12034569927869931,
+      0.0640254487407077
+     ],
+     [
+      "Dark Embrace",
+      0.0983380295231075,
+      0.05171162754267511
+     ],
+     [
+      "Demon Form",
+      0.085767027567369,
+      0.04480490781462576
+     ],
+     [
+      "Slavers Collar",
+      0.05882575758849406,
+      0.030304229209712208
+     ],
+     [
+      "Offering",
+      0.051616824507187097,
+      0.02649214017546503
+     ]
+    ],
+    "hp": 35,
+    "hp_flip_at": 36,
+    "choice_at_flip_hp": "Mindbloom option 0"
+   },
+   {
+    "sample": 6481,
+    "kind": "card reward",
+    "best": "take Battle Trance",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Twin Strike",
+      0.004292315533964461,
+      0.0021511638218998375
+     ],
+     [
+      "Burning Blood",
+      0.001967102874689921,
+      0.0009845202600725633
+     ],
+     [
+      "Spot Weakness",
+      0.001325482165777121,
+      0.0006632007202204138
+     ],
+     [
+      "Metallicize",
+      0.0012248823660564695,
+      0.0006128179327162808
+     ],
+     [
+      "Ascender's Bane",
+      0.0012242781156617975,
+      0.0006125143091839647
+     ]
+    ],
+    "hp": 46,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 6708,
+    "kind": "map",
+    "best": "map: shop x1 y4",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Question Card",
+      0.0692886108892681,
+      0.035887606651132775
+     ],
+     [
+      "Cultist Potion",
+      0.0362399637370395,
+      0.01845437480538825
+     ],
+     [
+      "Ascender's Bane",
+      0.018505826367802784,
+      0.009339329186055845
+     ],
+     [
+      "Strike",
+      0.014532415542202828,
+      0.007319391994088598
+     ],
+     [
+      "Bash",
+      0.011016843404167939,
+      0.005538932477951897
+     ]
+    ],
+    "hp": 67,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 7185,
+    "kind": "campfire",
+    "best": "campfire: rest",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Juggernaut",
+      0.08787951588815526,
+      0.045959344409747804
+     ],
+     [
+      "Spot Weakness",
+      0.05461250274981046,
+      0.028072815144131846
+     ],
+     [
+      "Ascender's Bane",
+      0.02823131624135983,
+      0.014317764296267743
+     ],
+     [
+      "Bludgeon+",
+      0.017016642495777067,
+      0.008581338312862341
+     ],
+     [
+      "Bash",
+      0.016008394858217985,
+      0.008068781553288717
+     ]
+    ],
+    "hp": 36,
+    "hp_flip_at": 48,
+    "choice_at_flip_hp": "campfire: smith"
+   },
+   {
+    "sample": 7290,
+    "kind": "map",
+    "best": "map: monster x3 y0",
+    "minimal_set": [
+     "Spot Weakness"
+    ],
+    "choice_without_set": "map: monster x0 y0",
+    "sarfa": [
+     [
+      "Runic Pyramid",
+      0.012310223901013976,
+      0.006193259920692251
+     ],
+     [
+      "Spot Weakness",
+      0.011835612490838953,
+      0.005953050837313706
+     ],
+     [
+      "Toxic Egg",
+      0.009143296920567666,
+      0.004592645499559456
+     ],
+     [
+      "Bag Of Preparation",
+      0.007007739257066652,
+      0.003516190432196642
+     ],
+     [
+      "Reaper",
+      0.006662961198012565,
+      0.0033426183377533447
+     ]
+    ],
+    "hp": 62,
+    "hp_flip_at": 61,
+    "choice_at_flip_hp": "map: monster x0 y0"
+   },
+   {
+    "sample": 7816,
+    "kind": "map",
+    "best": "map: treasure x1 y8",
+    "minimal_set": [
+     "Uppercut+"
+    ],
+    "choice_without_set": "map: treasure x0 y8",
+    "sarfa": [
+     [
+      "Uppercut+",
+      0.02643748721918968,
+      0.013395819513179974
+     ],
+     [
+      "Regen Potion",
+      0.01164375963808002,
+      0.005855972587669012
+     ],
+     [
+      "Panic Button",
+      0.005208559024079916,
+      0.0026110794928675407
+     ],
+     [
+      "Disarm",
+      0.0035821525645587187,
+      0.0017942899925285083
+     ],
+     [
+      "Strike",
+      0.0030913776117089025,
+      0.0015480816583443024
+     ]
+    ],
+    "hp": 87,
+    "hp_flip_at": 71,
+    "choice_at_flip_hp": "map: treasure x0 y8"
+   },
+   {
+    "sample": 8381,
+    "kind": "map",
+    "best": "map: event x3 y13",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "The Courier",
+      0.08704408973152454,
+      0.04550240246745063
+     ],
+     [
+      "Limit Break",
+      0.03640723519235349,
+      0.018541133296506085
+     ],
+     [
+      "Injury",
+      0.013160296901642473,
+      0.006623733601215931
+     ],
+     [
+      "Omamori",
+      0.012407489167653695,
+      0.006242471281227457
+     ],
+     [
+      "Frozen Egg",
+      0.012247508577789563,
+      0.006161485713458537
+     ]
+    ],
+    "hp": 84,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 8394,
+    "kind": "shop",
+    "best": "leave shop",
+    "minimal_set": [
+     "Corruption+"
+    ],
+    "choice_without_set": "buy remove a card (60 g)",
+    "sarfa": [
+     [
+      "Corruption+",
+      0.4139744084891531,
+      0.2757727332187109
+     ],
+     [
+      "The Courier",
+      0.14990869677843952,
+      0.08119588595866406
+     ],
+     [
+      "Philosophers Stone",
+      0.10949372929090749,
+      0.0580777713282874
+     ],
+     [
+      "Uppercut+",
+      0.07976481689958388,
+      0.04154765088088541
+     ],
+     [
+      "Feel No Pain+",
+      0.06313040825576172,
+      0.03259960568225062
+     ]
+    ],
+    "hp": 84,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 8873,
+    "kind": "map",
+    "best": "map: treasure x2 y8",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Shrug It Off",
+      0.015189890952036801,
+      0.0076530701263521905
+     ],
+     [
+      "Fiend Fire",
+      0.004292927913614758,
+      0.0021510811750177217
+     ],
+     [
+      "Oddly Smooth Stone",
+      0.003150506067835588,
+      0.001577738371073556
+     ],
+     [
+      "Ascender's Bane",
+      0.002880572355797599,
+      0.001442363594247098
+     ],
+     [
+      "Bash",
+      0.002335449211838091,
+      0.0011690897808226408
+     ]
+    ],
+    "hp": 36,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 9063,
+    "kind": "card reward",
+    "best": "take Battle Trance",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Fiend Fire",
+      0.016134051485341794,
+      0.008132652553908937
+     ],
+     [
+      "Anger",
+      0.009555570703724493,
+      0.004800722224657439
+     ],
+     [
+      "Slavers Collar",
+      0.0075790175732249835,
+      0.0038039395190746506
+     ],
+     [
+      "Ascender's Bane",
+      0.004573864151086044,
+      0.0022921762835368398
+     ],
+     [
+      "Strike+",
+      0.00415030421231213,
+      0.0020794675130639817
+     ]
+    ],
+    "hp": 69,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 9105,
+    "kind": "event",
+    "best": "Falling option 0 [Warcry]",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Spot Weakness+",
+      0.02289639469976658,
+      0.011583372003000303
+     ],
+     [
+      "Corruption",
+      0.004997736495145516,
+      0.0025062629921592805
+     ],
+     [
+      "Ink Bottle",
+      0.0022460619313676017,
+      0.0011242958529169567
+     ],
+     [
+      "Limit Break",
+      0.0019117411227170763,
+      0.000956791697813153
+     ],
+     [
+      "Shockwave",
+      0.001739195099589749,
+      0.0008703704619129615
+     ]
+    ],
+    "hp": 85,
+    "hp_flip_at": null,
+    "choice_at_flip_hp": null
+   },
+   {
+    "sample": 9471,
+    "kind": "campfire",
+    "best": "campfire: rest",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Corruption",
+      0.11476629632102404,
+      0.06087642932388759
+     ],
+     [
+      "Dark Embrace",
+      0.03679575134416973,
+      0.01874270156524116
+     ],
+     [
+      "Ascender's Bane",
+      0.029238781905357298,
+      0.014836288453872526
+     ],
+     [
+      "Slavers Collar",
+      0.02335682739666979,
+      0.011816410630102636
+     ],
+     [
+      "Evolve",
+      0.02316922212011885,
+      0.011720387187095227
+     ]
+    ],
+    "hp": 70,
+    "hp_flip_at": 78,
+    "choice_at_flip_hp": "campfire: toke"
+   },
+   {
+    "sample": 9828,
+    "kind": "map",
+    "best": "map: shop x3 y4",
+    "minimal_set": [
+     "Eternal Feather"
+    ],
+    "choice_without_set": "drink Blood Potion",
+    "sarfa": [
+     [
+      "Eternal Feather",
+      0.10996620454767264,
+      0.05818213664341132
+     ],
+     [
+      "Ascender's Bane",
+      0.08512607132177287,
+      0.04445518320912778
+     ],
+     [
+      "Dual Wield",
+      0.07648313571628329,
+      0.039762134211786204
+     ],
+     [
+      "Berserk",
+      0.0739074122636284,
+      0.03837168199192731
+     ],
+     [
+      "Sever Soul",
+      0.03617580065511675,
+      0.018421099336277003
+     ]
+    ],
+    "hp": 41,
+    "hp_flip_at": 35,
+    "choice_at_flip_hp": "drink Blood Potion"
+   },
+   {
+    "sample": 10236,
+    "kind": "campfire",
+    "best": "campfire: smith",
+    "minimal_set": null,
+    "choice_without_set": null,
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.05263704531663011,
+      0.027030049964704927
+     ],
+     [
+      "Havoc",
+      0.012163607592183366,
+      0.006119020307890466
+     ],
+     [
+      "Strawberry",
+      0.007437298285531416,
+      0.0037325424786953665
+     ],
+     [
+      "Battle Trance",
+      0.003855869673275589,
+      0.0019316639563423665
+     ],
+     [
+      "Panic Button",
+      0.0036158226469895356,
+      0.0018111909073509347
+     ]
+    ],
+    "hp": 79,
+    "hp_flip_at": 60,
+    "choice_at_flip_hp": "campfire: rest"
+   },
+   {
+    "sample": 10819,
+    "kind": "map",
+    "best": "map: monster x4 y11",
+    "minimal_set": [
+     "Burning Blood",
+     "Shockwave"
+    ],
+    "choice_without_set": "map: event x6 y11",
+    "sarfa": [
+     [
+      "Burning Blood",
+      0.08037857678864298,
+      0.04187227620934614
+     ],
+     [
+      "Shockwave",
+      0.02556229573740949,
+      0.012946695320150026
+     ],
+     [
+      "Strike",
+      0.02230535785391004,
+      0.011278467840970419
+     ],
+     [
+      "Defend",
+      0.022103579833480245,
+      0.011175297358247516
+     ],
+     [
+      "Corruption",
+      0.00931567993723065,
+      0.004679649332241853
+     ]
+    ],
+    "hp": 10,
+    "hp_flip_at": 9,
+    "choice_at_flip_hp": "map: event x6 y11"
+   }
+  ]
+ }
+}

@@ -1,0 +1,27 @@
+
+BARRICADE offered; f1 = ENTRENCH, f2 = BODY_SLAM; density SHRUG_IT_OFF+FLAME_BARRIER+GHOSTLY_ARMOR vs POMMEL_STRIKE+TWIN_STRIKE+UPPERCUT: n 675, C(a, Skip) mean +0.10
+   f1                   +0.365 [+0.349, +0.381]
+   f2                   +0.058 [+0.044, +0.073]
+   density              +4.344 [+4.071, +4.623]
+   f1 x f2              -0.009 [-0.010, -0.007]
+   f1 x density         -0.026 [-0.035, -0.016]
+   f2 x density         -0.154 [-0.168, -0.140]
+   f1 x f2 x density    -0.007 [-0.009, -0.006]
+
+CORRUPTION offered; f1 = DARK_EMBRACE, f2 = FEEL_NO_PAIN; density SHRUG_IT_OFF+FLAME_BARRIER+GHOSTLY_ARMOR vs POMMEL_STRIKE+TWIN_STRIKE+UPPERCUT: n 670, C(a, Skip) mean +6.75
+   f1                   +1.397 [+1.333, +1.456]
+   f2                   +2.019 [+1.933, +2.112]
+   density              +2.335 [+2.202, +2.476]
+   f1 x f2              -0.588 [-0.614, -0.560]
+   f1 x density         -0.183 [-0.199, -0.166]
+   f2 x density         -0.749 [-0.793, -0.705]
+   f1 x f2 x density    +0.042 [+0.031, +0.053]
+
+RUPTURE offered; f1 = BLOODLETTING, f2 = OFFERING; density HEMOKINESIS+COMBUST+BRUTALITY vs POMMEL_STRIKE+TWIN_STRIKE+UPPERCUT: n 1050, C(a, Skip) mean -6.51
+   f1                   +0.007 [-0.005, +0.020]
+   f2                   +0.017 [+0.003, +0.031]
+   density              +0.759 [+0.706, +0.816]
+   f1 x f2              -0.003 [-0.005, -0.002]
+   f1 x density         -0.009 [-0.013, -0.006]
+   f2 x density         -0.049 [-0.054, -0.044]
+   f1 x f2 x density    +0.001 [+0.001, +0.002]

@@ -59,6 +59,31 @@ artifact. The advisor loads it once at startup and reports an unavailable or
 schema-mismatched artifact without affecting the game.
 The live advisor still uses the pre-#418 CTM stack, not the pathb-r2 default of OOC MCTS (ledger §412).
 
+## Amber search and explanations (out of combat)
+
+`tools/az_bench/amber_advisor.py` wraps `one_combat_advisor`: combat requests
+go to the wrapped advisor unchanged; out-of-combat requests are imported
+(`az_bench_live` module), searched once from that state with an `AmberNet`
+checkpoint (the live run's search flags, 64/16 sims, no root noise, CPU) and
+answered as evaluator `amber_explain_v1`. Per option the overlay shows the
+search's rank, P(win) of the option's subtree and its visits (or the prior when
+the search did not visit it); the box at the upper right shows the selected
+option's prior, Q, expected HP at the end of the floor, the owned cards /
+relics / potions whose removal lowers the net's prior for it most (against
+Skip or the best other option, with a placebo z among all owned items), and
+for the pick against the runner-up: Shapley values, the smallest set of owned
+items whose removal reverses the prior, and the nearest HP at which it reverses.
+All numbers are the net's outputs on the real or edited state; no text is generated.
+
+Build the module with `cmake --build build/linux-gcc-release --target
+az_bench_live one_combat_advisor`, point `advisor` at `amber_advisor.py` (or a
+two-line wrapper that execs it with the Python that has torch), and set
+`amberInnerAdvisor`, `amberCkpt` and `amberModuleDir` (see
+`config.properties.example`; `STS_AMBER_*` environment variables override them).
+`amberOoc=both` also runs the wrapped advisor's out-of-combat search, and
+`oocSource=legacy` shows its ranking instead. A decision costs about 0.25-0.5 s
+on two CPU threads.
+
 ## Latest machine-readable observation
 
 While a stable observation exists, the mod asynchronously publishes the

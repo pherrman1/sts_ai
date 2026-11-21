@@ -62,26 +62,50 @@ final class OocOverlay {
         final JsonObject followUp;
         final String followUpUuid;
         final CombatHpOverlay.Layer hp;   // endpoint HP samples, or null
+        // amber_explain_v1 only (NaN / empty otherwise): the search-backed P(win) and expected HP at the end of
+        // the current and of the next floor, and the explanation lines of this option.
+        final double pWin, hpFloorEnd, hpNextFloor;
+        final List<String> why;
         Choice(String key, String label, String kind, double q, long visits, double visitShare, double prior,
                int index, boolean selected, JsonObject action,
                JsonObject followUp, String followUpUuid, String valueSemantics, Distribution distribution,
                CombatHpOverlay.Layer hp) {
+            this(key, label, kind, q, visits, visitShare, prior, index, selected, action, followUp, followUpUuid,
+                 valueSemantics, distribution, hp, Double.NaN, Double.NaN, Double.NaN, Collections.<String>emptyList());
+        }
+        Choice(String key, String label, String kind, double q, long visits, double visitShare, double prior,
+               int index, boolean selected, JsonObject action,
+               JsonObject followUp, String followUpUuid, String valueSemantics, Distribution distribution,
+               CombatHpOverlay.Layer hp, double pWin, double hpFloorEnd, double hpNextFloor, List<String> why) {
             this.key = key; this.label = label; this.kind = kind;
             this.q = q; this.visits = visits; this.visitShare = visitShare; this.prior = prior;
             this.index = index; this.selected = selected; this.action = action;
             this.followUp = followUp; this.followUpUuid = followUpUuid;
             this.valueSemantics = valueSemantics; this.distribution = distribution; this.hp = hp;
+            this.pWin = pWin; this.hpFloorEnd = hpFloorEnd; this.hpNextFloor = hpNextFloor;
+            this.why = Collections.unmodifiableList(new ArrayList<>(why));
         }
         String scoreLabel(int rank) {
             if ("forced_no_search".equals(valueSemantics)) return "#" + rank + " · Forced";
+            if (AMBER_SEMANTICS.equals(valueSemantics))
+                return visits == 0 || Double.isNaN(pWin)
+                    ? String.format(Locale.ROOT, "#%d · prior %.0f%% · not searched", rank, 100 * prior)
+                    : String.format(Locale.ROOT, "#%d · P(win) %.1f%% · N %d", rank, 100 * pWin, visits);
             if ("mean_backed_up_value_0_1".equals(valueSemantics))
                 return visits == 0 ? "#" + rank + " · No samples"
                     : String.format(Locale.ROOT, "#%d · Mean %.3f · N %d", rank, q, visits);
             return String.format(Locale.ROOT, "#%d · V4 score %.3f", rank, q);
         }
     }
+    static final String AMBER_EVALUATOR = "amber_explain_v1", AMBER_POLICY = "amber_search",
+            AMBER_SEMANTICS = "amber_search_v1";
+    /** Use the Amber evaluator when a response has one (config oocSource=legacy turns it off). */
+    static volatile boolean preferAmber = true;
     final String session, hash, status, reason, policy, screen;
     final long sequence;
+    // amber_explain_v1 only: the root line and the pick-vs-runner-up explanation lines (empty otherwise).
+    String amberRoot = "";
+    List<String> amberPair = Collections.emptyList();
     final List<Choice> choices;
     final Distribution distribution;
     // Player HP where each simulation was evaluated; null when not reported.
@@ -121,14 +145,21 @@ final class OocOverlay {
         JsonObject response = new JsonParser().parse(responseJson).getAsJsonObject();
         JsonObject ooc = new JsonParser().parse(observationJson).getAsJsonObject().getAsJsonObject("ooc");
         String screen = text(ooc, "screen");
-        JsonObject evaluator = null;
+        JsonObject evaluator = null, amber = null;
         if (response.has("evaluators")) for (JsonElement e : response.getAsJsonArray("evaluators")) {
             JsonObject candidate = e.getAsJsonObject();
             if ("live_ooc_decision_v1".equals(text(candidate, "id"))) {
                 if (evaluator != null) throw new IllegalArgumentException("duplicate OOC evaluator");
                 evaluator = candidate;
             }
+            if (AMBER_EVALUATOR.equals(text(candidate, "id"))) {
+                if (amber != null) throw new IllegalArgumentException("duplicate Amber evaluator");
+                amber = candidate;
+            }
         }
+        if (amber != null && preferAmber && !"ERROR".equals(text(response, "status"))
+                && (evaluator == null || "OK".equals(text(amber, "status")) || "FORCED".equals(text(amber, "status"))))
+            return parseAmber(response, amber, ooc, screen);
         if ("ERROR".equals(text(response, "status")) || evaluator == null)
             return new OocOverlay(response, "ERROR", text(response, "message"), "", screen, new ArrayList<Choice>(), null);
         String status = text(evaluator, "status"), policy = text(evaluator, "policy");
@@ -234,6 +265,109 @@ final class OocOverlay {
         OocOverlay view = new OocOverlay(response, status, text(evaluator, "reason"), policy, screen, choices, baseline);
         if (hpDistribution != null) attachHp(view, hpDistribution, hpBins);
         return view;
+    }
+    /**
+     * The Amber net's search and explanation (tools/az_bench/amber_advisor.py). Candidates without a live action
+     * (search actions the captured screen cannot express) are left out; exactly one remaining one is selected.
+     */
+    static OocOverlay parseAmber(JsonObject response, JsonObject evaluator, JsonObject ooc, String screen) {
+        String status = text(evaluator, "status");
+        List<Choice> choices = new ArrayList<>();
+        if ("FORCED".equals(status)) {
+            JsonElement only = evaluator.get("selectedLiveAction");
+            if (only != null && only.isJsonObject()) {
+                JsonObject action = only.getAsJsonObject();
+                choices.add(new Choice("forced", label(action, ooc), text(action, "kind"), 0, 0, 0, 0,
+                        action.has("choiceIndex") ? action.get("choiceIndex").getAsInt() : -1, true, action,
+                        null, "", "forced_no_search", null, null));
+            }
+            OocOverlay view = new OocOverlay(response, choices.isEmpty() ? "UNSUPPORTED" : "OK",
+                    text(evaluator, "reason"), AMBER_POLICY, screen, choices, null);
+            view.amberRoot = "Forced: one legal choice";
+            return view;
+        }
+        if (!"OK".equals(status))
+            return new OocOverlay(response, "UNSUPPORTED", text(evaluator, "reason"), AMBER_POLICY, screen, choices, null);
+        int selectedCount = 0, rank = 0;
+        Set<String> keys = new HashSet<>();
+        for (JsonElement e : evaluator.getAsJsonArray("candidates")) {
+            JsonObject c = e.getAsJsonObject();
+            ++rank;
+            if (!c.has("liveAction") || !c.get("liveAction").isJsonObject()) continue;
+            JsonObject action = c.getAsJsonObject("liveAction");
+            String key = action.toString();
+            if (!keys.add(key)) continue;   // two search actions on one live control: the first (better) one
+            boolean selected = c.get("selected").getAsBoolean();
+            if (selected) ++selectedCount;
+            double prior = number(c, "prior"), share = number(c, "visitShare");
+            long visits = c.get("visits").getAsLong();
+            if (visits < 0 || !(prior >= 0 && prior <= 1.0 + 1e-9) || !(share >= 0 && share <= 1.0 + 1e-9))
+                throw new IllegalArgumentException("invalid Amber candidate");
+            String lbl = label(action, ooc);
+            if (lbl.startsWith("Choice ") && !text(c, "label").isEmpty()) lbl = text(c, "label");
+            choices.add(new Choice(key, lbl, text(action, "kind"), number(c, "q"), visits, share, prior,
+                    action.has("choiceIndex") ? action.get("choiceIndex").getAsInt() : -1, selected, action,
+                    null, "", AMBER_SEMANTICS, null, null, number(c, "pWin"), number(c, "hpFloorEnd"),
+                    number(c, "hpNextFloor"), whyLines(c)));
+        }
+        if (selectedCount != 1) throw new IllegalArgumentException("Amber pick has no live action");
+        OocOverlay view = new OocOverlay(response, "OK", "", AMBER_POLICY, screen, choices, null);
+        JsonObject root = evaluator.getAsJsonObject("root");
+        view.amberRoot = String.format(Locale.ROOT, "Net P(win) %.1f%% · search %.1f%% · %d sims",
+                100 * number(root, "netPWin"), 100 * number(root, "searchPWin"), root.get("visits").getAsLong());
+        view.amberPair = pairLines(evaluator.has("pair") && evaluator.get("pair").isJsonObject()
+                ? evaluator.getAsJsonObject("pair") : null);
+        return view;
+    }
+    private static double number(JsonObject o, String field) {
+        JsonElement e = o == null ? null : o.get(field);
+        return e == null || e.isJsonNull() ? Double.NaN : e.getAsDouble();
+    }
+    private static String items(JsonArray list, boolean z) {
+        StringBuilder b = new StringBuilder();
+        if (list != null) for (JsonElement e : list) {
+            JsonObject x = e.getAsJsonObject();
+            if (b.length() > 0) b.append(", ");
+            b.append(text(x, "item")).append(String.format(Locale.ROOT, " %+.2f", number(x, z ? "effect" : "shapley")));
+            if (z && x.has("z") && !x.get("z").isJsonNull())
+                b.append(String.format(Locale.ROOT, " (z %.1f)", number(x, "z")));
+        }
+        return b.toString();
+    }
+    private static List<String> whyLines(JsonObject c) {
+        List<String> out = new ArrayList<>();
+        if (!c.has("why") || !c.get("why").isJsonObject()) return out;
+        JsonObject why = c.getAsJsonObject("why");
+        String plus = items(why.getAsJsonArray("for"), true), minus = items(why.getAsJsonArray("against"), true);
+        out.add(String.format(Locale.ROOT, "Prior vs %s: %+.2f logits", text(why, "ref"), number(why, "contrast")));
+        if (!plus.isEmpty()) out.add("+ " + plus);
+        if (!minus.isEmpty()) out.add("- " + minus);
+        return out;
+    }
+    private static List<String> pairLines(JsonObject pair) {
+        List<String> out = new ArrayList<>();
+        if (pair == null) return out;
+        out.add("Why " + text(pair, "pick") + " over " + text(pair, "runner_up") + " (net prior):");
+        String plus = items(pair.getAsJsonArray("for"), true), minus = items(pair.getAsJsonArray("against"), true);
+        if (!plus.isEmpty()) out.add("+ " + plus);
+        if (!minus.isEmpty()) out.add("- " + minus);
+        if (pair.has("shapley")) {
+            String sh = items(pair.getAsJsonArray("shapley"), false);
+            if (!sh.isEmpty()) out.add("Shapley: " + sh);
+        }
+        JsonObject flip = pair.has("minimal_flip") ? pair.getAsJsonObject("minimal_flip") : null;
+        if (flip != null) {
+            JsonElement set = flip.get("set");
+            if (set != null && set.isJsonArray()) {
+                StringBuilder b = new StringBuilder();
+                for (JsonElement e : set.getAsJsonArray()) b.append(b.length() > 0 ? ", " : "").append(e.getAsString());
+                out.add("Prior reverses without: " + b);
+            } else out.add("No small item set reverses the prior");
+        }
+        JsonObject hp = pair.has("hp") ? pair.getAsJsonObject("hp") : null;
+        if (hp != null && hp.has("reverses_at") && !hp.get("reverses_at").isJsonNull())
+            out.add("Prior reverses at HP " + hp.get("reverses_at").getAsInt() + " (now " + hp.get("hp").getAsInt() + ")");
+        return out;
     }
     private static void attachHp(OocOverlay view, JsonObject distribution, int bins) {
         CombatHpOverlay.Layer root = new CombatHpOverlay.Layer(distribution.getAsJsonObject("root"), bins);

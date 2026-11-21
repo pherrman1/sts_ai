@@ -28852,6 +28852,121 @@ with the route x, so a drink can be masked or kept by its slot number.
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
+
+## §840 — Decision explainability for every out-of-combat decision, P0-P2: checks of the explanations (deletion curves, weight randomization, checkpoint stability, calibration), constructed 2x2x2 contexts, logit lens, activation patching, probes, and a search-backed live advisor that shows per option prior / visits / Q / P(win) / HP and the owned items behind the prior in the inspector mod → BUILT, diagnostic only, no default changes (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21, after §833 and the literature review):** build the P0-P2 list for all out-of-combat
+decisions (not only card rewards), without generated text and without methods that need a lot of compute, and
+show it in the mod. Combat decisions later.
+**Tools (all CPU; the PC GPU and the live run are not touched):**
+- `tools/az_bench/explain.py` v2: every out-of-combat decision kind (card rewards, shop, map, campfire, events,
+  Neow, boss / reward relics, chests, card select screens, potions, keys); the measure is the logit contrast
+  C(a, b) = z_a - z_b against one reference b (Skip where it exists, else the best other action) instead of
+  log pi (§833's limit), with a placebo z of each item's effect among all owned items (median / MAD); modes
+  `survey` (per kind), `table` (per position) and `pairs` (§833's pairs with the double difference D2 against
+  strong and filler control cards and against matched offers).
+- `tools/az_bench/explain_lab.py` (new): `coverage`, `design`, `lens`, `patch`, `calibration`, `shapley` (exact
+  over the multiset of item types, else antithetic permutations; efficiency checked), `faithful` (deletion curves /
+  AOPC, method agreement, cascading randomization after Adebayo et al., checkpoint stability), `counterfactual`
+  (minimal removal sets PRINCE-style, SARFA, HP and gold scans), `probe` (linear probes per layer with input and
+  random-init baselines and a shuffled-label control, TCAV, a value GLM), `interact` (k-SII / Faithful-SII via
+  shapiq over the top items).
+- Search from a given state: `RunDriver(probe_roots=[GameState, ...])` searches each root once with the full
+  budget and no root noise (`probe_noise=True` keeps it), plays nothing, and returns per edge bits, logit, visits,
+  Q, completed Q, improved policy, root score, and the backed-up outcome distribution (57 floors), P(win), E[HP]
+  and floor-HP distribution of the subtree; needs `search_ema_lambda > 0` and `search_ema_hp`. `capture_rate`
+  hands out normal runs' out-of-combat roots as probe roots. `GameState.new_run(seed, asc, rng_fix)`.
+- `az_bench_live` (new CMake target, EXCLUDE_FROM_ALL): the same module plus the live importer;
+  `GameState.from_live(observation)` and `lower_action(bits)` (search action → live action JSON).
+- `tools/az_bench/amber_probe.py` (the live run's search flags, 64/16 sims), `explain_live.py` (one decision:
+  per option the items for / against it, for pick vs runner-up LOO, exact Shapley over the 6 strongest items,
+  minimal reversing set, HP reversal, value items), `amber_advisor.py` (proxy around `one_combat_advisor` that
+  adds evaluator `amber_explain_v1` to out-of-combat responses; combat passes through).
+- Mod: `OocOverlay` takes `amber_explain_v1` when present (`oocSource=legacy` restores the old ranking): per
+  option "#rank · P(win) · N" (or the prior when unvisited); a box at the upper right with the pick's prior, Q,
+  E[HP] at the end of the floor and the next floor, the why lines and the pair lines. `AmberOverlayTest`.
+**Positions:** §833's window (32 A20 runs, seeds 160100000-160100031, 11,725 positions, 1,485 out-of-combat
+decisions, 2 wins), `ckpt_895975.pt` and `ckpt_791357.pt` (hashes in the evidence).
+**Results:**
+
+| kind | positions | n | items | share |z|>3 | top item share | single-item flip | |dC| top | |dP(win)| top |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| card reward | 489 | 60 | 18.4 | 0.11 | 0.35 | 0.28 | 1.77 | 0.136 |
+| map | 315 | 60 | 18.1 | 0.07 | 0.30 | 0.35 | 0.49 | 0.119 |
+| event | 170 | 60 | 21.1 | 0.05 | 0.26 | 0.17 | 0.56 | 0.154 |
+| campfire | 127 | 60 | 20.8 | 0.10 | 0.30 | 0.22 | 1.29 | 0.160 |
+| shop | 115 | 60 | 22.8 | 0.11 | 0.35 | 0.42 | 1.61 | 0.141 |
+| select upgrade | 63 | 60 | 18.4 | 0.10 | 0.31 | 0.35 | 1.32 | 0.155 |
+| boss relic | 31 | 31 | 21.3 | 0.09 | 0.26 | 0.10 | 1.78 | 0.134 |
+| Neow | 32 | 32 | 5.0 | 0.06 | 0.50 | 0.03 | 0.21 | 0.038 |
+
+(all 19 kinds in `survey.log`; flip = removing one owned item changes the net's best action.)
+- Faithfulness (30 decisions, contrast best vs runner-up): AOPC over the first 5 deletions LOO 1.52, Shapley 1.60,
+  gate-IG 1.57, attention rollout 0.51, random -0.01. Agreement (Spearman) LOO~Shapley +0.74, LOO~gate-IG +0.78,
+  Shapley~gate-IG +0.90, LOO~rollout +0.11: attention rollout is not a faithful explanation here, the three
+  perturbation / gradient methods agree. Shapley vs LOO per decision: mean Spearman +0.73.
+- Cascading randomization (heads, then top 1-4 layers re-initialised): Spearman of the LOO ranking with the
+  original +0.05, +0.31, -0.16, -0.13, -0.01, i.e. the explanations depend on the trained weights (sanity check
+  passed). Checkpoint stability (`ckpt_791357`): same best action 0.87, Spearman of LOO +0.55.
+- Counterfactuals (40 decisions): 18 have a set of at most 6 owned items whose removal changes the choice, sizes
+  1 (12), 2 (3), 3 (2), 5 (1); in 42.5 % an HP change flips it, median distance 11 HP.
+- Calibration of the outcome head (1,485 positions): mean P(win) 0.349 against a win rate of 0.120, ECE 0.229
+  [0.150, 0.347], E[final floor] +6.8 floors too high (Act 1 +9.7, Act 3 -0.0); the HP head is unbiased (-0.3 HP).
+  The net is overconfident in these runs (replicated on 256 runs below). Likely reason: the live run that trained it
+  played at A10 until 2026-11-21 15:35 CET and at A20 with savescum after that, so its value targets come from
+  easier or retried runs; these runs are A20 without savescum. The mod shows P(win) as the net's number, not as a
+  calibrated probability.
+- Constructed contexts (2x2x2, run-clustered intervals): Corruption offered: Dark Embrace +1.37 [+1.25, +1.52],
+  Feel No Pain +2.03, three block cards instead of three attacks +2.47, Dark Embrace x Feel No Pain -0.57 [-0.64,
+  -0.52] (sub-additive). Barricade offered: Entrench +0.35, Body Slam +0.06, block density +4.00 [+3.10, +5.05]:
+  the net ties Barricade to how much block the deck has, not to the named partners (consistent with §833's null).
+  Rupture offered: Bloodletting +0.03, Offering -0.03, three self-damage cards +0.81 (tokens of cards nobody
+  owned are built, `design.log`).
+- Coverage (the owner's question on the nulls): in 32 runs Rupture and Bloodletting were never owned, Entrench and
+  Body Slam once each (offered 9-48 times); Corruption, Dark Embrace, Feel No Pain, Limit Break, Inflame owned in
+  5-13 runs. The null pairs are pairs the net has hardly seen together.
+- Logit lens / activation patching: the pair effects appear after layer 1 (Corruption < Dark Embrace D2 +0.81 at L1,
+  +1.73 at L2); patching only the offered card's residual from s + k recovers 0.95-1.12 of the effect from layer
+  1 on (Corruption, Limit Break pairs), 0.75 at layer 2 for Barricade < Entrench; the run token carries nothing.
+  The interaction is read into the offered card's token by the first one or two attention layers.
+- Probes (linear, on the run summary, held-out runs): HP ratio reaches it in layer 1 (R² 0.10 before, 0.97 after;
+  random-init net 0.16), gold too (0.80 at layer 1, random init 0.23); act, deck size and relic count are nearly
+  as readable from a random-init net as from the trained one; block share, strength sources and curses are not
+  linearly readable; the 0/1 concepts exhaust engine and has Corruption do not beat the shuffled-label control.
+  TCAV: 1 of 44 tests at p < 0.05 (Limit Break / has Corruption), about what chance gives. Value GLM on 10 readable
+  features: R² 0.55 of logit P(win) (per SD: act -0.48, HP ratio +0.32, deck size +0.28).
+- Live advisor on four captured observations (`tests/fixtures/live_act1_boss_card_reward.json`,
+  `live_du_vu_card_reward.json`, `live_act3_entry.json`, `live_act4_heart_map.json`): floor 16 card reward
+  (net P(win) 0.27; Barricade's prior supported by Shrug It Off and Ghostly Armor, z 4.0 / 3.7), floor 45 card reward
+  (0.93; Heavy Blade+ supported by Flex+, Inflame+, Philosopher's Stone, opposed by Dead Branch z -12.3), floor 34
+  map, floor 55 forced; latency 0.24-0.49 s per decision on 2 threads, 2.4 s with start-up.
+
+**Replication on 256 more runs (owner's go 2026-11-21 21:13 CET; seeds 160100032-160100287, same flags and
+checkpoint; 98,443 positions, 12,549 out-of-combat decisions, 4,203 card rewards; 12 wins = 4.7 %):**
+- Calibration (4,000 sampled positions): mean P(win) 0.360 against 0.080, ECE 0.280 [0.238, 0.319], E[final floor]
+  +6.6, HP head unbiased (-0.06 HP); Act 3 0.533 against 0.172; positions the net puts at 0.85-0.94 win 46 %.
+- Pairs: the same signs and classes as on 32 runs, intervals about three times narrower: D2 against Skip for
+  Corruption < Dark Embrace +1.01 [+0.94, +1.08], Limit Break < Inflame +3.00 [+2.78, +3.24], Barricade < Entrench
+  +0.14 [+0.13, +0.15], Rupture < Bloodletting +0.05 [+0.04, +0.06].
+- 2x2x2: Barricade: block density +4.34 [+4.07, +4.62], Entrench +0.37, Body Slam +0.06; Corruption: Dark Embrace
+  +1.40, Feel No Pain +2.02, Dark Embrace x Feel No Pain -0.59 [-0.61, -0.56]; Rupture: Bloodletting +0.01 [-0.01,
+  +0.02], Offering +0.02, self-damage density +0.76.
+- Coverage: Rupture now owned in 4 runs, Entrench 6, Body Slam 17, Bloodletting 22 (offered 122-362 times); the
+  Barricade and Rupture nulls stay.
+- Survey per kind: the same picture (card reward |dC| top 1.60, single-item flip 0.27; shop flip 0.47; boss relic
+  |dC| top 2.02). Probes: HP ratio 0.41 before layer 1, 0.99 after (random init 0.31); block share and curses not
+  readable; value GLM R² 0.36 (per SD relics +0.64, act -0.45, HP ratio +0.31); TCAV 2 of 44 tests at p < 0.05,
+  about what chance gives.
+**Limits:** explanations of the prior (and the value head); the search part is the searched numbers themselves, not
+an attribution of them. Token removal leaves states the net never saw (placebo z and controls calibrate it, do
+not remove it). Two windows (32 and 256 runs) of one checkpoint at A20 without savescum, mostly Act 1-2. The live advisor's search uses the net's P(win), which is
+overconfident here. Combat decisions are not covered.
+**Cost:** whole offline suite 22 min on 4 cloud threads (`commands.sh`); 256 runs 41 min on about 2 cloud cores,
+their analyses 25 min on 2 threads; one live decision 0.25-0.5 s.
+**Decision:** none on the agent; no defaults change (the probe mode is inert unless `probe_roots` is passed; the
+mod prefers the Amber evaluator only when the advisor sends one). The mod test on the PC (CPU only) follows.
+**Evidence:** `docs/experiments/evidence/explain_lab_20261121/` (every mode's log and JSON, the commands, checkpoint
+hashes, the advisor's responses to the four fixtures; `gen256/` for the 256 runs).
 ## §838 — §837 live test FAILED (winrate 41.6 % → 1.6 % → ~17 % in 15 min, trainer ~7 instead of ~200 steps / min); second attempt: `--enemy-tokens` now gates the encounter tokens in at 0 (the resumed net computes what it did without them), the bias goes into training as extra q / k columns instead of a float mask, `--check-enemy-gate` checks both offline → BUILT, default off (cloud, 2026-11-21)
 
 **Live test of §837 (PC, stage-1 thread, 21:09-21:25 CET, resumed with `--enemy-tokens --enemy-map-bias
