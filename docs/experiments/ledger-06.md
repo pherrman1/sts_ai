@@ -29288,3 +29288,18 @@ fair and watch live counters.
 `act1_boss_potions`, `hall_drinks`, `hall_drink_q_gap_micro`, `hall_drink_q_ties`, `end_turns_energy`,
 `end_turns_energy_card`, `end_turns_energy_card_best_q`; `selfplay.py` row metric `decisions`; dashboard chart
 "Potions and leftover energy". Play unchanged. Smoke (6 runs, ckpt_1117150): values as above.
+## §851 — Floor-HP EMA target guard against NaN search rows (`STS_AZ_HP_TARGET_GUARD`, default on) → FIX, live crash of 2026-11-22 23:03 CET (cloud, 2026-11-22)
+
+**Origin:** amber_scratch (A20, savescum off, `--hp-ema-search`) ended with `std::logic_error: run driver: empty
+floor HP target` (az_run_driver.cpp, closeFloor). The push-site check `|sum/n - 1| > 1e-3` is false for NaN, so a
+NaN root floor-HP distribution entered the floor's EMA chain; the chain became NaN, quantised to an all-zero 8-bit
+target and threw. A normalised 256-class row always has a class >= 1/256, so only NaN/unnormalised rows reach it.
+**What it does:** chain rows that are no distribution (non-finite, negative, |sum - 1| > 1e-3) are skipped, the
+chain keeps its target (counter `hp_target_bad_rows`); an empty 8-bit target falls back to the one-hot real
+floor-end HP (`hp_target_fallbacks`, unreachable after the skip). Valid rows: bit-identical targets.
+`STS_AZ_HP_TARGET_GUARD=0` restores the throw.
+**Checks:** new ctest `az_eval_cache_ema_hp_nan` (fake net, ~1/7 rows NaN: bad_rows > 0, no fallback, targets
+well-formed); with `=0` the same run reproduces the live crash. `^az_run_driver` + `az_eval_cache_ema_hp*` pass;
+independent review PASS (34/34 ctest, output identical with the guard on).
+**Open:** the source of the NaN in the search floor-HP distribution; the live counters will show its rate.
+**Knowledge impact:** this entry.

@@ -859,7 +859,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
             o["runs_started"] = s.runsStarted; o["runs_done"] = s.runsDone; o["wins"] = s.wins;
             o["floors_sum"] = s.floorsSum; o["stalls"] = s.stalls; o["terminal_leaves"] = s.terminalLeaves;
             o["encode_cut"] = s.encodeCut; o["encode_cut_ooc"] = s.encodeCutOoc; o["unsupported"] = s.unsupported; o["knowledge_failures"] = s.knowledgeFailures; o["invalid_actions"] = s.invalidActions;
-            o["stalls_fight_moves"] = s.stallsByType[0]; o["stalls_run_moves"] = s.stallsByType[1]; o["stalls_no_legal"] = s.stallsByType[2]; o["fights_ended_at_start"] = s.fightsEndedAtStart;
+            o["stalls_fight_moves"] = s.stallsByType[0]; o["stalls_run_moves"] = s.stallsByType[1]; o["stalls_no_legal"] = s.stallsByType[2]; o["fights_ended_at_start"] = s.fightsEndedAtStart; o["hp_target_bad_rows"] = s.hpTargetBadRows; o["hp_target_fallbacks"] = s.hpTargetFallbacks;
             o["samples_done"] = s.samplesDone; o["samples_pending"] = s.samplesPending;
             o["batches"] = s.batches; o["batch_rows"] = s.batchRows;
             o["outcomes"] = std::vector<std::int64_t>(s.outcomes.begin(), s.outcomes.end());
