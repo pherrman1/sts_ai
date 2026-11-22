@@ -108,7 +108,7 @@ picks it from the paths changed against `origin/main` (`--dry-run` prints the pl
 | Change | Tier | Checks |
 |---|---|---|
 | `docs/`, Markdown only | docs | repository health |
-| Python/shell tooling, dashboards, default-off Python flags | python | repository health, affected test modules (900 s cap each), affected CTest entries; no C++ build |
+| Python/shell tooling, dashboards, default-off Python flags | python | repository health, the changed test functions (or whole affected modules, 900 s cap each), affected CTest entries; no C++ build |
 | anything compiled, CMake, submodules | native | above, plus incremental Debug build in `build/linux-gcc-debug` and `ctest -L 'core\|smoke' -j<cores> --timeout 600` (the CI gate) |
 | engine fix or default change | `--tier native` | the CI gate, plus the independent review |
 
@@ -116,8 +116,13 @@ picks it from the paths changed against `origin/main` (`--dry-run` prints the pl
   build Release only for a binary that will actually run games.
 - Reuse the build directory; do not wipe it or configure a fresh one per check.
   An incremental rebuild after a one-file change takes under 30 s.
-- Do not run the whole Python suite (`pytest tests/`) or the unfiltered CTest
-  suite for a small change. Run them only when the tier says so or the user asks.
+- Do not run the whole Python suite (`pytest tests/`), a whole self-play test
+  module (`tests/test_selfplay.py` runs real self-play, 40+ min on 4 cores) or
+  the unfiltered CTest suite for a small change. Run them only when the tier
+  says so or the user asks.
+- Tests that load `az_bench_native` prefer an optimized module. Build just that
+  target in Release (`cmake --build build/linux-gcc-release --target
+  az_bench_native`, about 1 min); self-play on the Debug module is far slower.
 - A timeout or failure in a known flaky test (`test_run_train_resume`,
   `az_eval_cache_ema_amber`, `az_eval_cache_compact`) is reported as
   pre-existing, not chased.

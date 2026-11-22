@@ -22,7 +22,8 @@ import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools", "az_bench")
 sys.path.insert(0, TOOLS)
-NATIVE = sorted(glob.glob(os.path.join(ROOT, "build", "*", "az_bench_native*.so")))
+NATIVE = sorted(glob.glob(os.path.join(ROOT, "build", "*", "az_bench_native*.so")),
+                key=lambda p: ("debug" in p, p))   # an optimized module first: self-play on a Debug module is far slower
 LIVE = sorted(glob.glob(os.path.join(ROOT, "build", "*", "az_bench_live*.so")))
 
 try:

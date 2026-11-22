@@ -22,6 +22,7 @@ verification: they add -O3 -flto (about 30 minutes on 4 cores) and test nothing 
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib.util
 import json
 import os
@@ -75,6 +76,29 @@ def affected_test_modules(paths: list[str]) -> list[str]:
             if pat.search((ROOT / t).read_text(errors="replace")):
                 picked.add(t)
     return sorted(picked)
+
+
+def changed_tests(base: str, module: str) -> list[str] | None:
+    """pytest node ids of the test functions a changed test module adds or edits; None (= whole module) when the
+    diff also touches code outside test functions (helpers, imports, fixtures) or the module is new."""
+    merge_base = git("merge-base", base, "HEAD").strip()
+    lines: set[int] = set()
+    for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", git("diff", "-U0", merge_base, "--", module), re.M):
+        start, n = int(m.group(1)), int(m.group(2) or 1)
+        lines |= set(range(start, start + max(n, 1)))
+    if not lines:
+        return None
+    ids, covered = [], set()
+    for node in ast.walk(ast.parse((ROOT / module).read_text())):
+        for f in getattr(node, "body", []) if isinstance(node, (ast.Module, ast.ClassDef)) else []:
+            if isinstance(f, ast.FunctionDef) and f.name.startswith("test"):
+                span = set(range(f.lineno - len(f.decorator_list), f.end_lineno + 1))
+                if span & lines:
+                    covered |= span & lines
+                    ids.append(f"{module}::{node.name}::{f.name}" if isinstance(node, ast.ClassDef)
+                               else f"{module}::{f.name}")
+    blank = {i for i, l in enumerate((ROOT / module).read_text().splitlines(), 1) if not l.strip()}
+    return ids if ids and not (lines - covered - blank) else None
 
 
 def affected_ctests(paths: list[str], build_dir: Path) -> list[str]:
@@ -137,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2, help="build and ctest parallelism")
     ap.add_argument("--test-timeout", type=int, default=600, help="per CTest test seconds (default 600)")
     ap.add_argument("--module-timeout", type=int, default=900, help="per Python test module seconds (default 900)")
+    ap.add_argument("--all-tests", action="store_true",
+                    help="run changed test modules whole, not only their changed test functions")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, run nothing")
     args = ap.parse_args(argv)
 
@@ -173,7 +199,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"note: no build in {args.build_dir}; CTest entries that run changed tools are not selected")
     if tier in ("python", "native"):
         for mod in affected_test_modules(paths):
-            plan.append((f"pytest {mod}", [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", mod],
+            ids = None if args.all_tests or mod not in paths else changed_tests(args.base, mod)
+            label = f"pytest {mod}" + (f" ({len(ids)} changed test(s))" if ids else "")
+            plan.append((label, [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", *(ids or [mod])],
                          args.module_timeout))
 
     if args.dry_run:
