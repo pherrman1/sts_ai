@@ -29267,3 +29267,24 @@ a live `LR_ANNEAL` file replaces the anneal); the full `tests/test_selfplay.py` 
 warm-up formula, playing (not only evaluating) with the average, cosine shape, f = 0.1 default; when to anneal
 in an open-ended curriculum run is the owner's call (the file starts it).
 **Knowledge impact:** this entry.
+
+## §TBD — Decision trace of the live stage-1 net (potions, end turns with energy, campfires) and live counters → no engine bug; search rates end turn and hallway drinks as near-ties; potion value learned slowly; counters BUILT (logging only) (cloud, 2026-11-22)
+
+**Origin (owner, 2026-11-22 15:55 CET):** "why are we dying so often to the act 1 boss … smithing, removing, ending turns
+with energy left, potion usage". Read-only analysis with a local, env-gated per-decision trace (branch
+`claude/project-thread-p4grk8` @394200288 / @a4f91ae3, reverted before this merge; report
+https://claude.ai/artifact/1AfohLPbx7fMT7cBNMjaFN, raw traces `/mnt/project-files/decision-trace-20261122/`).
+Frozen nets, A20, the live search flags, no savescum, exploration or training; seeds 160400000-160531xxx (probe block).
+**Results:** 0 invalid actions / stalls / knowledge failures. Act 1 boss loss 10 % with 2 potions held vs 30 % with
+0-1 (observational). End turns with energy and a playable non-status card: 18.9 % of all end turns (fast 16 sims,
+168 runs) vs 21.5 % (fast 32 sims, 147 runs) — not search noise; the search itself rates end turn best in 84-93 %
+of them (median Q gap 0.004). Act 1 hallway drinks: median root Q advantage 0.003 (≈ no value for a held potion).
+Low-HP (< 40 %) smith 15 % of such campfires; the search mostly agrees. Checkpoints ckpt_pre_fair_1204 → 1117150
+→ 1128231: hallway fights with a potion 28.0 / 27.3 / 25.2 %, potions entering the Act 1 boss 0.75 / 0.91 / 0.92.
+EMA labels (half-life 20 full moves): weight of everything from the Act 1 boss on in a label at floor 5 / 10 / 15
+≈ 33 / 47 / 73 % — not the bottleneck. Owner chose (card 2026-11-22 21:39 CET) no reward shaping: keep training
+fair and watch live counters.
+**Built:** `RunProgress` counters `act1_hall_fights`, `act1_hall_potion_fights`, `act1_boss_fights`,
+`act1_boss_potions`, `hall_drinks`, `hall_drink_q_gap_micro`, `hall_drink_q_ties`, `end_turns_energy`,
+`end_turns_energy_card`, `end_turns_energy_card_best_q`; `selfplay.py` row metric `decisions`; dashboard chart
+"Potions and leftover energy". Play unchanged. Smoke (6 runs, ckpt_1117150): values as above.
