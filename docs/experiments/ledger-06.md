@@ -29310,3 +29310,10 @@ independent review PASS (34/34 ctest, output identical with the guard on).
 §852 trace analysis (18.9-21.5 %) was over *all* end turns. New counter `end_turns` (all searched end turns);
 `end_energy_card_pct` is now over it, the old share is kept as `end_energy_card_of_energy_pct`. Rows written before
 this have no `end_turns` (their stored values keep the old meaning). Play unchanged.
+
+## §TBD — End-turn share over every real end turn (metric only, follow-up to §853) (cloud, 2026-11-23)
+
+After §853 the live share read 53.4 %: it was over *searched* end turns, but ~60 % of end turns are automatic (end
+turn the only legal action) and never searched, and none of those can leave a playable card. The §852 trace's 18.9 %
+was over all end turns (same traces: 47.3 % of the searched ones). New counter `end_turns_all` (every real end
+turn); `end_energy_card_pct` is now over it; `end_energy_card_of_searched_pct` keeps the §853 meaning. Play unchanged.

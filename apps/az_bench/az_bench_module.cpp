@@ -902,6 +902,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                 field("end_turns_energy", &P::endTurnsEnergy); field("end_turns_energy_card", &P::endTurnsEnergyCard);
                 field("end_turns_energy_card_best_q", &P::endTurnsEnergyCardBestQ);
                 field("end_turns", &P::endTurns);
+                field("end_turns_all", &P::endTurnsAll);
                 for (int b = 0; b < P::kHeartHpBins; ++b) {   // heart_hp_00 .. heart_hp_15: Heart HP left in [50 b, 50 b + 50)
                     std::vector<std::int64_t> v;
                     for (const auto &p : s.progressAsc) v.push_back(p.heartHpHist[b]);
