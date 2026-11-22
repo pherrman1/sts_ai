@@ -2607,7 +2607,7 @@ def main(argv=None):
                 **({"weight_ema_updates": counters["ema_updates"]} if ema_params is not None else {}),
                 **({"kickstart_lambda": kick["lam"]} if teacher is not None else {}),
                 "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
-                "stalls": s["stalls"], "stalls_by_type": {k: s["stalls_" + k] for k in ("fight_moves", "run_moves", "no_legal")}, "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
+                "stalls": s["stalls"], "stalls_by_type": {k: s["stalls_" + k] for k in ("fight_moves", "run_moves", "no_legal")}, "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "hp_target_bad_rows": s.get("hp_target_bad_rows", 0), "hp_target_fallbacks": s.get("hp_target_fallbacks", 0), "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,
                 "asc_win_rate_window": round(a_wins / max(1, a_runs), 4),
