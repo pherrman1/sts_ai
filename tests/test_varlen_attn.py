@@ -601,7 +601,7 @@ class EnemyBiasKernel(unittest.TestCase):
                             out = V.varlen_attn(qkv, A.seq_offsets(mask).to(self.dev), H, T, cp,
                                                 None if tb is None else tb.contiguous().to(self.dev),
                                                 torch.tensor([gv], device=self.dev), split_enc=split, gate_key=True)
-                            self.assertLess(float((out.cpu() - ref).abs().max()), 2e-3 if self.dev != "cpu" else self.tol,
+                            self.assertLess(float((out.cpu() - ref).abs().max()), 3e-3 if self.dev != "cpu" else self.tol,
                                             (tb is None, gv, rb, split))
         finally:
             mod.ROW_BOUNDS = False

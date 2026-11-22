@@ -34,6 +34,15 @@ def _bias(TAB, h, cq, ck, C: tl.constexpr):
 
 
 @triton.jit
+def _bias_t(TAB, h, cq, ck, C: tl.constexpr):
+    # _bias transposed: [keys, queries]
+    b = tl.where((ck == 0)[:, None], tl.load(TAB + h * C * C + cq * C)[None, :], 0.0)
+    for c in tl.static_range(1, C):
+        b += tl.where((ck == c)[:, None], tl.load(TAB + h * C * C + cq * C + c)[None, :], 0.0)
+    return b
+
+
+@triton.jit
 def _row_bounds(OFF, RF, r, SEL: tl.constexpr):
     start = tl.load(OFF + r)
     n = tl.load(OFF + r + 1) - start
@@ -93,6 +102,8 @@ def _fwd(QKV, O, LSE, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr
 def _bwd_kv(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, DTAB, RF, scale, H: tl.constexpr, D: tl.constexpr,
             DH: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, NEED_DTAB: tl.constexpr,
             C: tl.constexpr, SEL: tl.constexpr):
+    # everything in the transposed orientation ([keys, queries] tiles), operands loaded in the layout each product
+    # needs, without tl.trans: 0d85b4d5 (tl.trans operands) gave wrong fp32 gradients on the PC GPU (triton 3.1.0)
     r = tl.program_id(0)
     h = tl.program_id(1)
     kb = tl.program_id(2)
@@ -101,52 +112,57 @@ def _bwd_kv(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, DTAB, RF, scale, H: tl.con
     offs_d = tl.arange(0, DH)
     kmask = offs_n < n
     k = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + D + h * DH + offs_d[None, :], mask=kmask[:, None],
-                other=0.0)
+                other=0.0)                                                 # [BN, DH]
     v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
-                other=0.0)
+                other=0.0)                                                 # [BN, DH]
     dk = tl.zeros([BN, DH], tl.float32)
     dv = tl.zeros([BN, DH], tl.float32)
     if HAS_BIAS:
         ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
     if NEED_DTAB:
         offs_c = tl.arange(0, 16)
-        okT = (ck[:, None] == offs_c[None, :]).to(tl.float32)          # [BN, 16]
-        dt = tl.zeros([16, 16], tl.float32)
+        ok16 = (offs_c[:, None] == ck[None, :]).to(tl.float32)            # [16, BN]
+        dt = tl.zeros([16, 16], tl.float32)                                # [key class, query class]
     hi = n
     if kb * BN >= n:
         hi = 0
     for q0 in range(0, hi, BM):
         offs_m = q0 + tl.arange(0, BM)
         qmask = offs_m < n
+        qT = tl.load(QKV + (start + offs_m)[None, :] * (3 * D) + h * DH + offs_d[:, None], mask=qmask[None, :],
+                     other=0.0)                                            # [DH, BM]
         q = tl.load(QKV + (start + offs_m)[:, None] * (3 * D) + h * DH + offs_d[None, :], mask=qmask[:, None],
-                    other=0.0)
+                    other=0.0)                                             # [BM, DH]
         do = tl.load(DO + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], mask=qmask[:, None], other=0.0)
+        doT = tl.load(DO + (start + offs_m)[None, :] * D + h * DH + offs_d[:, None], mask=qmask[None, :], other=0.0)
         lse = tl.load(LSE + (start + offs_m) * H + h, mask=qmask, other=0.0)
         delta = tl.load(DELTA + (start + offs_m) * H + h, mask=qmask, other=0.0)
-        s = tl.dot(q, tl.trans(k)).to(tl.float32) * scale              # [BM, BN]
+        sT = tl.dot(k, qT).to(tl.float32) * scale                         # [BN, BM]
         if HAS_BIAS:
             cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
-            s += _bias(TAB, h, cq, ck, C)
-        p = tl.where(qmask[:, None] & kmask[None, :], tl.exp(s - lse[:, None]), 0.0)
-        dv += tl.dot(tl.trans(p.to(do.dtype)), do)
-        dp = tl.dot(do, tl.trans(v)).to(tl.float32)
-        ds = p * (dp - delta[:, None])
-        dk += tl.dot(tl.trans(ds.to(q.dtype)), q)
+            sT += _bias_t(TAB, h, cq, ck, C)
+        pT = tl.where(kmask[:, None] & qmask[None, :], tl.exp(sT - lse[None, :]), 0.0)
+        dv += tl.dot(pT.to(do.dtype), do)
+        dpT = tl.dot(v, doT).to(tl.float32)                                # [BN, BM]
+        dsT = pT * (dpT - delta[None, :])
+        dk += tl.dot(dsT.to(q.dtype), q)
         if NEED_DTAB:
-            oq = (cq[:, None] == offs_c[None, :]).to(tl.float32)       # [BM, 16]
-            dt += tl.dot(tl.trans(oq), tl.dot(ds, okT, input_precision="ieee"), input_precision="ieee")
+            oq = (cq[:, None] == offs_c[None, :]).to(tl.float32)           # [BM, 16]
+            dt += tl.dot(ok16, tl.dot(dsT, oq, input_precision="ieee"), input_precision="ieee")
     tl.store(DQKV + (start + offs_n)[:, None] * (3 * D) + D + h * DH + offs_d[None, :],
              (dk * scale).to(DQKV.dtype.element_ty), mask=kmask[:, None])
     tl.store(DQKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :],
              dv.to(DQKV.dtype.element_ty), mask=kmask[:, None])
     if NEED_DTAB:
         cm = offs_c < C
-        tl.atomic_add(DTAB + h * C * C + offs_c[:, None] * C + offs_c[None, :], dt, mask=cm[:, None] & cm[None, :])
+        # dt[key class, query class] -> DTAB[h, query class, key class]
+        tl.atomic_add(DTAB + h * C * C + offs_c[None, :] * C + offs_c[:, None], dt, mask=cm[:, None] & cm[None, :])
 
 
 @triton.jit
 def _bwd_q(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr, DH: tl.constexpr,
            BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr, SEL: tl.constexpr):
+    # no tl.trans: K and V loaded transposed for the score products (see _bwd_kv)
     r = tl.program_id(0)
     h = tl.program_id(1)
     qb = tl.program_id(2)
@@ -167,16 +183,18 @@ def _bwd_q(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, RF, scale, H: tl.constexpr,
     for k0 in range(0, hi, BN):
         offs_n = k0 + tl.arange(0, BN)
         kmask = offs_n < n
+        kT = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
+                     other=0.0)                                            # [DH, BN]
         k = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + D + h * DH + offs_d[None, :], mask=kmask[:, None],
-                    other=0.0)
-        v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
-                    other=0.0)
-        s = tl.dot(q, tl.trans(k)).to(tl.float32) * scale
+                    other=0.0)                                             # [BN, DH]
+        vT = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + 2 * D + h * DH + offs_d[:, None], mask=kmask[None, :],
+                     other=0.0)                                            # [DH, BN]
+        s = tl.dot(q, kT).to(tl.float32) * scale
         if HAS_BIAS:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
             s += _bias(TAB, h, cq, ck, C)
         p = tl.where(qmask[:, None] & kmask[None, :], tl.exp(s - lse[:, None]), 0.0)
-        dp = tl.dot(do, tl.trans(v)).to(tl.float32)
+        dp = tl.dot(do, vT).to(tl.float32)
         ds = p * (dp - delta[:, None])
         dq += tl.dot(ds.to(k.dtype), k)
     tl.store(DQKV + (start + offs_m)[:, None] * (3 * D) + h * DH + offs_d[None, :], (dq * scale).to(DQKV.dtype.element_ty),
