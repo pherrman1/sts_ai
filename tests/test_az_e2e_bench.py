@@ -9,7 +9,8 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODULES = sorted(glob.glob(os.path.join(ROOT, "build", "*", "az_bench_native*.so")))
+MODULES = sorted(glob.glob(os.path.join(ROOT, "build", "*", "az_bench_native*.so")),
+                 key=lambda p: ("debug" in p, p))   # an optimized module first: self-play on a Debug module is far slower
 
 try:
     import torch  # noqa: F401
