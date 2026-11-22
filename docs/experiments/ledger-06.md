@@ -29168,3 +29168,28 @@ encounter rows policy 0.016 / outcome 0.063 / HP 0.125 / per-floor 0.005, compil
 28.6 (D 9.7 % / 28.4, B 9.3 % / 29.1); 1,091 moves/s vs B 1,630 (0.67x), training step 75.4 vs 63.3 ms. Went live
 00:28 CET (11-22) with a 30-min watch (roll back on collapse or moves/s more than 15 % below 8.9k).
 **Knowledge impact:** this entry; Triton 3.1 on sm_86 needs fp32 kernel checks per width.
+
+## §TBD — Encounter tokens live (bfbcab66 / 44ee2ed5, 2026-11-22 00:28-01:20 CET): play fine (48 % vs 45.5 % rolling), moves/s −26..−30 %; per-batch cost traced and cut to +27 % inference / +29 % training with the key gate (`--enemy-gate-key`, default off) → NOT_LIVE, waiting for Philipp (cloud + PC, 2026-11-22)
+
+**Live** (A5, compile, row bounds, packed heads): bfbcab66 5.9-6.2k moves/s vs 8.8k on stall_repo, inference GPU per
+batch 13.8 → 20.6 ms at the same rows / tokens (2,031 rows, 40.8 vs 41.7 tok/row), training step 181 → 314 ms;
+44ee2ed5 (rows without encounter tokens on the plain kernel) 6.5k. Gates stayed ≤ 0.002. Rolled back to stall_repo.
+**Offline timing** (`tools/az_bench/enemy_speed.py`, PC, 2,048 synthetic rows, 30 % with encounter tokens, d 128 x 4,
+fused layer, compiled inference / training step, ms; off 6.28 / 27.6):
+
+| commit | tokens | bias | both |
+|---|---|---|---|
+| d872833b (gather bias) | 8.21 / 35.3 | 9.03 / 38.6 | 9.62 / 40.8 |
+| 519d1f15 (bias per class, training one-hot matmul) | 8.18 / 35.2 | 7.87 / 35.3 | 8.54 / 38.6 |
+| 842d1f29 one launch with a per-row branch | miscompiled by triton 3.1.0 ("operation scheduled before its operands") | | |
+| 3d3547b4 one-softmax mix (tf32 P V), bias as a small product, trimmed training rows | 8.28 / 39.3 | 8.47 / 38.7 | 9.55 / 41.9 |
+| 60148341 `--enemy-gate-key` | 7.80 / 34.8 | 7.83 / 35.3 | 8.00 / 35.6 |
+
+The [BM, BN] gather from the bias table was the largest single cost (~5x the plain kernel), then the gate's second
+softmax (exp-bound at head dim 32); in training an index gather's backward (index_put, ~1 ms per layer) and many
+small elementwise ops / copies (cat of the extra q / k columns, row regrouping). **Key gate:** log(g + 1e-30) added to
+the encounter keys' scores (their weights times g): one softmax; at g = 0 exactly the attention without them; the
+gradient to g is finite at 0. A change of the gate's form, so Philipp decides before it goes live. **Next (to reach
+−15 %):** fewer training copies (the extra columns built once per batch, not per layer), torch.compile of the training
+step, the bias only on encounter pairs.
+**Knowledge impact:** this entry.
