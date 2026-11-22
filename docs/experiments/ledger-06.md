@@ -29268,7 +29268,7 @@ warm-up formula, playing (not only evaluating) with the average, cosine shape, f
 in an open-ended curriculum run is the owner's call (the file starts it).
 **Knowledge impact:** this entry.
 
-## §TBD — Decision trace of the live stage-1 net (potions, end turns with energy, campfires) and live counters → no engine bug; search rates end turn and hallway drinks as near-ties; potion value learned slowly; counters BUILT (logging only) (cloud, 2026-11-22)
+## §852 — Decision trace of the live stage-1 net (potions, end turns with energy, campfires) and live counters → no engine bug; search rates end turn and hallway drinks as near-ties; potion value learned slowly; counters BUILT (logging only) (cloud, 2026-11-22)
 
 **Origin (owner, 2026-11-22 15:55 CET):** "why are we dying so often to the act 1 boss … smithing, removing, ending turns
 with energy left, potion usage". Read-only analysis with a local, env-gated per-decision trace (branch
