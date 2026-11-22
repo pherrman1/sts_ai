@@ -29268,7 +29268,7 @@ warm-up formula, playing (not only evaluating) with the average, cosine shape, f
 in an open-ended curriculum run is the owner's call (the file starts it).
 **Knowledge impact:** this entry.
 
-## §TBD — Floor-HP EMA target guard against NaN search rows (`STS_AZ_HP_TARGET_GUARD`, default on) → FIX, live crash of 2026-11-22 23:03 CET (cloud, 2026-11-22)
+## §851 — Floor-HP EMA target guard against NaN search rows (`STS_AZ_HP_TARGET_GUARD`, default on) → FIX, live crash of 2026-11-22 23:03 CET (cloud, 2026-11-22)
 
 **Origin:** amber_scratch (A20, savescum off, `--hp-ema-search`) ended with `std::logic_error: run driver: empty
 floor HP target` (az_run_driver.cpp, closeFloor). The push-site check `|sum/n - 1| > 1e-3` is false for NaN, so a
