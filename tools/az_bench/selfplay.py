@@ -1191,7 +1191,8 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     tags = ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_noise",
             "infer_compiled",   # infer_compiled: torch.compile(infer) vs infer, both gated (only with --compile)
             "train_kernel", "train_kernel_bf16")   # --enemy-train-kernel: the training net with its kernels vs the
-    # padded SDPA path, in training mode, fp32 and under bf16 autocast (as the trainer runs)
+    # padded SDPA path, in training mode, fp32 (kernel dots in full fp32, AZ_TRAIN_ATTN_IEEE) and under bf16 autocast
+    # (as the trainer runs; both paths round to bf16, so about one bf16 step of each head's output scale)
     run_c = torch.compile(copy.deepcopy(infer)) if args.compile else None
     diff = {t: {k: 0.0 for k in names} for t in tags}
     nonfinite = {"train": 0, "infer": 0}   # non-finite outputs of the gated nets
@@ -1242,6 +1243,10 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     grad_rel = {}   # --enemy-train-kernel: per parameter max |grad kernel - grad SDPA| / max |grad SDPA| (fp32)
     if train_net.train_attn is not None and args.train_packed:
         ta = train_net.train_attn
+        # the fp32 comparison runs the kernels' dots in full fp32 (their TF32 default sits at the fp16 noise level,
+        # infer_noise); bf16 inputs are unaffected
+        ieee_env = os.environ.get("AZ_TRAIN_ATTN_IEEE")
+        os.environ["AZ_TRAIN_ATTN_IEEE"] = "1"
         for i in range(min(3, args.check_enemy_gate)):
             bt = to_torch(replay.sample(rng, args.train_batch), dev)
             bt = dict(bt, pack_idx=amber_net.pack_index(bt["mask"], 16))
@@ -1271,6 +1276,10 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
                 grad_rel[n_] = max(grad_rel.get(n_, 0.0), rel)
         train_net.train_attn = ta
         train_net.zero_grad()
+        if ieee_env is None:
+            os.environ.pop("AZ_TRAIN_ATTN_IEEE", None)
+        else:
+            os.environ["AZ_TRAIN_ATTN_IEEE"] = ieee_env
 
     def step_ms(net, strip):
         net.train()

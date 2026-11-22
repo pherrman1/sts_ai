@@ -57,7 +57,8 @@ def _row_bounds(OFF, RF, r, SEL: tl.constexpr):
 
 @triton.jit
 def _fwd(QKV, O, LSE, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr, DH: tl.constexpr,
-         BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr, SEL: tl.constexpr):
+         BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr, SEL: tl.constexpr,
+         PREC: tl.constexpr):
     r = tl.program_id(0)
     h = tl.program_id(1)
     qb = tl.program_id(2)
@@ -79,7 +80,7 @@ def _fwd(QKV, O, LSE, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr
         kmask = offs_n < n
         k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
                     other=0.0)
-        s = tl.dot(q, k).to(tl.float32) * scale
+        s = tl.dot(q, k, input_precision=PREC).to(tl.float32) * scale
         if HAS_BIAS:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
             s += _bias(TAB, h, cq, ck, C)
@@ -90,7 +91,7 @@ def _fwd(QKV, O, LSE, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr
         l_i = l_i * alpha + tl.sum(p, 1)
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
-        acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
+        acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v, input_precision=PREC)
         m_i = m_new
     l_safe = tl.where(l_i > 0, l_i, 1.0)
     tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], (acc / l_safe[:, None]).to(O.dtype.element_ty),
@@ -101,7 +102,8 @@ def _fwd(QKV, O, LSE, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr
 @triton.jit
 def _bwd_kv(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, DTAB, RF, scale, H: tl.constexpr, D: tl.constexpr,
             DH: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, NEED_DTAB: tl.constexpr,
-            C: tl.constexpr, SEL: tl.constexpr):
+            C: tl.constexpr, SEL: tl.constexpr,
+         PREC: tl.constexpr):
     # everything in the transposed orientation ([keys, queries] tiles), operands loaded in the layout each product
     # needs, without tl.trans: 0d85b4d5 (tl.trans operands) gave wrong fp32 gradients on the PC GPU (triton 3.1.0)
     r = tl.program_id(0)
@@ -137,15 +139,15 @@ def _bwd_kv(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, DTAB, RF, scale, H: tl.con
         doT = tl.load(DO + (start + offs_m)[None, :] * D + h * DH + offs_d[:, None], mask=qmask[None, :], other=0.0)
         lse = tl.load(LSE + (start + offs_m) * H + h, mask=qmask, other=0.0)
         delta = tl.load(DELTA + (start + offs_m) * H + h, mask=qmask, other=0.0)
-        sT = tl.dot(k, qT).to(tl.float32) * scale                         # [BN, BM]
+        sT = tl.dot(k, qT, input_precision=PREC).to(tl.float32) * scale                         # [BN, BM]
         if HAS_BIAS:
             cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
             sT += _bias_t(TAB, h, cq, ck, C)
         pT = tl.where(kmask[:, None] & qmask[None, :], tl.exp(sT - lse[None, :]), 0.0)
-        dv += tl.dot(pT.to(do.dtype), do)
-        dpT = tl.dot(v, doT).to(tl.float32)                                # [BN, BM]
+        dv += tl.dot(pT.to(do.dtype), do, input_precision=PREC)
+        dpT = tl.dot(v, doT, input_precision=PREC).to(tl.float32)                                # [BN, BM]
         dsT = pT * (dpT - delta[None, :])
-        dk += tl.dot(dsT.to(q.dtype), q)
+        dk += tl.dot(dsT.to(q.dtype), q, input_precision=PREC)
         if NEED_DTAB:
             oq = (cq[:, None] == offs_c[None, :]).to(tl.float32)           # [BM, 16]
             dt += tl.dot(ok16, tl.dot(dsT, oq, input_precision="ieee"), input_precision="ieee")
@@ -161,7 +163,8 @@ def _bwd_kv(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, DTAB, RF, scale, H: tl.con
 
 @triton.jit
 def _bwd_q(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, RF, scale, H: tl.constexpr, D: tl.constexpr, DH: tl.constexpr,
-           BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr, SEL: tl.constexpr):
+           BM: tl.constexpr, BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr, SEL: tl.constexpr,
+         PREC: tl.constexpr):
     # no tl.trans: K and V loaded transposed for the score products (see _bwd_kv)
     r = tl.program_id(0)
     h = tl.program_id(1)
@@ -189,16 +192,23 @@ def _bwd_q(QKV, DO, LSE, DELTA, DQKV, OFF, CLS, TAB, RF, scale, H: tl.constexpr,
                     other=0.0)                                             # [BN, DH]
         vT = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + 2 * D + h * DH + offs_d[:, None], mask=kmask[None, :],
                      other=0.0)                                            # [DH, BN]
-        s = tl.dot(q, kT).to(tl.float32) * scale
+        s = tl.dot(q, kT, input_precision=PREC).to(tl.float32) * scale
         if HAS_BIAS:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
             s += _bias(TAB, h, cq, ck, C)
         p = tl.where(qmask[:, None] & kmask[None, :], tl.exp(s - lse[:, None]), 0.0)
-        dp = tl.dot(do, vT).to(tl.float32)
+        dp = tl.dot(do, vT, input_precision=PREC).to(tl.float32)
         ds = p * (dp - delta[:, None])
-        dq += tl.dot(ds.to(k.dtype), k)
+        dq += tl.dot(ds.to(k.dtype), k, input_precision=PREC)
     tl.store(DQKV + (start + offs_m)[:, None] * (3 * D) + h * DH + offs_d[None, :], (dq * scale).to(DQKV.dtype.element_ty),
              mask=qmask[:, None])
+
+
+def _prec(qkv):
+    """tl.dot input precision: fp32 inputs run TF32 on the tensor cores (Triton's default, 10-bit mantissa = the
+    fp16 noise level); AZ_TRAIN_ATTN_IEEE=1 runs them in full fp32 (the gate check's exact comparison). fp16 / bf16
+    inputs are not affected."""
+    return "ieee" if qkv.dtype == torch.float32 and os.environ.get("AZ_TRAIN_ATTN_IEEE") == "1" else "tf32"
 
 
 def _blocks(max_len):
@@ -234,10 +244,11 @@ class _VarlenAttnTrain(torch.autograd.Function):
         lse = torch.zeros(N, heads, dtype=torch.float32, device=qkv.device)
         scale = (D // heads) ** -0.5
         nw = int(os.environ.get("AZ_TRAIN_ATTN_WARPS", "4"))
+        prec = _prec(qkv)
         for sel, hb in _launches(rf, rows_only, has_bias):
             _fwd[(R, heads, triton.cdiv(max_len, BM))](qkv, out, lse, seq_off, cls_, tab_, rf_, scale, H=heads, D=D,
                                                        DH=D // heads, BM=BM, BN=BN, HAS_BIAS=hb, C=C, SEL=sel,
-                                                       num_warps=nw)
+                                                       PREC=prec, num_warps=nw)
         ctx.save_for_backward(qkv, out, lse, seq_off, cls_, tab_, rf_)
         ctx.meta = (heads, max_len, has_bias, C, rf is not None, rows_only)
         return out
@@ -257,14 +268,15 @@ class _VarlenAttnTrain(torch.autograd.Function):
         dtab = torch.zeros(heads, C, C, dtype=torch.float32, device=qkv.device) if need_dtab else qkv
         scale = (D // heads) ** -0.5
         nw = int(os.environ.get("AZ_TRAIN_ATTN_WARPS", "4"))
+        prec = _prec(qkv)
         for sel, hb in _launches(rf_ if has_rf else None, rows_only, has_bias):
             _bwd_kv[(R, heads, triton.cdiv(max_len, BN))](qkv, dout, lse, delta, dqkv, seq_off, cls_, tab_, dtab, rf_,
                                                           scale, H=heads, D=D, DH=D // heads, BM=BM, BN=BN,
-                                                          HAS_BIAS=hb, NEED_DTAB=need_dtab and hb, C=C, SEL=sel,
+                                                          HAS_BIAS=hb, NEED_DTAB=need_dtab and hb, C=C, SEL=sel, PREC=prec,
                                                           num_warps=nw)
             _bwd_q[(R, heads, triton.cdiv(max_len, BM))](qkv, dout, lse, delta, dqkv, seq_off, cls_, tab_, rf_, scale,
                                                          H=heads, D=D, DH=D // heads, BM=BM, BN=BN, HAS_BIAS=hb, C=C,
-                                                         SEL=sel, num_warps=nw)
+                                                         SEL=sel, PREC=prec, num_warps=nw)
         return dqkv, None, None, None, None, (dtab if need_dtab else None), None, None
 
 
