@@ -1351,6 +1351,28 @@ def load_opt_state(opt, saved):
         groups.append(g)
     opt.load_state_dict({"state": state, "param_groups": groups})
 
+
+def lr_anneal_factor(step, anneal):
+    """--lr-anneal-* / LR_ANNEAL file: the learning rate's factor at training step `step`. anneal = [start, steps,
+    final] or None: 1 before `start`, then a cosine from 1 down to `final` over `steps` steps, `final` after them."""
+    if not anneal:
+        return 1.0
+    start, steps, final = anneal
+    if start < 0 or steps <= 0 or step < start:
+        return 1.0
+    t = min(1.0, (step - start) / steps)
+    return final + (1.0 - final) * 0.5 * (1.0 + math.cos(math.pi * t))
+
+
+def weight_ema_update(ema, params, decay, n):
+    """--weight-ema: one update of the averaged weights after optimizer step n (0, 1, ...): ema <- d * ema +
+    (1 - d) * params with d = min(decay, (1 + n) / (10 + n)) (the warm-up keeps a fresh average from holding on to
+    the first weights). Returns d."""
+    d = min(decay, (1.0 + n) / (10.0 + n))
+    with torch.no_grad():
+        torch._foreach_lerp_(ema, [p.detach() for p in params], 1.0 - d)
+    return d
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--module-dir", required=True)
@@ -1616,6 +1638,21 @@ def main(argv=None):
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--weight-decay", type=float, default=1e-4)
     ap.add_argument("--warmup-steps", type=int, default=500)
+    ap.add_argument("--weight-ema", type=float, default=0.0,
+                    help="decay of an exponential moving average of the training net's weights (Polyak averaging; "
+                         "e.g. 0.999 = about the last 1,000 optimizer steps), updated after every optimizer step; "
+                         "self-play then plays with the averaged weights (published every --sync-steps), training "
+                         "goes on with the raw weights. Saved in the checkpoint ('ema'); a resume from a checkpoint "
+                         "without it starts the average from the resumed weights. 0 = off (default; not from the "
+                         "Amber Eye page, an idea from the STS2 Discord)")
+    ap.add_argument("--lr-anneal-start", type=int, default=-1,
+                    help="training step at which the learning rate starts a cosine decay to --lr-anneal-final x "
+                         "--lr over --lr-anneal-steps steps (-1 = off, default; a resume keeps an anneal in progress "
+                         "from its checkpoint). Live: a file LR_ANNEAL in --out-dir with 'STEPS [FINAL]' starts one "
+                         "at the current step (renamed LR_ANNEAL.applied)")
+    ap.add_argument("--lr-anneal-steps", type=int, default=0, help="--lr-anneal-start: length of the decay in steps")
+    ap.add_argument("--lr-anneal-final", type=float, default=0.1,
+                    help="--lr-anneal-start: learning rate factor at the end of the decay (kept afterwards)")
     ap.add_argument("--w-policy", type=float, default=1.0)
     ap.add_argument("--w-soft-policy", type=float, default=0.0,
                     help="loss weight of the soft policy head (Amber Eye / KataGo: target p^(1/4); 0 = no head; "
@@ -1753,6 +1790,31 @@ def main(argv=None):
         warm0 = counters["step"]
         print(f"# init-counters {args.init_counters}: step {counters['step']} seeds_used {counters['seeds_used']} "
               f"runs_done {counters['runs_done']}", flush=True)
+    # --weight-ema: the averaged weights (fp32, the training net's parameter order), from the checkpoint if it has
+    # them for this net, otherwise from the weights as they are now (after --resume / --init-net).
+    ema_params = None
+    if args.weight_ema > 0:
+        if not args.weight_ema < 1:
+            ap.error("--weight-ema: decay in (0, 1)")
+        ema_params = [p_.detach().clone().float() for p_ in train_net.parameters()]
+        saved_ema = ck.get("ema") if args.resume else None
+        if saved_ema is not None and len(saved_ema) == len(ema_params) \
+                and all(a.shape == b.shape for a, b in zip(saved_ema, ema_params)):
+            for a, b in zip(ema_params, saved_ema):
+                a.copy_(b.to(dev))
+            print(f"# weight-ema: averaged weights from {args.resume} ({counters.get('ema_updates', 0)} updates)",
+                  flush=True)
+        else:
+            counters["ema_updates"] = 0
+            print(f"# weight-ema: decay {args.weight_ema}, average starts from the current weights", flush=True)
+        counters.setdefault("ema_updates", 0)
+    if args.lr_anneal_start >= 0:
+        if args.lr_anneal_steps <= 0:
+            ap.error("--lr-anneal-start needs --lr-anneal-steps > 0")
+        counters["lr_anneal"] = [args.lr_anneal_start, args.lr_anneal_steps, args.lr_anneal_final]
+    if counters.get("lr_anneal"):
+        print(f"# lr-anneal: start {counters['lr_anneal'][0]} steps {counters['lr_anneal'][1]} final "
+              f"{counters['lr_anneal'][2]}", flush=True)
     teacher = None
     kick = {"lam": args.kickstart_mix}
     if args.teacher_ckpt:
@@ -1784,6 +1846,10 @@ def main(argv=None):
 
     # Inference copy: fp16 weights, packed forward with the stage 0 kernels.
     infer = copy.deepcopy(train_net).eval()
+    if ema_params is not None:   # self-play plays with the averaged weights from the start
+        with torch.no_grad():
+            for p_i, p_e in zip(infer.parameters(), ema_params):
+                p_i.copy_(p_e)
     infer.sdpa = True
     if cuda:
         infer.varlen_attn = amber_net.load_kernel("varlen_attn")
@@ -2290,7 +2356,8 @@ def main(argv=None):
                 bt = to_torch(b, dev)
                 t_ph = lap(train_s, "h2d", t_ph)
                 step = counters["step"]
-                lr = args.lr * min(1.0, (step - warm0 + 1) / max(1, args.warmup_steps))
+                lr = args.lr * min(1.0, (step - warm0 + 1) / max(1, args.warmup_steps)) \
+                    * lr_anneal_factor(step, counters.get("lr_anneal"))
                 for g in opt.param_groups:
                     g["lr"] = lr * g.get("lr_scale", 1.0)
                 lam = kick["lam"]
@@ -2325,6 +2392,9 @@ def main(argv=None):
                         continue
                     nonfinite_run[0] = 0
                 opt.step()
+                if ema_params is not None:
+                    weight_ema_update(ema_params, train_net.parameters(), args.weight_ema, counters["ema_updates"])
+                    counters["ema_updates"] += 1
                 if gnorm is not None:
                     with lossbox_lock:
                         gradbox["n"] += 1
@@ -2344,7 +2414,8 @@ def main(argv=None):
                 t_ph = lap(train_s, "loss_read", t_ph)
                 if counters["step"] % args.sync_steps == 0:
                     with torch.no_grad():
-                        state = [p.detach().to(infer_dtype).clone() for p in train_net.parameters()]
+                        src = ema_params if ema_params is not None else train_net.parameters()
+                        state = [p.detach().to(infer_dtype).clone() for p in src]
                     ev = None
                     if stream is not None:
                         ev = torch.cuda.Event()
@@ -2362,6 +2433,7 @@ def main(argv=None):
             path = os.path.join(args.out_dir, f"ckpt_{tag}_r{c['runs_done']}.pt")   # never overwrite the resume source
         tmp = path + ".tmp"
         torch.save({"net": train_net.state_dict(), "opt": opt.state_dict(), "counters": c,
+                    **({"ema": [t.detach().clone() for t in ema_params]} if ema_params is not None else {}),
                     "args": vars(args), "net_size": [d, layers],
                     **({"explore_state": drv.explore_state()} if explore_on else {})}, tmp)
         os.replace(tmp, path)
@@ -2431,6 +2503,21 @@ def main(argv=None):
                             kick["lam"] = v
                 except (ValueError, OSError) as e:
                     print(f"# kickstart lambda file: ignored ({e})", flush=True)
+            lr_file = os.path.join(args.out_dir, "LR_ANNEAL")
+            if os.path.exists(lr_file):   # live LR anneal from the current step: "STEPS [FINAL]"
+                try:
+                    with open(lr_file) as fh:
+                        parts_ = fh.read().split()
+                    n_ = int(parts_[0])
+                    fin_ = float(parts_[1]) if len(parts_) > 1 else args.lr_anneal_final
+                    if n_ <= 0 or not 0.0 <= fin_ <= 1.0:
+                        raise ValueError(f"steps {n_} final {fin_}")
+                    counters["lr_anneal"] = [counters["step"], n_, fin_]
+                    print(f"# lr-anneal file: from step {counters['step']} over {n_} steps to {fin_} x lr", flush=True)
+                    os.replace(lr_file, lr_file + ".applied")
+                except (ValueError, IndexError, OSError) as e:
+                    print(f"# lr-anneal file: ignored ({e})", flush=True)
+                    os.replace(lr_file, lr_file + ".rejected")
             asc_file = os.path.join(args.out_dir, "ASCENSION")
             if os.path.exists(asc_file):   # live ascension: runs started from now on (curriculum continues from it)
                 try:
@@ -2491,6 +2578,8 @@ def main(argv=None):
                 **({"replay_soft_bytes_mean": round(replay.soft_stats[1] / max(1, replay.soft_stats[0]), 2)}
                    if replay.soft_q else {}), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "grad_norm": gavg,
+                "lr": args.lr * lr_anneal_factor(counters["step"], counters.get("lr_anneal")),
+                **({"weight_ema_updates": counters["ema_updates"]} if ema_params is not None else {}),
                 **({"kickstart_lambda": kick["lam"]} if teacher is not None else {}),
                 "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "stalls_by_type": {k: s["stalls_" + k] for k in ("fight_moves", "run_moves", "no_legal")}, "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],

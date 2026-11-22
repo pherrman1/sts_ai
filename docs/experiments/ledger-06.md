@@ -29239,3 +29239,31 @@ off / tokens / bias / both): default 27.6 / 35.2 / 35.3 / 38.6; `--enemy-train-k
 parts: no padding). `--check-enemy-gate` with `--enemy-train-kernel --train-packed` also compares the training net
 with its kernels against the SDPA path (fp32 and bf16 outputs, per-parameter gradient ratio).
 **Knowledge impact:** this entry; Triton 3.1 on sm_86: avoid tl.trans operands in fp32 tl.dot.
+
+## §TBD — `--weight-ema` (Polyak average of the training net's weights, self-play plays with it) and a cosine learning-rate anneal (`--lr-anneal-*`, live file `LR_ANNEAL`) → BUILT, default off, not tested live (cloud, 2026-11-22)
+
+**Origin (owner, 2026-11-22, "Bau mal den Punkt 1 nach, aber lass es noch nicht jetzt testen"):** in the STS2
+Discord one author reported that an EMA of the weights (decay 0.996 / 0.999) helped a lot and that annealing the
+learning rate at the end gave about +3 pp; another reported that the EMA helped. Amber Eye's page names no
+optimizer details, no weight average and no learning-rate schedule (searched 2026-11-22 for "EMA", "moving
+average", "learning rate", "anneal", "Adam": the only EMA there is the value-label average that `--value-ema-*`
+already implements), so this is a deviation the owner chose explicitly, as flags.
+**What it does:** `--weight-ema D` keeps an fp32 copy of every parameter of the training net; after every optimizer
+step `ema <- d ema + (1 - d) w` with `d = min(D, (1 + n) / (10 + n))` (n = updates so far; the warm-up stops a new
+average from holding on to its first weights). The weights handed to the inference net (every `--sync-steps`) are
+the average, so self-play plays with it; training goes on with the raw weights (and their AdamW state). A skipped
+non-finite step does not update it. The checkpoint holds it as `ema` (list in parameter order) and
+`counters["ema_updates"]`; a resume from a checkpoint without it starts the average from the resumed weights (and
+the inference net starts from the average either way). `--lr-anneal-start S --lr-anneal-steps N
+--lr-anneal-final f` multiplies the learning rate (after the warm-up factor) from step S by a cosine from 1 to f
+over N steps, f afterwards; the anneal is kept in `counters["lr_anneal"]`, so a resume continues it. Live: a file
+`LR_ANNEAL` in `--out-dir` with `N [f]` starts an anneal at the current step (renamed `.applied`, or `.rejected`
+if unreadable). New metric fields `lr` (without the warm-up factor) and `weight_ema_updates`.
+**Checks (cloud CPU):** `tests/test_selfplay.py` `WeightEmaLrAnnealTest` (cosine values, monotone, update by
+hand incl. warm-up, convergence) and `SelfplaySmoke.test_weight_ema_and_lr_anneal_run` (16-run CPU run: ema in
+the checkpoint, differs from the raw weights, `ema_updates == step`, metrics lr on the cosine; resume keeps both;
+a live `LR_ANNEAL` file replaces the anneal); the full `tests/test_selfplay.py` passes.
+**Open:** no live or offline strength test (owner: later). Choices of ours the Discord posts do not fix: the
+warm-up formula, playing (not only evaluating) with the average, cosine shape, f = 0.1 default; when to anneal
+in an open-ended curriculum run is the owner's call (the file starts it).
+**Knowledge impact:** this entry.

@@ -1286,6 +1286,50 @@ class DashboardSettlingTest(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_TORCH, "torch missing")
+class WeightEmaLrAnnealTest(unittest.TestCase):
+    """--weight-ema (Polyak average of the weights) and --lr-anneal-* / LR_ANNEAL (cosine decay of the lr)."""
+
+    def test_lr_anneal_factor(self):
+        sp = load()
+        f = sp.lr_anneal_factor
+        self.assertEqual(f(123, None), 1.0)
+        self.assertEqual(f(99, [100, 50, 0.1]), 1.0)          # before the start
+        self.assertAlmostEqual(f(100, [100, 50, 0.1]), 1.0)   # cosine starts at 1
+        self.assertAlmostEqual(f(125, [100, 50, 0.1]), 0.55)  # half way: the mean of 1 and final
+        self.assertAlmostEqual(f(150, [100, 50, 0.1]), 0.1)
+        self.assertAlmostEqual(f(10 ** 6, [100, 50, 0.1]), 0.1)   # final kept afterwards
+        self.assertEqual(f(5, [-1, 50, 0.1]), 1.0)
+        prev = 2.0
+        for st in range(100, 151):   # monotone down
+            v = f(st, [100, 50, 0.0])
+            self.assertLessEqual(v, prev)
+            prev = v
+
+    def test_weight_ema_update_by_hand(self):
+        sp = load()
+        p = [torch.zeros(3), torch.zeros(2, 2)]
+        ema = [t.clone() for t in p]
+        decays = []
+        for n in range(200):
+            for t in p:
+                t.fill_(float(n + 1))
+            prev = [e.clone() for e in ema]
+            d = sp.weight_ema_update(ema, p, 0.9, n)
+            decays.append(d)
+            self.assertAlmostEqual(d, min(0.9, (1 + n) / (10 + n)))
+            for e, e0, t in zip(ema, prev, p):
+                self.assertTrue(torch.allclose(e, d * e0 + (1 - d) * t))
+        self.assertEqual(decays[0], 0.1)    # warm-up: the first update takes 90 % of the new weights
+        self.assertEqual(decays[-1], 0.9)
+        # a constant target: the average converges to it
+        for t in p:
+            t.fill_(5.0)
+        for n in range(200, 400):
+            sp.weight_ema_update(ema, p, 0.9, n)
+        self.assertTrue(all(torch.allclose(e, torch.full_like(e, 5.0)) for e in ema))
+
+
+@unittest.skipUnless(HAVE_TORCH, "torch missing")
 class AuxFightsTest(unittest.TestCase):
     """--aux-fights: labels from the HP head, the loss, the optimizer state across the aux group and the replay
     window across the aux arrays."""
@@ -1620,6 +1664,42 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreaterEqual(c2["seeds_used"], 32)
             self.assertGreater(c2["step"], c["step"])   # training resumes (the replay-ratio cap counts from the resume)
             self.assertGreaterEqual(c2["runs_done"], 32)
+
+    def test_weight_ema_and_lr_anneal_run(self):
+        """--weight-ema: the checkpoint carries the average (differs from the raw weights), a resume keeps it and
+        its update count; --lr-anneal-*: the metrics' lr follows the cosine; LR_ANNEAL file starts one live."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "560", "--warmup-steps", "1"]
+        with tempfile.TemporaryDirectory() as d:
+            rc = sp.main(common + ["--out-dir", d, "--max-runs", "16", "--weight-ema", "0.99",
+                                   "--lr-anneal-start", "0", "--lr-anneal-steps", "10", "--lr-anneal-final", "0.25"])
+            self.assertEqual(rc, 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            last = rows[-1]
+            self.assertGreater(last["train_steps"], 0)
+            self.assertEqual(last["weight_ema_updates"], last["train_steps"])
+            self.assertAlmostEqual(last["lr"], 1e-3 * sp.lr_anneal_factor(last["train_steps"], [0, 10, 0.25]))
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            blob = torch.load(ck)
+            raw = list(blob["net"].values())
+            self.assertEqual(len(blob["ema"]), len(raw))
+            self.assertEqual(blob["counters"]["ema_updates"], blob["counters"]["step"])
+            self.assertEqual(blob["counters"]["lr_anneal"], [0, 10, 0.25])
+            if blob["counters"]["step"] > 1:
+                self.assertTrue(any(not torch.equal(e, r) for e, r in zip(blob["ema"], raw)))
+            # Resume: average and anneal carried over; a live LR_ANNEAL file replaces the anneal.
+            with open(os.path.join(d, "LR_ANNEAL"), "w") as f:
+                f.write("1000 0.5\n")
+            rc = sp.main(common + ["--out-dir", d, "--max-runs", "24", "--weight-ema", "0.99", "--resume", ck])
+            self.assertEqual(rc, 0)
+            self.assertTrue(os.path.exists(os.path.join(d, "LR_ANNEAL.applied")))
+            c2 = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["counters"]
+            self.assertEqual(c2["ema_updates"], c2["step"])
+            self.assertEqual(c2["lr_anneal"][1:], [1000, 0.5])
 
     def test_amber_utility_run_and_init_net(self):
         """--utility amber trains the per-floor HP head on the driver's labels; --init-net starts it from a floor-hp
