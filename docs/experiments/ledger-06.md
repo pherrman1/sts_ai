@@ -29220,3 +29220,22 @@ gradient to g is finite at 0. A change of the gate's form, so Philipp decides be
 −15 %):** fewer training copies (the extra columns built once per batch, not per layer), torch.compile of the training
 step, the bias only on encounter pairs.
 **Knowledge impact:** this entry.
+
+## §TBD — Own training kernel for the encounter parts (`--enemy-train-kernel`, default off): varlen attention with the class bias, forward + backward in Triton; PC training step with the key gate 35.6 → 25.3 ms (without encounter parts 27.6) → BUILT, default off (cloud + PC, 2026-11-22)
+
+Philipp's card (2026-11-22 09:14 CET): own training kernel. `tools/az_bench/varlen_attn_train.py`: packed tokens
+(each row attends over its own length; the padded trainer pays the batch's longest row squared on every row),
+flash-style forward saving the log-sum-exp, backward as flash attention 2 (dK / dV kernel per key block with the
+table gradient onehot(cls_k)^T dS^T onehot(cls_q) per tile, atomically added; dQ kernel per query block), rows
+without encounter tokens without the bias; the mix gate = 2 calls (the second only on rows with encounter tokens,
+table -1e4 on encounter keys), the key gate = 1 call (log g in the table). AmberNet.train_attn; used in training
+mode on `--train-packed` batches. **Triton 3.1.0 on sm_86:** the first backward (0d85b4d5) used tl.trans operands in
+its products and gave wrong fp32 gradients (qkv grad off by 3.2; bf16 right); without tl.trans (9543bc7f, operands
+loaded in the layout each product needs) 20 / 20 GPU tests pass (kernel vs padded torch reference incl. all
+gradients; AmberNet training with the kernel = the SDPA path, outputs and all parameter gradients, mix and key
+gate). **PC timing** (enemy_speed.py, 2,048 synthetic rows, 30 % with encounter tokens, d 128 x 4, training step ms,
+off / tokens / bias / both): default 27.6 / 35.2 / 35.3 / 38.6; `--enemy-train-kernel` 27.6 / 29.4 / 25.0 / 30.9;
+`--enemy-gate-key` 27.6 / 34.8 / 35.3 / 35.7; both flags 27.6 / 25.2 / 25.0 / 25.3 (faster than without encounter
+parts: no padding). `--check-enemy-gate` with `--enemy-train-kernel --train-packed` also compares the training net
+with its kernels against the SDPA path (fp32 and bf16 outputs, per-parameter gradient ratio).
+**Knowledge impact:** this entry; Triton 3.1 on sm_86: avoid tl.trans operands in fp32 tl.dot.
