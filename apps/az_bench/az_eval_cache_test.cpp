@@ -33,6 +33,7 @@
 //
 // usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact]
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -69,6 +70,10 @@ namespace {
         std::size_t dictTokens = 0;    // compact: tokens in the distinct dictionaries
         bool compactOk = true;         // compact: every sample refers to a dictionary (and has no copied tokens)
     };
+
+    // --hp-nan-every N: about one fake-net row in N gives a NaN floor HP distribution (a search row that is no
+    // distribution); the run driver skips such rows in the floor's EMA chain (STS_AZ_HP_TARGET_GUARD).
+    int hpNanEvery = 0;
 
     // Plays cfg.maxRuns runs with a fake net that is a hash of each row's live input (and of the weights version
     // when versionPerBatch: the version is bumped before every batch).
@@ -139,6 +144,8 @@ namespace {
                     double z = 0;
                     for (int k = 0; k < azbench::kHpClasses; ++k) { p[k] = static_cast<float>(std::exp(-0.02 * (k - c) * (k - c)) * (0.5 + unit(mix(h, 600 + k)))); z += p[k]; }
                     for (int k = 0; k < azbench::kHpClasses; ++k) p[k] = static_cast<float>(p[k] / z);
+                    if (hpNanEvery > 0 && mix(h, 700) % static_cast<std::uint64_t>(hpNanEvery) == 0)   // a broken net row
+                        std::fill(p, p + azbench::kHpClasses, std::numeric_limits<float>::quiet_NaN());
                 }
             }
             d.submit(tickets.data(), B, An, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr, version,
@@ -256,6 +263,7 @@ int main(int argc, char **argv) {
         else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
         else if (a == "--ema-hp") cfg.searchEmaHp = true;
         else if (a == "--compact") compact = true;
+        else if (a == "--hp-nan-every") hpNanEvery = std::stoi(next());
         else if (a == "--parallel-nodes") cfg.parallelNodes = std::stoi(next());
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
@@ -352,6 +360,10 @@ int main(int argc, char **argv) {
         if (a.maxHpSumGap > 0.1) { std::fprintf(stderr, "FAIL: floor HP targets do not sum to 1\n"); fail = 1; }
         if (r.baseDigest != a.baseDigest || r.maxHpRealGap > 1e-6) { std::fprintf(stderr, "FAIL: the HP chains do not end in the real labels\n"); fail = 1; }
         if (!(a.maxHpRealGap > 1e-3)) { std::fprintf(stderr, "FAIL: the HP targets are the real labels (no search in them)\n"); fail = 1; }
+        std::printf("{\"hp_target_guard\": {\"nan_every\": %d, \"bad_rows\": %lld, \"fallbacks\": %lld}}\n", hpNanEvery,
+                    static_cast<long long>(a.stats.hpTargetBadRows), static_cast<long long>(a.stats.hpTargetFallbacks));
+        if ((hpNanEvery > 0) != (a.stats.hpTargetBadRows > 0)) { std::fprintf(stderr, "FAIL: skipped HP rows do not match the broken net rows\n"); fail = 1; }
+        if (a.stats.hpTargetFallbacks != 0) { std::fprintf(stderr, "FAIL: an HP target fell back to the real HP\n"); fail = 1; }
     }
     return fail;
 }
