@@ -29240,7 +29240,7 @@ parts: no padding). `--check-enemy-gate` with `--enemy-train-kernel --train-pack
 with its kernels against the SDPA path (fp32 and bf16 outputs, per-parameter gradient ratio).
 **Knowledge impact:** this entry; Triton 3.1 on sm_86: avoid tl.trans operands in fp32 tl.dot.
 
-## §TBD — `--weight-ema` (Polyak average of the training net's weights, self-play plays with it) and a cosine learning-rate anneal (`--lr-anneal-*`, live file `LR_ANNEAL`) → BUILT, default off, not tested live (cloud, 2026-11-22)
+## §850 — `--weight-ema` (Polyak average of the training net's weights, self-play plays with it) and a cosine learning-rate anneal (`--lr-anneal-*`, live file `LR_ANNEAL`) → BUILT, default off, not tested live (cloud, 2026-11-22)
 
 **Origin (owner, 2026-11-22, "Bau mal den Punkt 1 nach, aber lass es noch nicht jetzt testen"):** in the STS2
 Discord one author reported that an EMA of the weights (decay 0.996 / 0.999) helped a lot and that annealing the
