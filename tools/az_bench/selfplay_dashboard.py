@@ -360,6 +360,21 @@ def progress_panel(rows, cur, recent=20):
                '<p class="rule">Not picked up: relics on a reward screen when it was left, plus treasure chests left '
                'unopened (one relic each). The chest relic given up for the Sapphire key is not counted '
                '(sapphire_relic_forfeits in economy_per_run).</p>')
+    # Potion and end-turn decisions (selfplay.py decisions_window, 2026-11-22; rows without it are left out).
+    dx = [r["runs_done"] for r in rows if r.get("decisions")]
+    if dx:
+        dc = [r["decisions"] for r in rows if r.get("decisions")]
+        def dcol(k, scale=1.0):
+            return [e[k] * scale if e.get(k) is not None else None for e in dc]
+        ch += (f'<h3>Potions and leftover energy (from run {dx[0]:,})</h3>' +
+               chart(dx, [("Act 1 hallway fights with a potion drunk % (smoothed)", gap(dcol("hall_potion_fight_pct")), "--accent2"),
+                          ("potions entering the Act 1 boss x10 (smoothed)", gap(dcol("boss_potions", 10.0)), "--good"),
+                          ("end turns with energy + playable card % (smoothed)", gap(dcol("end_energy_card_pct")), "--boss"),
+                          ("hallway drink Q advantage x1000 (smoothed)", gap(dcol("hall_drink_q_gap", 1000.0)), "--accent")],
+                     ymin=0, yfmt="{:.1f}") +
+               '<p class="rule">Hallway: Act 1 monster rooms. Q advantage: the searched drink\'s mean root Q minus the '
+               'best visited non-potion action (near 0 = the search sees no value in keeping the potion). End turns: '
+               'searched end turns with energy left; playable card = a non-status, non-curse card play was legal.</p>')
     return f"""<section class="ascbox"><h2>Keys, Recall, elites, Act 4 (finished runs)</h2>
 {tiles}
 <p class="rule">Tiles: current ascension, last ~{recent} windows. Keys count when held at the run's end. Recall % is over

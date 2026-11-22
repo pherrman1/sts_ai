@@ -580,6 +580,7 @@ namespace sts::azbench {
         RunProgress progress;                // this run's progress counters (added to its ascension at the end)
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
+        bool fightPotion = false;            // RunProgress::act1HallPotionFights: a potion was drunk in this fight
         // RunConfig::stallLog: the last StallLog::kTrail real decisions (ring; trailN written so far).
         std::array<std::string, StallLog::kTrail> trail;
         int trailN = 0;
@@ -1724,6 +1725,12 @@ namespace sts::azbench {
             if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
             g.inBattle = true;
             g.fightMoves = 0;
+            g.fightPotion = false;
+            if (g.gc.act == 1 && g.gc.curRoom == Room::BOSS) {
+                ++g.progress.act1BossFights;
+                for (int i = 0; i < g.gc.potionCapacity; ++i)
+                    if (g.gc.potions[i] != Potion::EMPTY_POTION_SLOT) ++g.progress.act1BossPotions;
+            }
         };
 
 
@@ -2123,11 +2130,19 @@ namespace sts::azbench {
                 ++g.trailN;
             }
             if (g.inBattle) {
+                {
+                    const Action a(bits);
+                    if (a.getActionType() == search::ActionType::POTION && a.getTargetIdx() <= 5) g.fightPotion = true;
+                }
                 executeObserved(g.bc, bits, *g.knowledge);
                 ++g.fightMoves;
                 if (g.bc.outcome == Outcome::UNDECIDED && g.fightMoves >= cfg.maxMovesPerFight) {
                     stall(g, 0);
                 } else if (g.bc.outcome != Outcome::UNDECIDED) {
+                    if (g.gc.act == 1 && g.gc.curRoom == Room::MONSTER) {
+                        ++g.progress.act1HallFights;
+                        if (g.fightPotion) ++g.progress.act1HallPotionFights;
+                    }
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
                 }
@@ -2564,6 +2579,45 @@ namespace sts::azbench {
                         h.searchPWin[slot] = moveResult[0];
                     } else {
                         h.netPWin[slot] = h.netPHeartDeath[slot] = h.netEFloor[slot] = h.searchPWin[slot] = -1;
+                    }
+                }
+            }
+            if (root.combat && root.bc) {   // RunProgress potion / end-turn counters (logging only)
+                const Action pa(root.edges[pick].bits);
+                const auto pt = pa.getActionType();
+                const bool hall = g.gc.act == 1 && g.gc.curRoom == Room::MONSTER;
+                if (pt == search::ActionType::POTION && pa.getTargetIdx() <= 5 && hall) {
+                    double best = -1e300;
+                    for (int i = 0; i < static_cast<int>(root.edges.size()); ++i) {
+                        const Edge &x = root.edges[i];
+                        if (i == pick || !x.n || Action(x.bits).getActionType() == search::ActionType::POTION) continue;
+                        best = std::max(best, x.w / x.n);
+                    }
+                    const Edge &pe = root.edges[pick];
+                    if (best > -1e300 && pe.n) {
+                        const double gap = pe.w / pe.n - best;
+                        ++g.progress.hallDrinks;
+                        g.progress.hallDrinkQGapMicro += static_cast<std::int64_t>(std::llround(gap * 1e6));
+                        if (gap < 0.005) ++g.progress.hallDrinkQTies;
+                    }
+                } else if (pt == search::ActionType::END_TURN && root.bc->player.energy > 0) {
+                    ++g.progress.endTurnsEnergy;
+                    bool card = false;
+                    double bestCard = -1e300;
+                    for (const Edge &x : root.edges) {
+                        const Action a(x.bits);
+                        if (a.getActionType() != search::ActionType::CARD) continue;
+                        const int src = a.getSourceIdx();
+                        if (src < 0 || src >= root.bc->cards.cardsInHand) continue;
+                        const CardType t = root.bc->cards.hand[src].getType();
+                        if (t == CardType::STATUS || t == CardType::CURSE) continue;
+                        card = true;
+                        if (x.n) bestCard = std::max(bestCard, x.w / x.n);
+                    }
+                    if (card) {
+                        ++g.progress.endTurnsEnergyCard;
+                        const Edge &pe = root.edges[pick];
+                        if (pe.n && pe.w / pe.n >= bestCard) ++g.progress.endTurnsEnergyCardBestQ;
                     }
                 }
             }

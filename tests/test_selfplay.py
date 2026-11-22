@@ -1115,6 +1115,24 @@ class ProgressWindowTest(unittest.TestCase):
         self.assertIsNone(sp.economy_per_run({"0": {"runs": 2, "ruby": 1}}))   # driver without the counters
 
 
+    def test_decisions_window(self):
+        sp = load()
+        e0 = {k: 0 for k in sp.DECISION_KEYS}; e0["runs"] = 1
+        e0.update(act1_hall_fights=8, act1_hall_potion_fights=2, act1_boss_fights=1, act1_boss_potions=2, hall_drinks=2,
+                  hall_drink_q_gap_micro=6000, hall_drink_q_ties=1, end_turns_energy=10, end_turns_energy_card=4,
+                  end_turns_energy_card_best_q=3)
+        e1 = {k: 0 for k in sp.DECISION_KEYS}; e1["runs"] = 1; e1.update(act1_hall_fights=2, act1_boss_fights=1)
+        d = sp.decisions_window({"0": e0, "1": e1})
+        self.assertEqual(d["hall_potion_fight_pct"], 20.0)
+        self.assertEqual(d["boss_potions"], 1.0)
+        self.assertEqual(d["hall_drink_q_gap"], 0.003)
+        self.assertEqual(d["hall_drink_tie_pct"], 50.0)
+        self.assertEqual(d["end_energy_card_pct"], 40.0)
+        self.assertEqual(d["end_energy_card_best_q_pct"], 75.0)
+        self.assertIsNone(sp.decisions_window({}))
+        self.assertIsNone(sp.decisions_window({"0": {"runs": 2, "ruby": 1}}))   # driver without the counters
+
+
 class MallocTrimTest(unittest.TestCase):
     def test_trim_and_rss(self):
         sp = load()
@@ -1197,6 +1215,10 @@ class DashboardProgressTest(unittest.TestCase):
         page = dash.page(rows[:-1] + [eco], "t", "")
         self.assertIn("Relic sources and relics left behind (per run, from run 300)", page)
         self.assertIn("relics not picked up (left + chests not opened)", page)
+        dec = dict(rows[-1], decisions={"hall_potion_fight_pct": 25.0, "boss_potions": 0.9, "end_energy_card_pct": 20.0,
+                                        "hall_drink_q_gap": 0.003})
+        page = dash.page(rows[:-1] + [dec], "t", "")
+        self.assertIn("Potions and leftover energy (from run 300)", page)
 
 
 class DashboardRecentTest(unittest.TestCase):

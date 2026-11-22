@@ -1082,6 +1082,31 @@ def economy_per_run(pw):
     return {k: round(sum(e[k] for e in pw.values()) / n, 3) for k in ECONOMY_KEYS}
 
 
+DECISION_KEYS = ("act1_hall_fights", "act1_hall_potion_fights", "act1_boss_fights", "act1_boss_potions", "hall_drinks",
+                 "hall_drink_q_gap_micro", "hall_drink_q_ties", "end_turns_energy", "end_turns_energy_card",
+                 "end_turns_energy_card_best_q")
+
+
+def decisions_window(pw):
+    """Potion / end-turn decision counters (2026-11-22, logging only) of the runs finished in this window over all
+    ascensions: Act 1 hallway fights with a potion drunk (%), potions held entering the Act 1 boss (mean), searched
+    Act 1 hallway drinks' mean root Q advantage over the best non-potion edge and the share below 0.005 (%), searched
+    end turns with energy left that had a playable non-status card (% of those end turns) and of these the share where
+    end turn had the best mean Q (%); None per value without data, None overall where the driver lacks the counters."""
+    if not pw or not all(k in e for e in pw.values() for k in DECISION_KEYS):
+        return None
+    t = {k: sum(e[k] for e in pw.values()) for k in DECISION_KEYS}
+
+    def r(a, b, scale=100.0, nd=2):
+        return round(scale * a / b, nd) if b else None
+    return {"act1_hall_fights": t["act1_hall_fights"], "hall_potion_fight_pct": r(t["act1_hall_potion_fights"], t["act1_hall_fights"]),
+            "act1_boss_fights": t["act1_boss_fights"], "boss_potions": r(t["act1_boss_potions"], t["act1_boss_fights"], 1.0, 3),
+            "hall_drinks": t["hall_drinks"], "hall_drink_q_gap": r(t["hall_drink_q_gap_micro"], t["hall_drinks"], 1e-6, 5),
+            "hall_drink_tie_pct": r(t["hall_drink_q_ties"], t["hall_drinks"]),
+            "end_turns_energy": t["end_turns_energy"], "end_energy_card_pct": r(t["end_turns_energy_card"], t["end_turns_energy"]),
+            "end_energy_card_best_q_pct": r(t["end_turns_energy_card_best_q"], t["end_turns_energy_card"])}
+
+
 def parse_cpu_list(text):
     """A CPU list as taskset / sysfs write it ("5,11", "0-3", "0-1,6") -> set of ints."""
     cpus = set()
@@ -2670,6 +2695,7 @@ def main(argv=None):
                 row["rss_gb_pre_trim"] = pre_trim
             row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)
             row["economy_per_run"] = economy_per_run(pw)
+            row["decisions"] = decisions_window(pw)
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
