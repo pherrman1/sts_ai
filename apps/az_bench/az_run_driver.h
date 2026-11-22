@@ -682,6 +682,7 @@ namespace sts::azbench {
         std::int64_t act1HallFights = 0, act1HallPotionFights = 0, act1BossFights = 0, act1BossPotions = 0;
         std::int64_t hallDrinks = 0, hallDrinkQGapMicro = 0, hallDrinkQTies = 0;
         std::int64_t endTurnsEnergy = 0, endTurnsEnergyCard = 0, endTurnsEnergyCardBestQ = 0;
+        std::int64_t endTurns = 0;   // all searched end turns (the denominator of the end-turn shares)
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
@@ -705,7 +706,7 @@ namespace sts::azbench {
             act1BossFights += o.act1BossFights; act1BossPotions += o.act1BossPotions;
             hallDrinks += o.hallDrinks; hallDrinkQGapMicro += o.hallDrinkQGapMicro; hallDrinkQTies += o.hallDrinkQTies;
             endTurnsEnergy += o.endTurnsEnergy; endTurnsEnergyCard += o.endTurnsEnergyCard;
-            endTurnsEnergyCardBestQ += o.endTurnsEnergyCardBestQ;
+            endTurnsEnergyCardBestQ += o.endTurnsEnergyCardBestQ; endTurns += o.endTurns;
             return *this;
         }
     };

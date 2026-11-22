@@ -1085,17 +1085,19 @@ def economy_per_run(pw):
 DECISION_KEYS = ("act1_hall_fights", "act1_hall_potion_fights", "act1_boss_fights", "act1_boss_potions", "hall_drinks",
                  "hall_drink_q_gap_micro", "hall_drink_q_ties", "end_turns_energy", "end_turns_energy_card",
                  "end_turns_energy_card_best_q")
+DECISION_KEYS_OPT = ("end_turns",)   # added later (2026-11-23): rows without it give end_energy_card_pct None
 
 
 def decisions_window(pw):
     """Potion / end-turn decision counters (2026-11-22, logging only) of the runs finished in this window over all
     ascensions: Act 1 hallway fights with a potion drunk (%), potions held entering the Act 1 boss (mean), searched
     Act 1 hallway drinks' mean root Q advantage over the best non-potion edge and the share below 0.005 (%), searched
-    end turns with energy left that had a playable non-status card (% of those end turns) and of these the share where
+    end turns with energy left and a playable non-status card (% of all searched end turns; _of_energy_pct: % of those
+    with energy left) and of these the share where
     end turn had the best mean Q (%); None per value without data, None overall where the driver lacks the counters."""
     if not pw or not all(k in e for e in pw.values() for k in DECISION_KEYS):
         return None
-    t = {k: sum(e[k] for e in pw.values()) for k in DECISION_KEYS}
+    t = {k: sum(e.get(k, 0) for e in pw.values()) for k in DECISION_KEYS + DECISION_KEYS_OPT}
 
     def r(a, b, scale=100.0, nd=2):
         return round(scale * a / b, nd) if b else None
@@ -1103,7 +1105,9 @@ def decisions_window(pw):
             "act1_boss_fights": t["act1_boss_fights"], "boss_potions": r(t["act1_boss_potions"], t["act1_boss_fights"], 1.0, 3),
             "hall_drinks": t["hall_drinks"], "hall_drink_q_gap": r(t["hall_drink_q_gap_micro"], t["hall_drinks"], 1e-6, 5),
             "hall_drink_tie_pct": r(t["hall_drink_q_ties"], t["hall_drinks"]),
-            "end_turns_energy": t["end_turns_energy"], "end_energy_card_pct": r(t["end_turns_energy_card"], t["end_turns_energy"]),
+            "end_turns": t["end_turns"], "end_turns_energy": t["end_turns_energy"],
+            "end_energy_card_pct": r(t["end_turns_energy_card"], t["end_turns"]),
+            "end_energy_card_of_energy_pct": r(t["end_turns_energy_card"], t["end_turns_energy"]),
             "end_energy_card_best_q_pct": r(t["end_turns_energy_card_best_q"], t["end_turns_energy_card"])}
 
 

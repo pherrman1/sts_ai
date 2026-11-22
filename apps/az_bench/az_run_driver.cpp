@@ -2624,7 +2624,8 @@ namespace sts::azbench {
                         g.progress.hallDrinkQGapMicro += static_cast<std::int64_t>(std::llround(gap * 1e6));
                         if (gap < 0.005) ++g.progress.hallDrinkQTies;
                     }
-                } else if (pt == search::ActionType::END_TURN && root.bc->player.energy > 0) {
+                } else if (pt == search::ActionType::END_TURN) ++g.progress.endTurns;
+                if (pt == search::ActionType::END_TURN && root.bc->player.energy > 0) {
                     ++g.progress.endTurnsEnergy;
                     bool card = false;
                     double bestCard = -1e300;
