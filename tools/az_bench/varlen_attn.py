@@ -40,7 +40,7 @@ import triton.language as tl
 def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.constexpr,
                  BN: tl.constexpr,
                  MAXLEN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr,
-                 HAS_GATE: tl.constexpr):
+                 HAS_GATE: tl.constexpr, GKEY: tl.constexpr):
     r = tl.program_id(0)
     h = tl.program_id(1)
     qb = tl.program_id(2)
@@ -58,6 +58,9 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
     mn = tl.full([BM], float("-inf"), tl.float32)
     if HAS_BIAS:
         cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
+    if HAS_GATE:
+        if GKEY == 1:   # key gate: the encounter keys' weights times g, i.e. log g added to their scores
+            logg = tl.log(tl.load(G) + 1e-30)
     for k0 in range(0, MAXLEN, BN):   # static bound (the batch's token bucket); keys past n are masked
         offs_n = k0 + tl.arange(0, BN)
         kmask = offs_n < n
@@ -73,6 +76,9 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
             for c in tl.static_range(C):
                 s += tl.where((ck == c)[None, :], tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None],
                               0.0)
+        if HAS_GATE:
+            if GKEY == 1:
+                s += tl.where(((ck >= 1) & (ck <= 3))[None, :], logg, 0.0)
         s = tl.where(kmask[None, :], s, float("-inf"))
         m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)   # finite even for a block with no live key
         p = tl.exp(s - m_new[:, None])
@@ -81,7 +87,7 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
-        if HAS_GATE:   # the softmax without the encounter keys, with its own running maximum
+        if HAS_GATE and GKEY == 0:   # the softmax without the encounter keys, with its own running maximum
             sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
             mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
             pn = tl.exp(sn - mn_new[:, None])
@@ -91,7 +97,7 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
             mn = mn_new
         m_i = m_new
     acc = acc / l_i[:, None]
-    if HAS_GATE:
+    if HAS_GATE and GKEY == 0:
         g = tl.load(G)
         acc = g * acc + (1.0 - g) * (accn / ln[:, None])
     tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], acc.to(O.dtype.element_ty),
@@ -101,7 +107,7 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
 @triton.jit
 def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.constexpr,
                       BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr,
-                      HAS_GATE: tl.constexpr, SEL: tl.constexpr):
+                      HAS_GATE: tl.constexpr, SEL: tl.constexpr, GKEY: tl.constexpr):
     """_attn_kernel with the row's own bounds: the key loop ends at the row's length n (the blocks past it hold no
     live key), and a query block past n has an empty loop and stores nothing. SEL 1 / 2: only the
     rows with RF[r] == 0 / != 0 (RF: the row holds encounter tokens); the others get n = 0 (empty loops, no store)."""
@@ -128,6 +134,9 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
     mn = tl.full([BM], float("-inf"), tl.float32)
     if HAS_BIAS:
         cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
+    if HAS_GATE:
+        if GKEY == 1:   # key gate: the encounter keys' weights times g, i.e. log g added to their scores
+            logg = tl.log(tl.load(G) + 1e-30)
     hi = n
     if qb * BM >= n:   # no live query in this block
         hi = 0
@@ -146,6 +155,9 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
             for c in tl.static_range(C):
                 s += tl.where((ck == c)[None, :], tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None],
                               0.0)
+        if HAS_GATE:
+            if GKEY == 1:
+                s += tl.where(((ck >= 1) & (ck <= 3))[None, :], logg, 0.0)
         s = tl.where(kmask[None, :], s, float("-inf"))
         m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)
         p = tl.exp(s - m_new[:, None])
@@ -154,7 +166,7 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
-        if HAS_GATE:   # the softmax without the encounter keys, with its own running maximum
+        if HAS_GATE and GKEY == 0:   # the softmax without the encounter keys, with its own running maximum
             sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
             mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
             pn = tl.exp(sn - mn_new[:, None])
@@ -164,7 +176,7 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
             mn = mn_new
         m_i = m_new
     acc = acc / l_i[:, None]
-    if HAS_GATE:
+    if HAS_GATE and GKEY == 0:
         g = tl.load(G)
         acc = g * acc + (1.0 - g) * (accn / ln[:, None])
     tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], acc.to(O.dtype.element_ty),
@@ -177,7 +189,8 @@ ROW_BOUNDS = False   # True: _attn_kernel_rows (selfplay.py --attn-row-bounds); 
 @torch.library.custom_op("azbench::varlen_attn", mutates_args=())
 def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_len: int,
                     cls: Optional[torch.Tensor] = None, tab: Optional[torch.Tensor] = None,
-                    gate: Optional[torch.Tensor] = None, split_enc: bool = False) -> torch.Tensor:
+                    gate: Optional[torch.Tensor] = None, split_enc: bool = False,
+                    gate_key: bool = False) -> torch.Tensor:
     qkv, seq_off = qkv.contiguous(), seq_off.contiguous()   # the kernels index raw pointers (no-op if contiguous)
     cls = None if cls is None else cls.contiguous()
     tab = None if tab is None else tab.contiguous()
@@ -189,6 +202,7 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
     BM = BN = 32 if max_len <= 32 else int(os.environ.get("AZ_ATTN_BLOCK", "64"))
     has_bias = tab is not None
     has_gate = gate is not None
+    gkey = 1 if gate_key else 0
     C = tab.shape[-1] if has_bias else 1
     if cls is None:   # unused pointers (HAS_BIAS / HAS_GATE are constexprs)
         cls = seq_off
@@ -210,38 +224,40 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
             so = seq_off.long()
             rf = ((c[so[1:]] - c[so[:-1]]) > 0).to(torch.int32)
             _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
-                                    BM=BM, BN=BN, HAS_BIAS=False, C=C, HAS_GATE=False, SEL=1, num_warps=nw)
+                                    BM=BM, BN=BN, HAS_BIAS=False, C=C, HAS_GATE=False, SEL=1, GKEY=0, num_warps=nw)
             # smaller tiles for the full kernel: its extra [BM, BN] score tiles (bias, the gate's second softmax)
             # otherwise spill registers (PC profile: ~3x the plain kernel's time per row at 64 x 64)
             be = int(os.environ.get("AZ_ATTN_ENC_BLOCK", "32"))
             ge = (R, heads, triton.cdiv(max_len, be))
             _attn_kernel_rows[ge](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
-                                  BM=be, BN=be, HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=2,
+                                  BM=be, BN=be, HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=2, GKEY=gkey,
                                   num_warps=int(os.environ.get("AZ_ATTN_ENC_WARPS", str(nw))))
             return out
         _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, seq_off, (D // heads) ** -0.5,
                                 D=D, DH=D // heads, BM=BM, BN=BN,
-                                HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=0, num_warps=nw)
+                                HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=0, GKEY=gkey, num_warps=nw)
         return out
     _attn_kernel[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, cls, tab, gate, (D // heads) ** -0.5, D=D,
                                                        DH=D // heads, BM=BM, BN=BN,
                                                        MAXLEN=triton.cdiv(max_len, BN) * BN, HAS_BIAS=has_bias, C=C,
-                                                       HAS_GATE=has_gate,
+                                                       HAS_GATE=has_gate, GKEY=gkey,
                                                        num_warps=int(os.environ.get("AZ_ATTN_WARPS", "4")))
     return out
 
 
 @_varlen_attn_op.register_fake
-def _(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None, split_enc=False):
+def _(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None, split_enc=False, gate_key=False):
     return qkv.new_empty(qkv.shape[0], qkv.shape[1] // 3)
 
 
-def varlen_attn(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None, split_enc=False):
+def varlen_attn(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None, split_enc=False, gate_key=False):
     """qkv [N, 3 d] contiguous, seq_off [R + 1] int32 / int64 row starts in the packed axis, max_len >= the longest
     row. Optional attention bias: cls [N] int32 token classes, tab [heads, C, C] fp32 contiguous. Returns the
     attention output [N, d]. Optional encounter gate: gate [1] fp32 (needs cls; tab may be None). split_enc: tab
     is 0 on every pair without an encounter class (1..3), so with ROW_BOUNDS the rows without encounter tokens run
-    the plain kernel (same values, less work)."""
+    the plain kernel (same values, less work). gate_key: the key gate (AmberNet enemy_gate_key): one softmax with
+    log g added to the encounter keys' scores instead of the mix of two attentions (exactly the attention without
+    encounter keys at g = 0)."""
     if (tab is not None or gate is not None) and cls is None:
         raise ValueError("varlen_attn: tab / gate need cls")
-    return _varlen_attn_op(qkv, seq_off, heads, max_len, cls, tab, gate, split_enc)
+    return _varlen_attn_op(qkv, seq_off, heads, max_len, cls, tab, gate, split_enc, gate_key)

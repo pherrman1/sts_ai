@@ -292,7 +292,7 @@ class EnemyBiasKernel(unittest.TestCase):
             for tb, gt in ((tab, gate), (tab, None), (None, gate)):
                 tb_ = None if tb is None else tb.contiguous().to(self.dev)
                 one = V.varlen_attn(qkv, so, H, T, cp, tb_, gt)
-                for m in ("1", "2"):   # one launch with a per-row branch / two launches (other tile sizes)
+                for m in ("1",):   # two launches (the encounter rows on other tile sizes)
                     os.environ["AZ_ATTN_SPLIT_ENC"] = m
                     two = V.varlen_attn(qkv, so, H, T, cp, tb_, gt, split_enc=True)
                     # (fp32 inputs: tl.dot runs in tf32 on a GPU, so other tile sizes round differently)
@@ -421,7 +421,7 @@ class EnemyBiasKernel(unittest.TestCase):
         self.assertGreater(float((o3[1] - o4[1]).abs().max()), 1e-3)   # the table matters
 
     def test_kernel_gate_matches_sdpa(self):
-        """gate g: g x attention over all keys + (1 - g) x the same (biased) attention without the encounter keys,
+        """gate g: g x attention over all keys + (1 - g) x without the encounter keys, with and without the bias,
         in both kernels."""
         import sys
         A, V = load("amber_net"), load("varlen_attn")
@@ -448,7 +448,7 @@ class EnemyBiasKernel(unittest.TestCase):
                                 tab.reshape(H, C * C)[:, cls[:, :, None] * C + cls[:, None, :]].permute(1, 0, 2, 3)
                             b_ = b_.masked_fill(~keys[:, None, None, :], float("-inf"))
                             return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=b_)
-                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc)
+                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc, bias=False)
                         ref = ref.transpose(1, 2).reshape(B * T, d)[mask.reshape(-1)]
                         for rb in (False, True):
                             mod.ROW_BOUNDS = rb
@@ -559,6 +559,94 @@ class EnemyBiasKernel(unittest.TestCase):
                     self.assertLess(float((x.float() - y.float()).abs().max()), tol, (name, k))
         finally:
             mod.ROW_BOUNDS = False
+
+
+    def test_key_gate(self):
+        """gate_key: the kernels (both, split or not) equal softmax with log g added to the encounter keys' scores
+        (and the bias); the net's sdpa_trunk, packed padded, varlen and packed-heads paths agree; at gate 0 the net
+        equals the net without encounter parts on the stripped state."""
+        import sys
+        A, V = load("amber_net"), load("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        g = torch.Generator().manual_seed(4)
+        C = A.BIAS_CLASSES
+        B, T, H, dh = 4, 70, 4, 32
+        d = H * dh
+        n = torch.randint(2, T + 1, (B,), generator=g)
+        mask = torch.arange(T)[None, :] < n[:, None]
+        qkv_pad = torch.randn(B, T, 3 * d, generator=g)
+        cls = torch.randint(0, C, (B, T), generator=g)
+        cls[:, 0] = 0
+        cls[1] = torch.where(A.enc_of(cls[1]), torch.zeros_like(cls[1]), cls[1])   # a row without encounters
+        q, k, v = qkv_pad.view(B, T, 3, H, dh).permute(2, 0, 3, 1, 4)
+        pk = A.pack_index(mask, 1)
+        qkv = qkv_pad.reshape(B * T, -1)[pk].contiguous().to(self.dev)
+        cp = cls.reshape(-1)[pk].to(torch.int32).contiguous().to(self.dev)
+        enc = A.enc_of(cls)
+        e = torch.zeros(C, dtype=torch.bool)
+        e[1:4] = True
+        tab = torch.randn(H, C, C, generator=g) * (e[:, None] | e[None, :])
+        try:
+            for tb in (None, tab):
+                for gv in (0.0, 0.3, 1.0):
+                    b_ = torch.zeros(B, H, T, T) if tb is None else \
+                        tb.reshape(H, C * C)[:, cls[:, :, None] * C + cls[:, None, :]].permute(1, 0, 2, 3)
+                    b_ = b_ + torch.where(enc, torch.log(torch.tensor(gv + 1e-30)), torch.tensor(0.0))[:, None, None, :]
+                    b_ = b_.masked_fill(~mask[:, None, None, :], float("-inf"))
+                    ref = torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=b_)
+                    ref = ref.transpose(1, 2).reshape(B * T, d)[mask.reshape(-1)]
+                    for rb in (False, True):
+                        mod.ROW_BOUNDS = rb
+                        for split in (False, True):
+                            out = V.varlen_attn(qkv, A.seq_offsets(mask).to(self.dev), H, T, cp,
+                                                None if tb is None else tb.contiguous().to(self.dev),
+                                                torch.tensor([gv], device=self.dev), split_enc=split, gate_key=True)
+                            self.assertLess(float((out.cpu() - ref).abs().max()), 2e-3 if self.dev != "cpu" else self.tol,
+                                            (tb is None, gv, rb, split))
+        finally:
+            mod.ROW_BOUNDS = False
+        f = {k_: v_.to(self.dev) for k_, v_ in gate_batch(A, seed=9).items()}
+        pk, inv = A.pack_index(f["mask"], 16, inverse=True)
+        b = dict(f, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(f["mask"]))
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(64, 2, enemy_bias=True, enemy_gate=True).eval()).to(self.dev)
+        net.sdpa = True
+        net.gate_key = True
+        with torch.no_grad():
+            keep = torch.zeros_like(net.enemy_bias, dtype=torch.bool)
+            keep[:, :, 1:4] = True
+            keep[:, :, :, 1:4] = True
+            net.enemy_bias.normal_(0, 1.0).mul_(keep)
+            net.enemy_gate.copy_(torch.tensor([0.3, 0.7, 0.5]))
+            o0, o1 = net(f), net(b)
+            net.varlen_attn = A.load_kernel("varlen_attn")
+            o2 = net(b)
+            net.row_mean, net.packed_heads = A.load_kernel("row_mean"), True
+            o5 = net(dict(b, act_idx=torch.nonzero(f["a_mask"].reshape(-1)).squeeze(1)))
+            net.packed_heads = False
+            live = f["a_mask"]
+            tol = 2e-3 if self.dev != "cpu" else self.tol
+            for w, x, y, u in zip(o0, o1, o2, o5):
+                self.assertLess(float((w - x).abs().max()), tol)
+                self.assertLess(float((x - y).abs().max()), tol)
+                if u.shape == live.shape:
+                    u, x = u[live], x[live]
+                self.assertLess(float((x - u).abs().max()), tol)
+            net.enemy_gate.zero_()
+            o4 = net(b)
+            base = A.AmberNet(64, 2).eval().to(self.dev)
+            base.load_state_dict(net.state_dict())
+            base.sdpa = True
+            ref = base({k_: v_.to(self.dev) for k_, v_ in strip_encounters(A, {k_: v_.cpu() for k_, v_ in f.items()}).items()})
+        for x, y in zip(o4, ref):
+            self.assertLess(float((x - y).abs().max()), tol)
+        # gradient reaches the gates at 0 through the key gate (training path)
+        net.train()
+        net.varlen_attn = None
+        out = net(f)
+        (out[1].float().logsumexp(-1).sum() + out[0].float().masked_fill(~f["a_mask"], 0).sum()).backward()
+        self.assertTrue(bool(torch.isfinite(net.enemy_gate.grad).all()))
+        self.assertGreater(float(net.enemy_gate.grad[:-1].abs().sum()), 0.0)
 
 
 if __name__ == "__main__":
