@@ -145,6 +145,19 @@ def main(argv=None):
             opt.step()
         sync()
         res["train_step"] = (time.perf_counter() - t0) * 1e3 / 10
+        if a.profile and dev == "cuda":
+            from torch.profiler import ProfilerActivity, profile
+            with profile(activities=[ProfilerActivity.CUDA]) as p:
+                for _ in range(3):
+                    with torch.autocast(dev, dtype=torch.bfloat16):
+                        o = tr(tb)
+                        loss = o[0].float().masked_fill(~tb["a_mask"], 0).sum() + o[1].float().logsumexp(-1).sum()
+                    opt.zero_grad()
+                    loss.backward()
+                    opt.step()
+                sync()
+            print(f"--- {name} train: top CUDA kernels (3 steps)")
+            print(p.key_averages().table(sort_by="cuda_time_total", row_limit=15))
         print(f"{name:7s} " + "  ".join(f"{k} {v:7.2f} ms" for k, v in res.items()), flush=True)
     return 0
 

@@ -203,8 +203,13 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
             rf = ((c[so[1:]] - c[so[:-1]]) > 0).to(torch.int32)
             _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
                                     BM=BM, BN=BN, HAS_BIAS=False, C=C, HAS_GATE=False, SEL=1, num_warps=nw)
-            _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
-                                    BM=BM, BN=BN, HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=2, num_warps=nw)
+            # smaller tiles for the full kernel: its extra [BM, BN] score tiles (bias, the gate's second softmax)
+            # otherwise spill registers (PC profile: ~3x the plain kernel's time per row at 64 x 64)
+            be = int(os.environ.get("AZ_ATTN_ENC_BLOCK", "32"))
+            ge = (R, heads, triton.cdiv(max_len, be))
+            _attn_kernel_rows[ge](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
+                                  BM=be, BN=be, HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=2,
+                                  num_warps=int(os.environ.get("AZ_ATTN_ENC_WARPS", str(nw))))
             return out
         _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, seq_off, (D // heads) ** -0.5,
                                 D=D, DH=D // heads, BM=BM, BN=BN,
