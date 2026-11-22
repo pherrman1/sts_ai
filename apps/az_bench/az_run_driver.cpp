@@ -736,6 +736,7 @@ namespace sts::azbench {
         int trailN = 0;
         std::string tr;                      // STS_AZ_TRACE (local diagnostic): this run's events, one JSON per line
         int trSearched = 0;                  // the next real step comes from a search (1) or is automatic (0)
+        std::string trQ;                     // LOCAL DIAGNOSTIC: the search's root edges of the next real step
         std::vector<Node> pool;
         int poolUsed = 0;
         int budget = 0, spent = 0, candidates = 0;
@@ -2305,14 +2306,17 @@ namespace sts::azbench {
                         }
                         default: os << ",\"a\":\"?\""; break;
                     }
-                    os << "}";
+                    os << g.trQ << "}";
                     if (!g.tr.empty()) g.tr += ",";
                     g.tr += os.str();
                 } else {
                     if (!g.tr.empty()) g.tr += ",";
-                    g.tr += trace::ooc(g.gc, bits, g.trSearched);
+                    std::string o = trace::ooc(g.gc, bits, g.trSearched);
+                    if (!g.trQ.empty() && !o.empty() && o.back() == '}') { o.pop_back(); o += g.trQ; o += "}"; }
+                    g.tr += o;
                 }
                 g.trSearched = 0;
+                g.trQ.clear();
             }
             if (cfg.stallLog) {   // the decision as text, before it is played (printDesc reads the state)
                 std::ostringstream os;
@@ -2974,6 +2978,47 @@ namespace sts::azbench {
                 }
             }
             g.trSearched = 1;
+            g.trQ.clear();
+            if (trace::path() && (!root.combat || (root.bc && g.bc.player.energy > 0))) {
+                std::ostringstream os;
+                os << ",\"sq\":{\"full\":" << (g.full ? 1 : 0) << ",\"n\":" << root.n << ",\"pick\":" << pick
+                   << ",\"cand\":[";
+                for (std::size_t i = 0; i < g.cand.size(); ++i) os << (i ? "," : "") << g.cand[i];
+                os << "],\"ed\":[";
+                for (int i = 0; i < static_cast<int>(root.edges.size()); ++i) {
+                    const Edge &x = root.edges[i];
+                    if (i) os << ",";
+                    os << "[";
+                    if (root.combat) {
+                        const Action a(x.bits);
+                        const int src = a.getSourceIdx();
+                        std::string lab = "?";
+                        switch (a.getActionType()) {
+                            case search::ActionType::END_TURN: lab = "END"; break;
+                            case search::ActionType::CARD:
+                                if (src >= 0 && src < root.bc->cards.cardsInHand) {
+                                    const auto &c = root.bc->cards.hand[src];
+                                    lab = std::string("C:") + c.getName() + (c.isUpgraded() ? "+" : "") + ":"
+                                          + std::to_string(static_cast<int>(c.costForTurn));
+                                } else lab = "C:?";
+                                break;
+                            case search::ActionType::POTION:
+                                lab = (src >= 0 && src < root.bc->potionCapacity) ? std::string("P:") + getPotionName(root.bc->potions[src]) : "P:?";
+                                if (a.getTargetIdx() >= root.bc->monsters.monsterCount) lab += ":disc";
+                                break;
+                            default: lab = "SEL"; break;
+                        }
+                        trace::str(os, lab.c_str());
+                    } else {
+                        os << trace::ooc(g.gc, x.bits, 0);
+                    }
+                    os << "," << x.n << ",";
+                    if (x.n) os << x.w / x.n; else os << "null";
+                    os << "," << q[i] << "," << x.logit << "]";
+                }
+                os << "]}";
+                g.trQ = os.str();
+            }
             applyReal(g, bits);
             startMove(g, gi);
         };
