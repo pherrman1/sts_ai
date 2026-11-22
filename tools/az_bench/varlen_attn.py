@@ -22,11 +22,10 @@ and TAB [H, C, C] fp32; the score of query i and key j in head h gets TAB[h, CLS
 (as an additive attn_mask of scaled_dot_product_attention).
 
 Encounter gate (2026-11-21, AmberNet enemy_gate, selfplay.py --enemy-tokens): optional G [1] fp32 (needs CLS): the
-output is g x attention over all keys (with the bias) + (1 - g) x the same attention restricted to the keys without
-encounter tokens (CLS 1..3), renormalized. One pass, one softmax: the second part sums the same weights with the
-encounter keys zeroed (its P V product in tf32: with the shared maximum its weights can be tiny). For a query
-without an encounter class the bias is 0 on those keys (split_enc tables), so its second part is the attention of
-the net without encounter tokens.
+output is g x attention over all keys (with the bias) + (1 - g) x attention without the encounter-token keys
+(CLS 1..3) and without the bias. One pass:
+the second softmax keeps its own running maximum, sum and accumulator (one more exp and P V product per block;
+a shared maximum would leave its weights tiny, below fp16's normal range, when an encounter key scores highest).
 """
 
 import os
@@ -56,23 +55,24 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
     acc = tl.zeros([BM, DH], tl.float32)
     ln = tl.zeros([BM], tl.float32)
     accn = tl.zeros([BM, DH], tl.float32)
+    mn = tl.full([BM], float("-inf"), tl.float32)
     if HAS_BIAS:
-        # the bias as a small product: tq [BM, 16] = TAB[h, cls_q, :] (padded), times onehot(cls_k) [16, BN] per key
-        # block (a [BM, BN] gather from TAB was ~5x the plain kernel's time on the PC)
         cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
-        offs_c = tl.arange(0, 16)
-        tq = tl.load(TAB + h * C * C + cq[:, None] * C + offs_c[None, :], mask=qmask[:, None] & (offs_c[None, :] < C),
-                     other=0.0)
     for k0 in range(0, MAXLEN, BN):   # static bound (the batch's token bucket); keys past n are masked
         offs_n = k0 + tl.arange(0, BN)
         kmask = offs_n < n
         k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
                     other=0.0)
         s = tl.dot(q, k) * scale
+        s0 = s   # without the class bias (the gate's second softmax)
         if HAS_BIAS or HAS_GATE:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
         if HAS_BIAS:
-            s += tl.dot(tq, (ck[None, :] == offs_c[:, None]).to(tl.float32), input_precision="ieee")
+            # per class c: the query's TAB entry for key class c on the keys of that class (C small loads per query
+            # instead of a [BM, BN] gather from TAB, which the PC profile showed ~5x the plain kernel's time)
+            for c in tl.static_range(C):
+                s += tl.where((ck == c)[None, :], tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None],
+                              0.0)
         s = tl.where(kmask[None, :], s, float("-inf"))
         m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)   # finite even for a block with no live key
         p = tl.exp(s - m_new[:, None])
@@ -81,16 +81,19 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
-        if HAS_GATE:   # the same weights without the encounter keys; their product in tf32 (fp32 exponent range:
-            # with the shared maximum these weights can be tiny when an encounter key scores highest)
-            pn = tl.where(((ck >= 1) & (ck <= 3))[None, :], 0.0, p)
-            ln = ln * alpha + tl.sum(pn, 1)
-            accn = accn * alpha[:, None] + tl.dot(pn, v.to(tl.float32))
+        if HAS_GATE:   # the softmax without the encounter keys, with its own running maximum
+            sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
+            mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
+            pn = tl.exp(sn - mn_new[:, None])
+            alphan = tl.exp(mn - mn_new)
+            ln = ln * alphan + tl.sum(pn, 1)
+            accn = accn * alphan[:, None] + tl.dot(pn.to(v.dtype), v)
+            mn = mn_new
         m_i = m_new
     acc = acc / l_i[:, None]
     if HAS_GATE:
         g = tl.load(G)
-        acc = g * acc + (1.0 - g) * (accn / tl.where(ln > 0, ln, 1.0)[:, None])
+        acc = g * acc + (1.0 - g) * (accn / ln[:, None])
     tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], acc.to(O.dtype.element_ty),
              mask=qmask[:, None])
 
@@ -122,13 +125,9 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
     acc = tl.zeros([BM, DH], tl.float32)
     ln = tl.zeros([BM], tl.float32)
     accn = tl.zeros([BM, DH], tl.float32)
+    mn = tl.full([BM], float("-inf"), tl.float32)
     if HAS_BIAS:
-        # the bias as a small product: tq [BM, 16] = TAB[h, cls_q, :] (padded), times onehot(cls_k) [16, BN] per key
-        # block (a [BM, BN] gather from TAB was ~5x the plain kernel's time on the PC)
         cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
-        offs_c = tl.arange(0, 16)
-        tq = tl.load(TAB + h * C * C + cq[:, None] * C + offs_c[None, :], mask=qmask[:, None] & (offs_c[None, :] < C),
-                     other=0.0)
     hi = n
     if qb * BM >= n:   # no live query in this block
         hi = 0
@@ -138,10 +137,15 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
         k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
                     other=0.0)
         s = tl.dot(q, k) * scale
+        s0 = s   # without the class bias (the gate's second softmax)
         if HAS_BIAS or HAS_GATE:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
         if HAS_BIAS:
-            s += tl.dot(tq, (ck[None, :] == offs_c[:, None]).to(tl.float32), input_precision="ieee")
+            # per class c: the query's TAB entry for key class c on the keys of that class (C small loads per query
+            # instead of a [BM, BN] gather from TAB, which the PC profile showed ~5x the plain kernel's time)
+            for c in tl.static_range(C):
+                s += tl.where((ck == c)[None, :], tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None],
+                              0.0)
         s = tl.where(kmask[None, :], s, float("-inf"))
         m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)
         p = tl.exp(s - m_new[:, None])
@@ -150,19 +154,21 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
-        if HAS_GATE:   # the same weights without the encounter keys; their product in tf32 (fp32 exponent range:
-            # with the shared maximum these weights can be tiny when an encounter key scores highest)
-            pn = tl.where(((ck >= 1) & (ck <= 3))[None, :], 0.0, p)
-            ln = ln * alpha + tl.sum(pn, 1)
-            accn = accn * alpha[:, None] + tl.dot(pn, v.to(tl.float32))
+        if HAS_GATE:   # the softmax without the encounter keys, with its own running maximum
+            sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
+            mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
+            pn = tl.exp(sn - mn_new[:, None])
+            alphan = tl.exp(mn - mn_new)
+            ln = ln * alphan + tl.sum(pn, 1)
+            accn = accn * alphan[:, None] + tl.dot(pn.to(v.dtype), v)
+            mn = mn_new
         m_i = m_new
     acc = acc / l_i[:, None]
     if HAS_GATE:
         g = tl.load(G)
-        acc = g * acc + (1.0 - g) * (accn / tl.where(ln > 0, ln, 1.0)[:, None])
+        acc = g * acc + (1.0 - g) * (accn / ln[:, None])
     tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], acc.to(O.dtype.element_ty),
              mask=qmask[:, None])
-
 
 
 ROW_BOUNDS = False   # True: _attn_kernel_rows (selfplay.py --attn-row-bounds); same output values
@@ -193,13 +199,12 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
     if ROW_BOUNDS:
         grid = (R, heads, triton.cdiv(max_len, BM))
         nw = int(os.environ.get("AZ_ATTN_WARPS", "4"))
-        mode = os.environ.get("AZ_ATTN_SPLIT_ENC", "1")
-        if split_enc and (has_bias or has_gate) and mode != "0":
+        if split_enc and (has_bias or has_gate) and os.environ.get("AZ_ATTN_SPLIT_ENC", "1") != "0":
             # rows without encounter tokens (most: all combat rows) get the plain kernel, without the bias loads and
             # the gate's second softmax; the others the full one. Same values when the table has entries only for
             # pairs with an encounter class (split_enc: the caller says so, AmberNet._tab): on a row without encounter
             # tokens the bias is then 0 and both softmaxes of the gate are the same. AZ_ATTN_SPLIT_ENC=0: one
-            # full launch for all rows. (One launch with a per-row branch was miscompiled by triton 3.1.0.)
+            # full launch for all rows.
             enc = ((cls >= 1) & (cls <= 3)).long()
             c = torch.cat([enc.new_zeros(1), enc.cumsum(0)])
             so = seq_off.long()

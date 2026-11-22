@@ -350,22 +350,11 @@ class AmberNet(nn.Module):
         e[1:4] = True
         return self.enemy_bias[li] * (e[:, None] | e[None, :]).to(self.enemy_bias.dtype)
 
-    @staticmethod
-    def _enemy_split(cls, mask):
-        """(rows with encounter tokens, the other rows, the others' longest length) for _attend_enemy."""
-        has = enc_of(cls).any(1)
-        rows = torch.nonzero(has).squeeze(1)
-        non = torch.nonzero(~has).squeeze(1)
-        Tn = max(1, int(mask[non].sum(1).max())) if non.numel() else 1
-        return rows, non, Tn
-
     def _attend_enemy(self, q, k, v, keep, li, cls, rows):
         """Attention of layer li with the encounter-token parts (cls [B, T] token classes, rows: the rows that hold
-        encounter tokens; rows = _enemy_split(...)). Rows without them attend as without the flag (one pass, on their own
-        longest length). Rows with them: g x attention
-        with the encounter keys and the class bias + (1 - g) x the same attention without the encounter keys
-        (enemy_gate; without a gate: the first part only; for a query without an encounter class that is the attention
-        of the net without encounter tokens). The bias goes in as extra q / k columns: q' = [q / sqrt(dh),
+        encounter tokens). Rows without them attend as without the flag (one pass). Rows with them: g x attention
+        with the encounter keys and the class bias + (1 - g) x attention without the encounter keys (enemy_gate;
+        without a gate: the first part only). The bias goes in as extra q / k columns: q' = [q / sqrt(dh),
         TAB[h, cls_q, :]], k' = [k, onehot(cls_k)], so q'.k' = q.k / sqrt(dh) + TAB[h, cls_q, cls_k] and
         scaled_dot_product_attention keeps its fused kernels (a float mask [B, H, T, T] would not: the first live
         test's trainer ran about 30x slower with it)."""
@@ -378,18 +367,9 @@ class AmberNet(nn.Module):
             s = (q_ @ k_.transpose(-1, -2)).float() * (q_.shape[-1] ** -0.5 if scale is None else scale)
             return torch.softmax(s.masked_fill(~m, float("-inf")), -1).to(v_.dtype) @ v_
 
-        rows, non, Tn = rows
+        o = sdpa(q, k, v, keep)
         if rows.numel() == 0:
-            return sdpa(q, k, v, keep)
-        T = q.shape[2]
-        # rows without encounter tokens: one pass over their own longest length Tn (the batch's T is set by the
-        # rows with encounter tokens; padded attention costs T^2 per row)
-        o = None
-        if non.numel():
-            on = sdpa(q[non][:, :, :Tn], k[non][:, :, :Tn], v[non][:, :, :Tn], keep[non][..., :Tn])
-            o = q.new_zeros(q.shape).index_copy(0, non, F.pad(on, (0, 0, 0, T - Tn)))
-        else:
-            o = q.new_zeros(q.shape)
+            return o
         qs, ks, vs, ms, cs = q[rows], k[rows], v[rows], keep[rows], cls[rows]
         gated = self.enemy_gate is not None
         if self.enemy_bias is not None:
@@ -407,10 +387,10 @@ class AmberNet(nn.Module):
             ka = torch.cat([ks, kx, z], -1)
             va = torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1)
             if gated:
-                # both parts in one call: the second without the encounter keys (with the bias, as varlen_attn's
-                # gate: for a query without an encounter class the bias is 0 on those keys anyway)
+                # both parts in one call: the second has no bias columns (zeros) and no encounter keys
+                qn = torch.cat([qs * dh ** -0.5, qs.new_zeros(*qs.shape[:-1], C + pad)], -1)
                 R = qs.shape[0]
-                ob = sdpa(torch.cat([qa, qa]), torch.cat([ka, ka]), torch.cat([va, va]),
+                ob = sdpa(torch.cat([qa, qn]), torch.cat([ka, ka]), torch.cat([va, va]),
                           torch.cat([ms, ms & ~enc_of(cs)[:, None, None, :]]),
                           1.0)[..., :dh]
                 g = self._gate(li).to(o.dtype)
@@ -418,7 +398,7 @@ class AmberNet(nn.Module):
             else:
                 oa = sdpa(qa, ka, va, ms, 1.0)[..., :dh]
         else:
-            oa = sdpa(qs, ks, vs, ms)
+            oa = o[rows]
             if gated:
                 g = self._gate(li).to(o.dtype)
                 oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
@@ -432,7 +412,7 @@ class AmberNet(nn.Module):
         F = torch.nn.functional
         B, T, d = x.shape
         keep = mask[:, None, None, :]                      # [B, 1, 1, T], True = attend
-        rows = None if cls is None else self._enemy_split(cls, mask)
+        rows = None if cls is None else torch.nonzero(enc_of(cls).any(1)).squeeze(1)
         for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
             H = a.num_heads
@@ -490,7 +470,7 @@ class AmberNet(nn.Module):
             else:
                 cls_p = token_classes(tt_p, ids_p, f_p)
                 cls_pad = unpack(cls_p[:, None]).view(B, T)
-                rows = self._enemy_split(cls_pad, mask)
+                rows = torch.nonzero(enc_of(cls_pad).any(1)).squeeze(1)
 
         def vattn(qkv, li):
             if cls_i is None:
