@@ -29304,7 +29304,7 @@ independent review PASS (34/34 ctest, output identical with the guard on).
 **Open:** the source of the NaN in the search floor-HP distribution; the live counters will show its rate.
 **Knowledge impact:** this entry.
 
-## §TBD — Fix of the §852 end-turn share's denominator (metric only) (cloud, 2026-11-23)
+## §853 — Fix of the §852 end-turn share's denominator (metric only) (cloud, 2026-11-23)
 
 `decisions.end_energy_card_pct` divided by searched end turns *with energy left*, so it read ~96 % live, while the
 §852 trace analysis (18.9-21.5 %) was over *all* end turns. New counter `end_turns` (all searched end turns);
