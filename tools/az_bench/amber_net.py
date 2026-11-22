@@ -371,21 +371,37 @@ class AmberNet(nn.Module):
         if rows.numel() == 0:
             return o
         qs, ks, vs, ms, cs = q[rows], k[rows], v[rows], keep[rows], cls[rows]
+        gated = self.enemy_gate is not None
         if self.enemy_bias is not None:
             tab = self._tab(li).to(q.dtype)                              # [H, C, C]
             C = tab.shape[-1]
             H = q.shape[1]
             pad = (-(dh + C)) % 8
-            qx = tab[:, cs].permute(1, 0, 2, 3)                          # [R, H, T, C]: row of the query's class
-            kx = F.one_hot(cs, C).to(q.dtype)[:, None].expand(-1, H, -1, -1)
+            oh = F.one_hot(cs, C).to(q.dtype)                            # [R, T, C]
+            # [R, H, T, C]: the row of the query's class, as a matmul (an index gather's backward accumulates with
+            # index_put: ~1 ms per layer on the PC)
+            qx = torch.einsum("rtc,hcd->rhtd", oh, tab)
+            kx = oh[:, None].expand(-1, H, -1, -1)
             z = qs.new_zeros(*qs.shape[:-1], pad)
-            oa = sdpa(torch.cat([qs * dh ** -0.5, qx, z], -1), torch.cat([ks, kx, z], -1),
-                      torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1), ms, 1.0)[..., :dh]
+            qa = torch.cat([qs * dh ** -0.5, qx, z], -1)
+            ka = torch.cat([ks, kx, z], -1)
+            va = torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1)
+            if gated:
+                # both parts in one call: the second has no bias columns (zeros) and no encounter keys
+                qn = torch.cat([qs * dh ** -0.5, qs.new_zeros(*qs.shape[:-1], C + pad)], -1)
+                R = qs.shape[0]
+                ob = sdpa(torch.cat([qa, qn]), torch.cat([ka, ka]), torch.cat([va, va]),
+                          torch.cat([ms, ms & ~enc_of(cs)[:, None, None, :]]),
+                          1.0)[..., :dh]
+                g = self._gate(li).to(o.dtype)
+                oa = g * ob[:R] + (1 - g) * ob[R:]
+            else:
+                oa = sdpa(qa, ka, va, ms, 1.0)[..., :dh]
         else:
             oa = o[rows]
-        if self.enemy_gate is not None:
-            g = self._gate(li).to(o.dtype)
-            oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
+            if gated:
+                g = self._gate(li).to(o.dtype)
+                oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
         return o.index_copy(0, rows, oa.to(o.dtype))
 
     def sdpa_trunk(self, x, mask, cls=None):

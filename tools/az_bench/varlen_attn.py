@@ -68,7 +68,11 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
         if HAS_BIAS or HAS_GATE:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
         if HAS_BIAS:
-            s += tl.load(TAB + h * C * C + cq[:, None] * C + ck[None, :])
+            # per class c: the query's TAB entry for key class c on the keys of that class (C small loads per query
+            # instead of a [BM, BN] gather from TAB, which the PC profile showed ~5x the plain kernel's time)
+            for c in tl.static_range(C):
+                s += tl.where((ck == c)[None, :], tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None],
+                              0.0)
         s = tl.where(kmask[None, :], s, float("-inf"))
         m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)   # finite even for a block with no live key
         p = tl.exp(s - m_new[:, None])
@@ -137,7 +141,11 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
         if HAS_BIAS or HAS_GATE:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
         if HAS_BIAS:
-            s += tl.load(TAB + h * C * C + cq[:, None] * C + ck[None, :])
+            # per class c: the query's TAB entry for key class c on the keys of that class (C small loads per query
+            # instead of a [BM, BN] gather from TAB, which the PC profile showed ~5x the plain kernel's time)
+            for c in tl.static_range(C):
+                s += tl.where((ck == c)[None, :], tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None],
+                              0.0)
         s = tl.where(kmask[None, :], s, float("-inf"))
         m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)
         p = tl.exp(s - m_new[:, None])
