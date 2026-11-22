@@ -61,157 +61,6 @@ namespace sts::azbench {
                gc.map->burningEliteY == gc.curMapNodeY;
     }
 
-    // LOCAL DIAGNOSTIC (not for merge): STS_AZ_TRACE=<path> appends one JSON line per finished run with every real
-    // decision (decision-behaviour analysis, 2026-11-22). Unset: nothing changes.
-    namespace trace {
-        inline const char *path() {
-            static const char *p = [] { const char *v = std::getenv("STS_AZ_TRACE"); return (v && *v) ? v : nullptr; }();
-            return p;
-        }
-        inline std::mutex &fileM() { static std::mutex m; return m; }
-        inline void str(std::ostringstream &os, const char *s) {
-            os << '"';
-            for (const char *c = s ? s : ""; *c; ++c) { if (*c == '"' || *c == '\\') os << '\\'; os << *c; }
-            os << '"';
-        }
-        inline void card(std::ostringstream &os, const Card &c) {
-            std::string n = c.getName();
-            if (c.isUpgraded()) n += "+";
-            str(os, n.c_str());
-        }
-        inline void deck(std::ostringstream &os, const GameContext &gc) {
-            os << "[";
-            for (int i = 0; i < gc.deck.size(); ++i) { if (i) os << ","; card(os, gc.deck.cards[i]); }
-            os << "]";
-        }
-        inline void relics(std::ostringstream &os, const GameContext &gc) {
-            os << "[";
-            bool first = true;
-            for (const auto &r : gc.relics.relics) { if (!first) os << ","; first = false; str(os, getRelicName(r.id)); }
-            os << "]";
-        }
-        inline void potions(std::ostringstream &os, const GameContext &gc) {
-            os << "[";
-            bool first = true;
-            for (int i = 0; i < gc.potionCapacity; ++i)
-                if (gc.potions[i] != Potion::EMPTY_POTION_SLOT) { if (!first) os << ","; first = false; str(os, getPotionName(gc.potions[i])); }
-            os << "]";
-        }
-        inline void bpotions(std::ostringstream &os, const BattleContext &bc) {
-            os << "[";
-            bool first = true;
-            for (int i = 0; i < bc.potionCapacity; ++i)
-                if (bc.potions[i] != Potion::EMPTY_POTION_SLOT) { if (!first) os << ","; first = false; str(os, getPotionName(bc.potions[i])); }
-            os << "]";
-        }
-        inline void cardReward(std::ostringstream &os, const CardReward &r) {
-            os << "[";
-            for (int j = 0; j < r.size(); ++j) { if (j) os << ","; card(os, r[j]); }
-            os << "]";
-        }
-        // An out-of-combat decision (before it is played).
-        inline std::string ooc(const GameContext &gc, std::uint32_t bits, int searched) {
-            static const char *const screens[] = {"INVALID", "EVENT", "REWARDS", "BOSS_RELIC", "CARD_SELECT",
-                                                  "MAP", "TREASURE", "REST", "SHOP", "BATTLE"};
-            using RT = search::GameAction::RewardsActionType;
-            const search::GameAction a(bits);
-            const int sc = static_cast<int>(gc.screenState);
-            std::ostringstream os;
-            os << "{\"t\":\"o\",\"f\":" << gc.floorNum << ",\"act\":" << gc.act << ",\"hp\":" << gc.curHp
-               << ",\"mhp\":" << gc.maxHp << ",\"gold\":" << gc.gold << ",\"s\":" << searched << ",\"scr\":";
-            str(os, sc >= 0 && sc < 10 ? screens[sc] : "?");
-            os << ",\"room\":"; str(os, roomStrings[static_cast<int>(gc.curRoom)]);
-            os << ",\"pot\":"; potions(os, gc);
-            os << ",\"i1\":" << a.getIdx1() << ",\"i2\":" << a.getIdx2();
-            if (a.isPotionAction()) {
-                os << ",\"k\":"; str(os, a.isPotionDiscard() ? "potion_discard" : "potion_drink");
-                const int i = a.getIdx1();
-                if (i >= 0 && i < gc.potionCapacity) { os << ",\"name\":"; str(os, getPotionName(gc.potions[i])); }
-                os << "}";
-                return os.str();
-            }
-            switch (gc.screenState) {
-                case ScreenState::EVENT_SCREEN:
-                    os << ",\"ev\":"; str(os, eventIdStrings[static_cast<int>(gc.curEvent)]);
-                    break;
-                case ScreenState::REWARDS: {
-                    const auto &r = gc.info.rewardsContainer;
-                    const RT t = a.getRewardsActionType();
-                    static const char *const rts[] = {"CARD", "GOLD", "KEY", "POTION", "RELIC", "CARD_REMOVE", "SKIP"};
-                    os << ",\"rt\":"; str(os, rts[std::clamp(static_cast<int>(t), 0, 6)]);
-                    os << ",\"cards\":[";
-                    for (int i = 0; i < r.cardRewardCount; ++i) { if (i) os << ","; cardReward(os, r.cardRewards[i]); }
-                    os << "],\"relics\":[";
-                    for (int i = 0; i < r.relicCount; ++i) { if (i) os << ","; str(os, getRelicName(r.relics[i])); }
-                    os << "],\"potions\":[";
-                    for (int i = 0; i < r.potionCount; ++i) { if (i) os << ","; str(os, getPotionName(r.potions[i])); }
-                    os << "],\"slots\":" << gc.potionCapacity << ",\"key\":" << (r.sapphireKey ? 1 : r.emeraldKey ? 2 : 0);
-                    if (t == RT::CARD && a.getIdx1() < r.cardRewardCount) {
-                        os << ",\"name\":";
-                        if (a.getIdx2() == 5) str(os, "BOWL");
-                        else if (a.getIdx2() < r.cardRewards[a.getIdx1()].size()) card(os, r.cardRewards[a.getIdx1()][a.getIdx2()]);
-                        else str(os, "?");
-                    } else if (t == RT::RELIC && a.getIdx1() < r.relicCount) {
-                        os << ",\"name\":"; str(os, getRelicName(r.relics[a.getIdx1()]));
-                    } else if (t == RT::POTION && a.getIdx1() < r.potionCount) {
-                        os << ",\"name\":"; str(os, getPotionName(r.potions[a.getIdx1()]));
-                    }
-                    break;
-                }
-                case ScreenState::BOSS_RELIC_REWARDS:
-                    os << ",\"offers\":[";
-                    for (int i = 0; i < 3; ++i) { if (i) os << ","; str(os, getRelicName(gc.info.bossRelics[i])); }
-                    os << "],\"name\":"; str(os, a.getIdx1() < 3 ? getRelicName(gc.info.bossRelics[a.getIdx1()]) : "SKIP");
-                    break;
-                case ScreenState::CARD_SELECT: {
-                    static const char *const sts_[] = {"INVALID", "TRANSFORM", "TRANSFORM_UPGRADE", "UPGRADE", "REMOVE",
-                                                       "DUPLICATE", "OBTAIN", "BOTTLE", "BONFIRE_SPIRITS"};
-                    os << ",\"sel\":"; str(os, sts_[std::clamp(static_cast<int>(gc.info.selectScreenType), 0, 8)]);
-                    os << ",\"ev\":"; str(os, eventIdStrings[static_cast<int>(gc.curEvent)]);
-                    if (a.getIdx1() >= 0 && a.getIdx1() < gc.info.toSelectCards.size()) {
-                        os << ",\"name\":"; card(os, gc.info.toSelectCards[a.getIdx1()].card);
-                    }
-                    os << ",\"deck\":"; deck(os, gc);
-                    break;
-                }
-                case ScreenState::MAP_SCREEN: {
-                    const int y = gc.curMapNodeY + 1;
-                    char sym = '?';
-                    if (gc.map && y >= 0 && y <= 14 && a.getIdx1() >= 0 && a.getIdx1() < 7) sym = gc.map->getNode(a.getIdx1(), y).getRoomSymbol();
-                    if (y >= 15) sym = 'B';
-                    const char sb[2] = {sym, 0};
-                    os << ",\"y\":" << y << ",\"sym\":"; str(os, sb);
-                    if (gc.map && y >= 0 && y <= 14) {   // the reachable choices
-                        os << ",\"opts\":\"";
-                        for (int x = 0; x < 7; ++x) if (gc.mapMoveCost(x) >= 0) os << gc.map->getNode(x, y).getRoomSymbol();
-                        os << "\"";
-                    }
-                    break;
-                }
-                case ScreenState::TREASURE_ROOM: break;
-                case ScreenState::REST_ROOM:
-                    os << ",\"upg\":" << gc.deck.getUpgradeableCount();
-                    break;
-                case ScreenState::SHOP_ROOM: {
-                    const auto &s = gc.info.shop;
-                    const RT t = a.getRewardsActionType();
-                    static const char *const rts[] = {"CARD", "GOLD", "KEY", "POTION", "RELIC", "CARD_REMOVE", "SKIP"};
-                    os << ",\"rt\":"; str(os, rts[std::clamp(static_cast<int>(t), 0, 6)]);
-                    const int i = a.getIdx1();
-                    if (t == RT::CARD && i >= 0 && i < 7) { os << ",\"name\":"; card(os, s.cards[i]); os << ",\"price\":" << s.cardPrice(i); }
-                    if (t == RT::RELIC && i >= 0 && i < 3) { os << ",\"name\":"; str(os, getRelicName(s.relics[i])); os << ",\"price\":" << s.relicPrice(i); }
-                    if (t == RT::POTION && i >= 0 && i < 3) { os << ",\"name\":"; str(os, getPotionName(s.potions[i])); os << ",\"price\":" << s.potionPrice(i); }
-                    if (t == RT::CARD_REMOVE) os << ",\"price\":" << s.removeCost;
-                    os << ",\"remove_cost\":" << s.removeCost;
-                    break;
-                }
-                default: break;
-            }
-            os << "}";
-            return os.str();
-        }
-    }
-
     namespace {
 
         double cpuSeconds() {
@@ -734,8 +583,6 @@ namespace sts::azbench {
         // RunConfig::stallLog: the last StallLog::kTrail real decisions (ring; trailN written so far).
         std::array<std::string, StallLog::kTrail> trail;
         int trailN = 0;
-        std::string tr;                      // STS_AZ_TRACE (local diagnostic): this run's events, one JSON per line
-        int trSearched = 0;                  // the next real step comes from a search (1) or is automatic (0)
         std::vector<Node> pool;
         int poolUsed = 0;
         int budget = 0, spent = 0, candidates = 0;
@@ -1947,8 +1794,6 @@ namespace sts::azbench {
             g.cache.clear();
             g.moves = g.fightMoves = 0;
             g.trailN = 0;
-            g.tr.clear();
-            g.trSearched = 0;
             g.floor = g.gc.floorNum;
             g.pending.clear();
             g.dict.reset();   // compactSamples: a new dictionary at the run's first kept sample
@@ -2149,18 +1994,6 @@ namespace sts::azbench {
                 g.pickedKeys.clear();
                 g.gapMin.clear();
             }
-            if (trace::path() && g.probe < 0) {   // LOCAL DIAGNOSTIC: the run's record
-                std::ostringstream os;
-                os << "{\"seed\":" << g.seed << ",\"asc\":" << g.asc << ",\"win\":" << (win ? 1 : 0) << ",\"floor\":" << g.gc.floorNum
-                   << ",\"act\":" << g.gc.act << ",\"hp\":" << g.gc.curHp << ",\"mhp\":" << g.gc.maxHp << ",\"deck\":";
-                trace::deck(os, g.gc);
-                os << ",\"relics\":"; trace::relics(os, g.gc);
-                os << ",\"pot\":"; trace::potions(os, g.gc);
-                os << ",\"ev\":[" << g.tr << "]}\n";
-                std::lock_guard<std::mutex> l(trace::fileM());
-                if (FILE *fp = std::fopen(trace::path(), "a")) { std::fputs(os.str().c_str(), fp); std::fclose(fp); }
-                g.tr.clear();
-            }
             ++wk.st.runsDone;
             runsDone_.fetch_add(1, std::memory_order_relaxed);
             if (win) ++wk.st.wins;
@@ -2236,84 +2069,6 @@ namespace sts::azbench {
         // Applies a chosen action to the real run; handles fight entry / exit, floor labels and the run's end.
         auto applyRealStep = [&](Run &g, std::uint32_t bits) {
             const double t0 = cpuSeconds();
-            if (trace::path()) {   // LOCAL DIAGNOSTIC: the decision, before it is played
-                std::ostringstream os;
-                if (g.inBattle) {
-                    const BattleContext &bc = g.bc;
-                    const Action a(bits);
-                    os << "{\"t\":\"c\",\"f\":" << bc.floorNum << ",\"tu\":" << bc.turn << ",\"hp\":" << bc.player.curHp
-                       << ",\"e\":" << bc.player.energy << ",\"s\":" << g.trSearched;
-                    const int src = a.getSourceIdx(), tgt = a.getTargetIdx();
-                    switch (a.getActionType()) {
-                        case search::ActionType::CARD:
-                            os << ",\"a\":\"card\"";
-                            if (src >= 0 && src < bc.cards.cardsInHand) {
-                                const auto &c = bc.cards.hand[src];
-                                std::string n = c.getName();
-                                if (c.isUpgraded()) n += "+";
-                                os << ",\"n\":"; trace::str(os, n.c_str());
-                                os << ",\"cost\":" << static_cast<int>(c.costForTurn);
-                            }
-                            break;
-                        case search::ActionType::POTION:
-                            os << ",\"a\":\"pot\"";
-                            if (src >= 0 && src < bc.potionCapacity) {
-                                const Potion p = bc.potions[src];
-                                os << ",\"n\":"; trace::str(os, getPotionName(p));
-                                os << ",\"disc\":" << (tgt >= bc.monsters.monsterCount ? 1 : 0);
-                            }
-                            os << ",\"pot\":"; trace::bpotions(os, bc);
-                            {
-                                int mhp = 0;
-                                for (int m = 0; m < bc.monsters.monsterCount; ++m)
-                                    if (!bc.monsters.arr[m].isDeadOrEscaped()) mhp += bc.monsters.arr[m].curHp;
-                                os << ",\"mhp\":" << mhp;
-                            }
-                            break;
-                        case search::ActionType::SINGLE_CARD_SELECT: os << ",\"a\":\"sel\""; break;
-                        case search::ActionType::MULTI_CARD_SELECT: os << ",\"a\":\"msel\""; break;
-                        case search::ActionType::END_TURN: {
-                            os << ",\"a\":\"end\"";
-                            const auto &acts = combatActions(bc, g.ctx);
-                            std::vector<int> playable;
-                            bool potionLegal = false;
-                            for (const auto &x : acts) {
-                                if (x.getActionType() == search::ActionType::CARD) {
-                                    const int si = x.getSourceIdx();
-                                    if (std::find(playable.begin(), playable.end(), si) == playable.end()) playable.push_back(si);
-                                } else if (x.getActionType() == search::ActionType::POTION) potionLegal = true;
-                            }
-                            os << ",\"pl\":" << playable.size() << ",\"potl\":" << (potionLegal ? 1 : 0) << ",\"hand\":[";
-                            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
-                                const auto &c = bc.cards.hand[i];
-                                std::string n = c.getName();
-                                if (c.isUpgraded()) n += "+";
-                                if (std::find(playable.begin(), playable.end(), i) != playable.end()) n += "*";
-                                if (i) os << ",";
-                                trace::str(os, n.c_str());
-                            }
-                            os << "],\"pot\":"; trace::bpotions(os, bc);
-                            int mhp = 0, inc = 0;
-                            for (int m = 0; m < bc.monsters.monsterCount; ++m) {
-                                const auto &mo = bc.monsters.arr[m];
-                                if (mo.isDeadOrEscaped()) continue;
-                                mhp += mo.curHp;
-                            }
-                            os << ",\"mhp\":" << mhp << ",\"blk\":" << bc.player.block;
-                            (void)inc;
-                            break;
-                        }
-                        default: os << ",\"a\":\"?\""; break;
-                    }
-                    os << "}";
-                    if (!g.tr.empty()) g.tr += ",";
-                    g.tr += os.str();
-                } else {
-                    if (!g.tr.empty()) g.tr += ",";
-                    g.tr += trace::ooc(g.gc, bits, g.trSearched);
-                }
-                g.trSearched = 0;
-            }
             if (cfg.stallLog) {   // the decision as text, before it is played (printDesc reads the state)
                 std::ostringstream os;
                 if (g.inBattle) {
@@ -2373,17 +2128,6 @@ namespace sts::azbench {
                 if (g.bc.outcome == Outcome::UNDECIDED && g.fightMoves >= cfg.maxMovesPerFight) {
                     stall(g, 0);
                 } else if (g.bc.outcome != Outcome::UNDECIDED) {
-                    if (trace::path()) {
-                        std::ostringstream os;
-                        os << ",{\"t\":\"be\",\"f\":" << g.bc.floorNum << ",\"win\":" << (g.bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0)
-                           << ",\"hp\":" << g.bc.player.curHp << ",\"tu\":" << g.bc.turn << ",\"pot\":";
-                        trace::bpotions(os, g.bc);
-                        int mhp = 0;
-                        for (int m = 0; m < g.bc.monsters.monsterCount; ++m)
-                            if (!g.bc.monsters.arr[m].isDeadOrEscaped()) mhp += std::max(0, (int)g.bc.monsters.arr[m].curHp);
-                        os << ",\"mhp\":" << mhp << "}";
-                        g.tr += os.str();
-                    }
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
                 }
@@ -2471,19 +2215,6 @@ namespace sts::azbench {
                     }
                 }
                 enterBattle(g);
-                if (trace::path()) {
-                    std::ostringstream os;
-                    os << ",{\"t\":\"bs\",\"f\":" << g.gc.floorNum << ",\"act\":" << g.gc.act << ",\"enc\":";
-                    trace::str(os, monsterEncounterStrings[static_cast<int>(g.gc.info.encounter)]);
-                    os << ",\"room\":"; trace::str(os, roomStrings[static_cast<int>(g.gc.curRoom)]);
-                    os << ",\"hp\":" << g.gc.curHp << ",\"mhp\":" << g.gc.maxHp << ",\"pot\":"; trace::potions(os, g.gc);
-                    os << ",\"deck\":"; trace::deck(os, g.gc);
-                    os << ",\"relics\":"; trace::relics(os, g.gc);
-                    int mh = 0;
-                    for (int m = 0; m < g.bc.monsters.monsterCount; ++m) mh += g.bc.monsters.arr[m].curHp;
-                    os << ",\"mon_hp\":" << mh << "}";
-                    g.tr += os.str();
-                }
             }
             wk.st.stepCpu += cpuSeconds() - t0;
             ++wk.st.moves;
@@ -2973,7 +2704,6 @@ namespace sts::azbench {
                     }
                 }
             }
-            g.trSearched = 1;
             applyReal(g, bits);
             startMove(g, gi);
         };
