@@ -2157,6 +2157,7 @@ namespace sts::azbench {
                 {
                     const Action a(bits);
                     if (a.getActionType() == search::ActionType::POTION && a.getTargetIdx() <= 5) g.fightPotion = true;
+                    if (a.getActionType() == search::ActionType::END_TURN) ++g.progress.endTurnsAll;
                 }
                 executeObserved(g.bc, bits, *g.knowledge);
                 ++g.fightMoves;
