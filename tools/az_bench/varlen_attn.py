@@ -171,6 +171,70 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: 
              mask=qmask[:, None])
 
 
+
+@triton.jit
+def _attn_kernel_rows_enc(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.constexpr,
+                          BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr, HAS_GATE: tl.constexpr):
+    """_attn_kernel_rows (bias / gate) in one launch for all rows, the encounter parts under a per-row branch: rows
+    with RF[r] == 0 (no encounter tokens; the table is 0 on them, split_enc) run the plain loop body."""
+    r = tl.program_id(0)
+    h = tl.program_id(1)
+    qb = tl.program_id(2)
+    start = tl.load(OFF + r)
+    n = tl.load(OFF + r + 1) - start
+    isenc = tl.load(RF + r) != 0
+    offs_m = qb * BM + tl.arange(0, BM)
+    offs_d = tl.arange(0, DH)
+    qmask = offs_m < n
+    q = tl.load(QKV + (start + offs_m)[:, None] * (3 * D) + h * DH + offs_d[None, :], mask=qmask[:, None], other=0.0)
+    m_i = tl.full([BM], float("-inf"), tl.float32)
+    l_i = tl.zeros([BM], tl.float32)
+    acc = tl.zeros([BM, DH], tl.float32)
+    ln = tl.zeros([BM], tl.float32)
+    accn = tl.zeros([BM, DH], tl.float32)
+    mn = tl.full([BM], float("-inf"), tl.float32)
+    cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
+    hi = n
+    if qb * BM >= n:   # no live query in this block
+        hi = 0
+    for k0 in range(0, hi, BN):
+        offs_n = k0 + tl.arange(0, BN)
+        kmask = offs_n < n
+        k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
+                    other=0.0)
+        s = tl.dot(q, k) * scale
+        v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
+                    other=0.0)
+        if isenc:
+            s0 = s
+            ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
+            if HAS_BIAS:
+                for c in tl.static_range(C):
+                    s += tl.where((ck == c)[None, :],
+                                  tl.load(TAB + h * C * C + cq * C + c, mask=qmask, other=0.0)[:, None], 0.0)
+            if HAS_GATE:
+                sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
+                mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
+                pn = tl.exp(sn - mn_new[:, None])
+                alphan = tl.exp(mn - mn_new)
+                ln = ln * alphan + tl.sum(pn, 1)
+                accn = accn * alphan[:, None] + tl.dot(pn.to(v.dtype), v)
+                mn = mn_new
+        s = tl.where(kmask[None, :], s, float("-inf"))
+        m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)
+        p = tl.exp(s - m_new[:, None])
+        alpha = tl.exp(m_i - m_new)
+        l_i = l_i * alpha + tl.sum(p, 1)
+        acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
+        m_i = m_new
+    acc = acc / l_i[:, None]
+    if HAS_GATE:
+        if isenc:
+            g = tl.load(G)
+            acc = g * acc + (1.0 - g) * (accn / ln[:, None])
+    tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], acc.to(O.dtype.element_ty),
+             mask=qmask[:, None])
+
 ROW_BOUNDS = False   # True: _attn_kernel_rows (selfplay.py --attn-row-bounds); same output values
 
 
@@ -199,12 +263,24 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
     if ROW_BOUNDS:
         grid = (R, heads, triton.cdiv(max_len, BM))
         nw = int(os.environ.get("AZ_ATTN_WARPS", "4"))
-        if split_enc and (has_bias or has_gate) and os.environ.get("AZ_ATTN_SPLIT_ENC", "1") != "0":
+        mode = os.environ.get("AZ_ATTN_SPLIT_ENC", "1")
+        if split_enc and (has_bias or has_gate) and mode == "1":
+            # one launch, the encounter parts under a per-row branch (PC: two launches cost 254 us per layer vs
+            # 135 us for the plain kernel alone)
+            enc = ((cls >= 1) & (cls <= 3)).long()
+            c = torch.cat([enc.new_zeros(1), enc.cumsum(0)])
+            so = seq_off.long()
+            rf = ((c[so[1:]] - c[so[:-1]]) > 0).to(torch.int32)
+            _attn_kernel_rows_enc[grid](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D,
+                                        DH=D // heads, BM=BM, BN=BN, HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate,
+                                        num_warps=nw)
+            return out
+        if split_enc and (has_bias or has_gate) and mode == "2":
             # rows without encounter tokens (most: all combat rows) get the plain kernel, without the bias loads and
             # the gate's second softmax; the others the full one. Same values when the table has entries only for
             # pairs with an encounter class (split_enc: the caller says so, AmberNet._tab): on a row without encounter
-            # tokens the bias is then 0 and both softmaxes of the gate are the same. AZ_ATTN_SPLIT_ENC=0: one
-            # full launch for all rows.
+            # tokens the bias is then 0 and both softmaxes of the gate are the same. AZ_ATTN_SPLIT_ENC=2: this
+            # two-launch form; 0: one full launch for all rows.
             enc = ((cls >= 1) & (cls <= 3)).long()
             c = torch.cat([enc.new_zeros(1), enc.cumsum(0)])
             so = seq_off.long()

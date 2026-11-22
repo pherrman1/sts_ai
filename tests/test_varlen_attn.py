@@ -292,10 +292,15 @@ class EnemyBiasKernel(unittest.TestCase):
             for tb, gt in ((tab, gate), (tab, None), (None, gate)):
                 tb_ = None if tb is None else tb.contiguous().to(self.dev)
                 one = V.varlen_attn(qkv, so, H, T, cp, tb_, gt)
-                two = V.varlen_attn(qkv, so, H, T, cp, tb_, gt, split_enc=True)
-                self.assertLess(float((one - two).abs().max()), 1e-5, (tb is None, gt is None))
+                for m in ("1", "2"):   # one launch with a per-row branch / two launches (other tile sizes)
+                    os.environ["AZ_ATTN_SPLIT_ENC"] = m
+                    two = V.varlen_attn(qkv, so, H, T, cp, tb_, gt, split_enc=True)
+                    # (fp32 inputs: tl.dot runs in tf32 on a GPU, so other tile sizes round differently)
+                    self.assertLess(float((one - two).abs().max()), 2e-3 if self.dev != "cpu" else 1e-5,
+                                    (tb is None, gt is None, m))
         finally:
             mod.ROW_BOUNDS = False
+            os.environ.pop("AZ_ATTN_SPLIT_ENC", None)
 
     def test_gated_row_mean_matches_reference(self):
         """row_mean at the widths the gated mean uses (16, d, 2 d; fp32 and fp16 inputs) and _gated_row_mean
