@@ -29179,7 +29179,7 @@ the bug, so which part was wrong on the PC's 2.5.1 is still open: the PC check d
 test, `--check-enemy-gate --compile` and frozen arm C3 (play like D, moves/s near B).
 **Knowledge impact:** this entry.
 
-## §TBD-a — #1166 failed the PC check: the fp32 row_mean kernel is wrong on the PC GPU (sm_86, triton 3.1.0) at every width but 128 (fp16 right at all widths, so the live packed heads were never affected); fixed with an fp32 one-token-per-step kernel and a gated mean on row_mean at width d in the input dtype; frozen arm C4 8.0 % / floor 28.6 → BUILT, default off (cloud + PC, 2026-11-21)
+## §847 — #1166 failed the PC check: the fp32 row_mean kernel is wrong on the PC GPU (sm_86, triton 3.1.0) at every width but 128 (fp16 right at all widths, so the live packed heads were never affected); fixed with an fp32 one-token-per-step kernel and a gated mean on row_mean at width d in the input dtype; frozen arm C4 8.0 % / floor 28.6 → BUILT, default off (cloud + PC, 2026-11-21)
 
 **PC check of #1166 (§845):** with both flags the inference outputs were off on all rows (outcome 17 vs noise 0.15),
 eager and compiled alike; frozen C3 4.0 %. **GPU diagnosis** (tests/test_varlen_attn.py, diag_row_mean.py on
@@ -29196,7 +29196,7 @@ encounter rows policy 0.016 / outcome 0.063 / HP 0.125 / per-floor 0.005, compil
 00:28 CET (11-22) with a 30-min watch (roll back on collapse or moves/s more than 15 % below 8.9k).
 **Knowledge impact:** this entry; Triton 3.1 on sm_86 needs fp32 kernel checks per width.
 
-## §TBD-b — Encounter tokens live (bfbcab66 / 44ee2ed5, 2026-11-22 00:28-01:20 CET): play fine (48 % vs 45.5 % rolling), moves/s −26..−30 %; per-batch cost traced and cut to +27 % inference / +29 % training with the key gate (`--enemy-gate-key`, default off) → NOT_LIVE, waiting for Philipp (cloud + PC, 2026-11-22)
+## §848 — Encounter tokens live (bfbcab66 / 44ee2ed5, 2026-11-22 00:28-01:20 CET): play fine (48 % vs 45.5 % rolling), moves/s −26..−30 %; per-batch cost traced and cut to +27 % inference / +29 % training with the key gate (`--enemy-gate-key`, default off) → NOT_LIVE, waiting for Philipp (cloud + PC, 2026-11-22)
 
 **Live** (A5, compile, row bounds, packed heads): bfbcab66 5.9-6.2k moves/s vs 8.8k on stall_repo, inference GPU per
 batch 13.8 → 20.6 ms at the same rows / tokens (2,031 rows, 40.8 vs 41.7 tok/row), training step 181 → 314 ms;
@@ -29221,7 +29221,7 @@ gradient to g is finite at 0. A change of the gate's form, so Philipp decides be
 step, the bias only on encounter pairs.
 **Knowledge impact:** this entry.
 
-## §TBD-c — Own training kernel for the encounter parts (`--enemy-train-kernel`, default off): varlen attention with the class bias, forward + backward in Triton; PC training step with the key gate 35.6 → 25.3 ms (without encounter parts 27.6) → BUILT, default off (cloud + PC, 2026-11-22)
+## §849 — Own training kernel for the encounter parts (`--enemy-train-kernel`, default off): varlen attention with the class bias, forward + backward in Triton; PC training step with the key gate 35.6 → 25.3 ms (without encounter parts 27.6) → BUILT, default off (cloud + PC, 2026-11-22)
 
 Philipp's card (2026-11-22 09:14 CET): own training kernel. `tools/az_bench/varlen_attn_train.py`: packed tokens
 (each row attends over its own length; the padded trainer pays the batch's longest row squared on every row),
