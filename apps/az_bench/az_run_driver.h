@@ -673,6 +673,15 @@ namespace sts::azbench {
         std::int64_t bossRelicSkips = 0, goldGained = 0, goldLost = 0;
         std::int64_t sapphireRelicForfeits = 0;   // chest relics given up for the Sapphire key (neither taken nor left)
         std::int64_t oocPotionDiscards = 0, oocPotionDrinks = 0;   // out-of-combat potion actions taken
+        // Potion and end-turn decisions (2026-11-22, logging only; decision-trace analysis): Act 1 hallway fights
+        // (Room::MONSTER) and those in which a potion was drunk; Act 1 boss fights and the potions held entering them;
+        // searched Act 1 hallway drinks and the sum of their root Q advantage over the best visited non-potion edge
+        // (in 1e-6 units; small = the search sees almost no value in keeping the potion) and how many are below 0.005;
+        // searched end turns with energy left, of which with a playable non-status, non-curse card, and of those
+        // the ones where end turn has the highest mean Q among the visited edges.
+        std::int64_t act1HallFights = 0, act1HallPotionFights = 0, act1BossFights = 0, act1BossPotions = 0;
+        std::int64_t hallDrinks = 0, hallDrinkQGapMicro = 0, hallDrinkQTies = 0;
+        std::int64_t endTurnsEnergy = 0, endTurnsEnergyCard = 0, endTurnsEnergyCardBestQ = 0;
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
@@ -692,6 +701,11 @@ namespace sts::azbench {
             shopRemoves += o.shopRemoves; bossRelicSkips += o.bossRelicSkips;
             goldGained += o.goldGained; goldLost += o.goldLost; sapphireRelicForfeits += o.sapphireRelicForfeits;
             oocPotionDiscards += o.oocPotionDiscards; oocPotionDrinks += o.oocPotionDrinks;
+            act1HallFights += o.act1HallFights; act1HallPotionFights += o.act1HallPotionFights;
+            act1BossFights += o.act1BossFights; act1BossPotions += o.act1BossPotions;
+            hallDrinks += o.hallDrinks; hallDrinkQGapMicro += o.hallDrinkQGapMicro; hallDrinkQTies += o.hallDrinkQTies;
+            endTurnsEnergy += o.endTurnsEnergy; endTurnsEnergyCard += o.endTurnsEnergyCard;
+            endTurnsEnergyCardBestQ += o.endTurnsEnergyCardBestQ;
             return *this;
         }
     };
