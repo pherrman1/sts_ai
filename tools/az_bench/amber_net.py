@@ -22,6 +22,7 @@ projection is one Linear per segment).
 """
 
 import os
+import sys
 
 import torch
 import torch.nn as nn
@@ -217,6 +218,7 @@ class AmberNet(nn.Module):
         # (weight g) and without them (1 - g), and a last gate weights them in the summary mean. At g = 0 every
         # other token computes what the net computes on the state without encounter tokens (up to float rounding).
         self.enemy_gate = nn.Parameter(torch.zeros(layers + 1)) if enemy_gate else None
+        self.train_attn = None  # varlen_attn_train.varlen_attn_train (selfplay.py --enemy-train-kernel)
         self.gate_key = False   # key gate (selfplay.py --enemy-gate-key): see _attend_enemy / varlen_attn gate_key
 
     def load_state_dict(self, state_dict, strict=True, **kw):
@@ -352,6 +354,28 @@ class AmberNet(nn.Module):
         e[1:4] = True
         return self.enemy_bias[li] * (e[:, None] | e[None, :]).to(self.enemy_bias.dtype)
 
+    def _train_enemy_attn(self, qkv, so, H, T, cls, rf, tok_enc, li):
+        """Attention of layer li in training through varlen_attn_train (self.train_attn) on the packed tokens: the
+        same parts as _attend_enemy (bias; the gate as the mix of two attentions or as the key gate)."""
+        K = self.train_attn
+        C = BIAS_CLASSES
+        tab = self._tab(li).float() if self.enemy_bias is not None else None
+        if self.enemy_gate is None:
+            return K(qkv, so, H, T, cls, tab, rf)
+        e = torch.zeros(C, dtype=torch.float32, device=qkv.device)
+        e[1:4] = 1.0
+        if self.gate_key:
+            logg = torch.log(self._gate(li).float() + 1e-30)
+            base = tab if tab is not None else qkv.new_zeros(H, C, C, dtype=torch.float32)
+            return K(qkv, so, H, T, cls, base + logg * e[None, None, :], rf)
+        g = self._gate(li).to(qkv.dtype)
+        o1 = K(qkv, so, H, T, cls, tab, rf)
+        # the second part: without the encounter keys and without the bias (a constant table, -1e4 on encounter-
+        # class keys), only on the rows with encounter tokens
+        tmask = (e * -1e4)[None, None, :].expand(H, C, C).contiguous()
+        o2 = K(qkv, so, H, T, cls, tmask, rf, rows_only=True)
+        return torch.where(tok_enc, g * o1 + (1 - g) * o2, o1)
+
     def _attend_enemy(self, q, k, v, keep, li, cls, rows):
         """Attention of layer li with the encounter-token parts (cls [B, T] token classes, rows: the rows that hold
         encounter tokens). Rows without them attend as without the flag (one pass). Rows with them: g x attention
@@ -485,8 +509,18 @@ class AmberNet(nn.Module):
             return full[:M]
 
         varlen = self.varlen_attn is not None and "seq_off" in b
+        # training with the encounter parts on the packed tokens (varlen_attn_train: own kernels with gradients)
+        tvar = self.train_attn is not None and self.enemy_on and self.training and not varlen
         cls_p = cls_pad = cls_i = None
-        if self.enemy_on:
+        if tvar:
+            cls_p = token_classes(tt_p, ids_p, f_p)
+            t_so = seq_offsets(mask).to(tt_p.device)
+            cls_t = cls_p.to(torch.int32).contiguous()
+            t_rf = sys.modules["az_bench_varlen_attn_train"].row_flags(cls_t, t_so)
+            cnt = (t_so[1:] - t_so[:-1]).long()
+            tok_enc = torch.repeat_interleave(t_rf != 0, cnt)
+            tok_enc = torch.cat([tok_enc, tok_enc.new_zeros(tt_p.shape[0] - tok_enc.shape[0])])[:, None]
+        elif self.enemy_on:
             if varlen:
                 cls_p, cls_i = _packed_classes(tt_p, ids_p, f_p)
             else:
@@ -512,7 +546,9 @@ class AmberNet(nn.Module):
                 x = out_ffn(x, o, layer)
                 continue
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
-            if varlen:
+            if tvar:
+                x = x + a.out_proj(self._train_enemy_attn(qkv_p, t_so, H, T, cls_t, t_rf, tok_enc, li))
+            elif varlen:
                 x = x + a.out_proj(vattn(qkv_p.contiguous(), li))
             else:
                 qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)

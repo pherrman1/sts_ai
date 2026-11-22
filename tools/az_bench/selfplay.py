@@ -1496,6 +1496,10 @@ def main(argv=None):
                          "to the encounter keys' scores (their weights times g; at g = 0 exactly the attention without "
                          "them, as the mix). Cheaper: the mix runs a second softmax on rows with encounter tokens "
                          "(PC 2026-11-22: +30 %% inference GPU per batch at 30 %% such rows)")
+    ap.add_argument("--enemy-train-kernel", action="store_true",
+                    help="--enemy-tokens with --train-packed: training attention through own Triton kernels with "
+                         "gradients on the packed tokens (tools/az_bench/varlen_attn_train.py; bias in the kernel, "
+                         "rows attend over their own length) instead of padded SDPA with extra q / k columns")
     ap.add_argument("--enemy-lr-scale", type=float, default=0.01,
                     help="--enemy-tokens / --enemy-map-bias: learning rate of the gates and the bias table as a share "
                          "of --lr (their own optimizer group). Adam moves each by about lr per step whatever the "
@@ -1609,6 +1613,8 @@ def main(argv=None):
         ap.error("--init-net and --resume exclude each other")
     if args.enemy_map_bias and not args.enemy_tokens:
         ap.error("--enemy-map-bias needs --enemy-tokens")
+    if args.enemy_train_kernel and not (args.enemy_tokens and args.train_packed):
+        ap.error("--enemy-train-kernel needs --enemy-tokens and --train-packed")
     if args.enemy_gate_key and not args.enemy_tokens:
         ap.error("--enemy-gate-key needs --enemy-tokens")
     if args.enemy_tokens and args.fused_net:
@@ -1662,6 +1668,8 @@ def main(argv=None):
                                    enemy_bias=args.enemy_map_bias, enemy_gate=args.enemy_tokens).to(dev)
     train_net.sdpa = True
     train_net.gate_key = bool(args.enemy_gate_key)   # (deepcopied into the inference net)
+    if args.enemy_train_kernel:
+        train_net.train_attn = amber_net.load_kernel("varlen_attn_train")
     # --aux-fights / --enemy-map-bias: their parameters are a second group, so a checkpoint without them keeps its
     # optimizer state for the rest (load_opt_state).
     main_params = [p_ for n_, p_ in train_net.named_parameters() if not extra_param(n_)]

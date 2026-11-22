@@ -68,6 +68,9 @@ def main(argv=None):
     ap.add_argument("--train-packed", action="store_true", help="training batch with pack_idx (selfplay --train-packed)")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--gate-key", action="store_true", help="the key gate (selfplay.py --enemy-gate-key)")
+    ap.add_argument("--train-kernel", action="store_true",
+                    help="training attention via varlen_attn_train (selfplay.py --enemy-train-kernel; needs "
+                         "--train-packed)")
     a = ap.parse_args(argv)
     dev = a.device
     import torch._dynamo as dynamo
@@ -95,10 +98,13 @@ def main(argv=None):
             if net.enemy_bias is not None:
                 net.enemy_bias.normal_(0, 0.01)
         net.gate_key = a.gate_key
+        if a.train_kernel:
+            net.train_attn = A.load_kernel("varlen_attn_train")
         tr = net.to(dev)
         inf = A.AmberNet(a.d, a.layers, enemy_bias=bias, enemy_gate=gate).to(dev)
         inf.load_state_dict(tr.state_dict())
         inf.gate_key = a.gate_key
+        inf.train_attn = None
         inf = (inf.half() if dev == "cuda" else inf).eval()
         inf.sdpa = True
         inf.varlen_attn, inf.row_mean, inf.packed_heads = V, A.load_kernel("row_mean"), True
