@@ -701,6 +701,8 @@ namespace sts::azbench {
         std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, unsupported = 0;
         std::array<std::int64_t, 3> stallsByType{};   // StallLog::type order: fight_moves, run_moves, no_legal
         std::int64_t fightsEndedAtStart = 0;   // real fights decided before their first decision (Neow's Lament + Mercury Hourglass)
+        std::int64_t hpTargetBadRows = 0;     // search floor-HP rows skipped in the EMA chain (NaN / no mass; STS_AZ_HP_TARGET_GUARD)
+        std::int64_t hpTargetFallbacks = 0;   // floor-HP targets that fell back to the real HP (empty after 8-bit quantisation)
         std::int64_t invalidActions = 0;      // chosen actions not valid in the real fight after translation (bug; run lost)
         std::int64_t knowledgeFailures = 0;   // fights whose public view could not be built (run abandoned as a loss)
         std::int64_t encodeCut = 0, encodeCutOoc = 0;   // tokens / actions past capacity (combat, out of combat; MAP keeps the nearest 32 nodes)

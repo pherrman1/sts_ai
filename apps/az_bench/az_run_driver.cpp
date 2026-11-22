@@ -1157,6 +1157,7 @@ namespace sts::azbench {
             s.stalls += p.stalls;
             for (int k = 0; k < 3; ++k) s.stallsByType[k] += p.stallsByType[k];
             s.fightsEndedAtStart += p.fightsEndedAtStart;
+            s.hpTargetBadRows += p.hpTargetBadRows; s.hpTargetFallbacks += p.hpTargetFallbacks;
             s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
             s.unsupported += p.unsupported; s.knowledgeFailures += p.knowledgeFailures; s.invalidActions += p.invalidActions; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
@@ -1302,6 +1303,11 @@ namespace sts::azbench {
         // loss. STS_AZ_FIGHT_START_END=0 restores the old behaviour.
         const char *fightStartEnv = std::getenv("STS_AZ_FIGHT_START_END");
         const bool fightStartEnd = !(fightStartEnv && std::strcmp(fightStartEnv, "0") == 0);
+        // A search floor-HP row that is no distribution (NaN, no mass) is skipped in the floor's EMA chain, and an
+        // empty 8-bit target falls back to the real HP, both counted, instead of ending the process with a
+        // logic_error. STS_AZ_HP_TARGET_GUARD=0 restores the old behaviour.
+        const char *hpGuardEnv = std::getenv("STS_AZ_HP_TARGET_GUARD");
+        const bool hpTargetGuard = !(hpGuardEnv && std::strcmp(hpGuardEnv, "0") == 0);
         auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr,
                               int *rewardRule = nullptr, int *potionRule = nullptr,
                               int *canonRemoved = nullptr) -> std::vector<GameAction> {
@@ -1655,7 +1661,15 @@ namespace sts::azbench {
                             q[k] = static_cast<std::uint8_t>(std::clamp<long>(std::lround(255.0 * t[k]), 0, 255));
                             if (q[k]) { lo = std::min(lo, k); hi = k; }
                         }
-                        if (hi < 0) throw std::logic_error("run driver: empty floor HP target");
+                        if (hi < 0) {
+                            // Only an unnormalised chain (a search row with NaN or no mass) gets here: a distribution
+                            // over 256 classes always has one class >= 1/256. Fall back to the real HP of the floor.
+                            if (!hpTargetGuard) throw std::logic_error("run driver: empty floor HP target");
+                            ++wk.st.hpTargetFallbacks;
+                            q.fill(0);
+                            lo = hi = hpClass(hpEnd);
+                            q[lo] = 255;
+                        }
                         s.hpTargetLo = static_cast<std::int16_t>(lo);
                         s.hpTargetQ.assign(q.begin() + lo, q.begin() + hi + 1);
                     }
@@ -1663,7 +1677,17 @@ namespace sts::azbench {
                 give(M);   // kept moves after the floor's last chain move: the real HP
                 for (int m = M - 1; m >= g.floorChain0; --m) {
                     const float *d = g.floorHpd.data() + static_cast<std::size_t>(m - g.floorChain0) * kHpClasses;
-                    for (int k = 0; k < kHpClasses; ++k) t[k] = (1.0 - lam) * d[k] + lam * t[k];
+                    double dsum = 0;
+                    bool dok = true;
+                    for (int k = 0; k < kHpClasses; ++k) {
+                        if (!std::isfinite(d[k]) || d[k] < 0) dok = false;
+                        dsum += d[k];
+                    }
+                    if (dok && std::abs(dsum - 1.0) > 1e-3) dok = false;
+                    if (dok || !hpTargetGuard)
+                        for (int k = 0; k < kHpClasses; ++k) t[k] = (1.0 - lam) * d[k] + lam * t[k];
+                    else
+                        ++wk.st.hpTargetBadRows;   // a search row that is no distribution: the chain keeps its target
                     give(m);
                 }
                 if (si >= s0) throw std::logic_error("run driver: kept sample outside its floor's chain");
