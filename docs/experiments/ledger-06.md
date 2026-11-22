@@ -29137,6 +29137,33 @@ torch.compile(infer) with the eager inference net (`infer_compiled`). New test: 
 encounter tokens, then arm C again; a live test only if C matches D.
 **Knowledge impact:** this entry.
 
+## §846 — Live stall log, first 6 rows (all `fight_moves`): Deca's Plated Armor counter wrapped at 127 to negative (int8) and gave -128 block; fixed, default on, `STS_MONSTER_POWER_SATURATE_FIX=0` restores. The Champ "400 decisions in 8 turns" is a real-game infinite (Havoc+ + Unceasing Top with empty piles), not an engine bug; the rest are huge-block stalemates (PC + cloud, 2026-11-21)
+
+**Data:** stage-1 run with `--stall-log` (main 5f5c94ae, §842) from 22:48 CET: 6 stalls, all `fight_moves` (no
+`no_legal` after §842's fix, about 25 per 100k runs vs 46 before). Rows (verbatim, with the run command):
+`/mnt/project-files/stall-20261121/stall_log_rows_1-3.md`, `_4-6.md`.
+**Row 1, Donu & Deca, F51, seed 145220295, turn 95:** Donu dead, Deca 135/265 HP with block -128, player 921 block.
+**Cause (code):** `Monster::platedArmor` (also `artifact`, `metallicize`, `regen`) is `std::int8_t`, and
+`Monster::buff` added without a limit. Deca's A19 Square of Protection adds 3 Plated Armor per cast (every other
+turn); after 43 casts the counter passes 127 and wraps, so `applyEndOfTurnTriggers` adds negative block. Java keeps
+an int.
+**Fix (`include/combat/Monster.h`, `src/combat/Monster.cpp`):** `Monster::buff` for Artifact, Metallicize, Plated
+Armor and Regen saturates at 127 (`monsterPowerAdd`); below 127 nothing changes. Default on,
+`STS_MONSTER_POWER_SATURATE_FIX=0` restores the wrap. 127 instead of Java's unbounded int: widening the fields would
+change `BattleContextBinary` (int8 on the wire) and the Silver wire state; a counter above 127 needs a fight of 85+
+turns. Test `monster_power_saturate` (50 x 3 Plated Armor: 127 and 127 end-of-turn block on, negative block with
+`=0`; Metallicize, Regen, Artifact stop at 127; a small buff adds exactly).
+**Row 4, Champ, F33, seed 145231261, turn 8:** 400 decisions, the last 30 all "card 0 Havoc+" at 0 energy, hand 1,
+draw 0, discard 0, relics include Unceasing Top. Havoc+ costs 0; with empty draw and discard piles it plays nothing
+and goes to the discard pile, Unceasing Top draws it back (shuffle). The game has the same loop (`UnceasingTop`
+draws when the hand is empty during the turn; Havoc's target draw uses cardRandomRng, as in the engine): the
+policy repeats a no-op that is legal forever. Not an engine bug; not changed (a no-op pruning rule would change
+the action space, not Amber's design).
+**Rows 2, 3, 5, 6:** Three Darklings F37 (reviving, player 985 block), Slime Boss F16 (Defend / True Grit deck
+against an Acid Slime M), Awakened One F50 (803 block), Shield and Spear F55 (999 block): stalemates, as in
+§842's fake-net case.
+**Decision:** engine fix default on (independent review). Live use after the owner's go and a PC test.
+**Knowledge impact:** this entry; `docs/knowledge-base/operations/environment-variables.md`.
 ## §845 — §843 checked on the PC: encounter tokens with `--compile` play right again (frozen arm C2 8.0 % / floor 27.2 vs D 9.7 %, B 9.3 %), but ~3x slower per batch (0.79k moves/s vs B 1.63k) from six graph breaks; the helpers are back in the compiled graph without the break-prone ops → BUILT, default off (cloud, 2026-11-21)
 
 **PC (torch 2.5.1+cu121, triton 3.1.0):** compiled-vs-eager test on CUDA passes; `--check-enemy-gate 20 --compile`
