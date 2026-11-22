@@ -29178,3 +29178,64 @@ inputs contiguous. `AZ_ENEMY_NO_COMPILE=1` restores §843's graph breaks. The cl
 the bug, so which part was wrong on the PC's 2.5.1 is still open: the PC check decides. **Next:** on the PC the
 test, `--check-enemy-gate --compile` and frozen arm C3 (play like D, moves/s near B).
 **Knowledge impact:** this entry.
+
+## §847 — #1166 failed the PC check: the fp32 row_mean kernel is wrong on the PC GPU (sm_86, triton 3.1.0) at every width but 128 (fp16 right at all widths, so the live packed heads were never affected); fixed with an fp32 one-token-per-step kernel and a gated mean on row_mean at width d in the input dtype; frozen arm C4 8.0 % / floor 28.6 → BUILT, default off (cloud + PC, 2026-11-21)
+
+**PC check of #1166 (§845):** with both flags the inference outputs were off on all rows (outcome 17 vs noise 0.15),
+eager and compiled alike; frozen C3 4.0 %. **GPU diagnosis** (tests/test_varlen_attn.py, diag_row_mean.py on
+the PC, torch 2.5.1+cu121, triton 3.1.0): row_mean with fp32 inputs gives wrong means on every row at widths 16 /
+32 / 64 / 256 (max error 2.3-10.2), right at 128 (3e-7); fp16 right at 16-256 (<= 0.002); int32 / int64 seq_off
+alike. The live flag-off path calls row_mean only in the fp16 inference net at d = 128: not affected. §845's gated
+mean used fp32 row_mean at widths 2 d and 16. **Change:** fp32 inputs use a kernel without the 2-D reduction (one
+token per step; fp16 / bf16 keep the old kernel, bit-equal); the gated mean calls row_mean at width d in the input
+dtype on x * other and x * enc and takes the encounter fraction from exact prefix-sum counts. Still 0 graph breaks.
+**PC check (bfbcab66):** diag fp32 <= 6.4e-7 at all widths; 14 / 14 tests; `--check-enemy-gate 20 --compile`:
+encounter rows policy 0.016 / outcome 0.063 / HP 0.125 / per-floor 0.005, compiled vs eager 0.063 / 0.125 / 0.47 /
+0.014, fp16 noise 0.081 / 0.150 / 0.57 / 0.014, other rows 0. Frozen C4 (flags + compile, 300 games): 8.0 % / floor
+28.6 (D 9.7 % / 28.4, B 9.3 % / 29.1); 1,091 moves/s vs B 1,630 (0.67x), training step 75.4 vs 63.3 ms. Went live
+00:28 CET (11-22) with a 30-min watch (roll back on collapse or moves/s more than 15 % below 8.9k).
+**Knowledge impact:** this entry; Triton 3.1 on sm_86 needs fp32 kernel checks per width.
+
+## §848 — Encounter tokens live (bfbcab66 / 44ee2ed5, 2026-11-22 00:28-01:20 CET): play fine (48 % vs 45.5 % rolling), moves/s −26..−30 %; per-batch cost traced and cut to +27 % inference / +29 % training with the key gate (`--enemy-gate-key`, default off) → NOT_LIVE, waiting for Philipp (cloud + PC, 2026-11-22)
+
+**Live** (A5, compile, row bounds, packed heads): bfbcab66 5.9-6.2k moves/s vs 8.8k on stall_repo, inference GPU per
+batch 13.8 → 20.6 ms at the same rows / tokens (2,031 rows, 40.8 vs 41.7 tok/row), training step 181 → 314 ms;
+44ee2ed5 (rows without encounter tokens on the plain kernel) 6.5k. Gates stayed ≤ 0.002. Rolled back to stall_repo.
+**Offline timing** (`tools/az_bench/enemy_speed.py`, PC, 2,048 synthetic rows, 30 % with encounter tokens, d 128 x 4,
+fused layer, compiled inference / training step, ms; off 6.28 / 27.6):
+
+| commit | tokens | bias | both |
+|---|---|---|---|
+| d872833b (gather bias) | 8.21 / 35.3 | 9.03 / 38.6 | 9.62 / 40.8 |
+| 519d1f15 (bias per class, training one-hot matmul) | 8.18 / 35.2 | 7.87 / 35.3 | 8.54 / 38.6 |
+| 842d1f29 one launch with a per-row branch | miscompiled by triton 3.1.0 ("operation scheduled before its operands") | | |
+| 3d3547b4 one-softmax mix (tf32 P V), bias as a small product, trimmed training rows | 8.28 / 39.3 | 8.47 / 38.7 | 9.55 / 41.9 |
+| 60148341 `--enemy-gate-key` | 7.80 / 34.8 | 7.83 / 35.3 | 8.00 / 35.6 |
+
+The [BM, BN] gather from the bias table was the largest single cost (~5x the plain kernel), then the gate's second
+softmax (exp-bound at head dim 32); in training an index gather's backward (index_put, ~1 ms per layer) and many
+small elementwise ops / copies (cat of the extra q / k columns, row regrouping). **Key gate:** log(g + 1e-30) added to
+the encounter keys' scores (their weights times g): one softmax; at g = 0 exactly the attention without them; the
+gradient to g is finite at 0. A change of the gate's form, so Philipp decides before it goes live. **Next (to reach
+−15 %):** fewer training copies (the extra columns built once per batch, not per layer), torch.compile of the training
+step, the bias only on encounter pairs.
+**Knowledge impact:** this entry.
+
+## §849 — Own training kernel for the encounter parts (`--enemy-train-kernel`, default off): varlen attention with the class bias, forward + backward in Triton; PC training step with the key gate 35.6 → 25.3 ms (without encounter parts 27.6) → BUILT, default off (cloud + PC, 2026-11-22)
+
+Philipp's card (2026-11-22 09:14 CET): own training kernel. `tools/az_bench/varlen_attn_train.py`: packed tokens
+(each row attends over its own length; the padded trainer pays the batch's longest row squared on every row),
+flash-style forward saving the log-sum-exp, backward as flash attention 2 (dK / dV kernel per key block with the
+table gradient onehot(cls_k)^T dS^T onehot(cls_q) per tile, atomically added; dQ kernel per query block), rows
+without encounter tokens without the bias; the mix gate = 2 calls (the second only on rows with encounter tokens,
+table -1e4 on encounter keys), the key gate = 1 call (log g in the table). AmberNet.train_attn; used in training
+mode on `--train-packed` batches. **Triton 3.1.0 on sm_86:** the first backward (0d85b4d5) used tl.trans operands in
+its products and gave wrong fp32 gradients (qkv grad off by 3.2; bf16 right); without tl.trans (9543bc7f, operands
+loaded in the layout each product needs) 20 / 20 GPU tests pass (kernel vs padded torch reference incl. all
+gradients; AmberNet training with the kernel = the SDPA path, outputs and all parameter gradients, mix and key
+gate). **PC timing** (enemy_speed.py, 2,048 synthetic rows, 30 % with encounter tokens, d 128 x 4, training step ms,
+off / tokens / bias / both): default 27.6 / 35.2 / 35.3 / 38.6; `--enemy-train-kernel` 27.6 / 29.4 / 25.0 / 30.9;
+`--enemy-gate-key` 27.6 / 34.8 / 35.3 / 35.7; both flags 27.6 / 25.2 / 25.0 / 25.3 (faster than without encounter
+parts: no padding). `--check-enemy-gate` with `--enemy-train-kernel --train-packed` also compares the training net
+with its kernels against the SDPA path (fp32 and bf16 outputs, per-parameter gradient ratio).
+**Knowledge impact:** this entry; Triton 3.1 on sm_86: avoid tl.trans operands in fp32 tl.dot.

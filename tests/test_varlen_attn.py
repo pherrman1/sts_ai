@@ -266,6 +266,73 @@ class EnemyBiasKernel(unittest.TestCase):
     dev = VarlenAttn.dev
     tol = VarlenAttn.tol
 
+    def test_split_enc_same_values(self):
+        """split_enc with ROW_BOUNDS (rows without encounter tokens on the plain kernel) gives the values of one full
+        launch, for an encounter-only table and a gate, on a batch where only some rows hold encounter tokens."""
+        import sys
+        A, V = load("amber_net"), load("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        g = torch.Generator().manual_seed(5)
+        B, T, H, dh, C = 9, 70, 4, 32, A.BIAS_CLASSES
+        d = H * dh
+        n = torch.randint(1, T + 1, (B,), generator=g)
+        mask = torch.arange(T)[None, :] < n[:, None]
+        cls = torch.randint(0, C, (B, T), generator=g)
+        cls[::2] = torch.where((cls[::2] >= 1) & (cls[::2] <= 3), torch.zeros_like(cls[::2]), cls[::2])   # no encounters
+        e = torch.zeros(C, dtype=torch.bool)
+        e[1:4] = True
+        tab = torch.randn(H, C, C, generator=g) * (e[:, None] | e[None, :])
+        pk = A.pack_index(mask, 1)
+        qkv = torch.randn(B * T, 3 * d, generator=g)[pk].contiguous().to(self.dev)
+        cp = cls.reshape(-1)[pk].to(torch.int32).contiguous().to(self.dev)
+        so = A.seq_offsets(mask).to(self.dev)
+        gate = torch.tensor([0.4], device=self.dev)
+        try:
+            mod.ROW_BOUNDS = True
+            for tb, gt in ((tab, gate), (tab, None), (None, gate)):
+                tb_ = None if tb is None else tb.contiguous().to(self.dev)
+                one = V.varlen_attn(qkv, so, H, T, cp, tb_, gt)
+                for m in ("1",):   # two launches (the encounter rows on other tile sizes)
+                    os.environ["AZ_ATTN_SPLIT_ENC"] = m
+                    two = V.varlen_attn(qkv, so, H, T, cp, tb_, gt, split_enc=True)
+                    # (fp32 inputs: tl.dot runs in tf32 on a GPU, so other tile sizes round differently)
+                    self.assertLess(float((one - two).abs().max()), 2e-3 if self.dev != "cpu" else 1e-5,
+                                    (tb is None, gt is None, m))
+        finally:
+            mod.ROW_BOUNDS = False
+            os.environ.pop("AZ_ATTN_SPLIT_ENC", None)
+
+    def test_gated_row_mean_matches_reference(self):
+        """row_mean at the widths the gated mean uses (16, d, 2 d; fp32 and fp16 inputs) and _gated_row_mean
+        against plain torch sums, on packed tokens with long rows and a trash tail (as the inference batches)."""
+        A = load("amber_net")
+        rm = A.load_kernel("row_mean")
+        g = torch.Generator().manual_seed(7)
+        R, d = 37, 128
+        n = torch.randint(0, 230, (R,), generator=g)
+        so = torch.cat([torch.zeros(1, dtype=torch.long), n.cumsum(0)])
+        N = int(so[-1]) + 21                                   # trash rows past the last live token
+        row = torch.bucketize(torch.arange(N), so[1:], right=True).clamp(max=R - 1)
+        live = (torch.arange(N) < so[-1]) & (torch.arange(N) != so[row])
+        for dt in (torch.float32, torch.float16):
+            for w in (16, d, 2 * d):
+                x = (torch.randn(N, w, generator=g) * 3).to(dt)
+                ref = torch.zeros(R, w).index_add_(0, row, x.float() * live[:, None])
+                cnt = torch.zeros(R).index_add_(0, row, live.float()).clamp(min=1)
+                out = rm(x.to(self.dev), so.to(self.dev)).float().cpu()
+                self.assertLess(float((out - ref / cnt[:, None]).abs().max()), 1e-2 if dt == torch.float16 else 1e-4,
+                                (dt, w))
+            x = (torch.randn(N, d, generator=g) * 3).to(dt)
+            enc = (torch.rand(N, generator=g) < 0.1) & live
+            for gv in (0.0, 0.3, 1.0):
+                w8 = live.float() * torch.where(enc, torch.tensor(gv), torch.tensor(1.0))
+                ref = torch.zeros(R, d).index_add_(0, row, x.float() * w8[:, None])
+                cnt = torch.zeros(R).index_add_(0, row, w8)
+                ref = ref / torch.where(cnt > 0, cnt, torch.ones_like(cnt))[:, None]
+                out = A._gated_row_mean(rm, x.to(self.dev), so.to(self.dev), enc.to(self.dev),
+                                        torch.tensor(gv, dtype=dt, device=self.dev)).float().cpu()
+                self.assertLess(float((out - ref).abs().max()), 1e-2 if dt == torch.float16 else 1e-4, (dt, gv))
+
     def test_compiled_gated_net_matches_eager(self):
         """torch.compile of the gated inference forward (packed tokens, varlen_attn, packed heads, N dynamic as
         selfplay.py --compile marks it) gives the eager outputs: on the PC GPU the compiled forward with encounter
@@ -437,6 +504,149 @@ class EnemyBiasKernel(unittest.TestCase):
             ref = base(g)
         for x, y in zip(o4, ref):
             self.assertLess(float((x - y).abs().max()), self.tol)
+
+
+    def test_gate_zero_inference_paths_fp16(self):
+        """The inference configuration (fp16 on CUDA, d = 128, varlen attention with and without row bounds, fused
+        layer, packed heads): at gate 0 the gated net on the state equals the net without encounter parts on the
+        stripped state, per path, so a failing path names itself (CUDA diagnosis of #1166)."""
+        import sys
+        A = load("amber_net")
+        mod = sys.modules["az_bench_varlen_attn"] if "az_bench_varlen_attn" in sys.modules else None
+        cuda = self.dev != "cpu"
+        dt = torch.float16 if cuda else torch.float32
+        tol = 0.15 if cuda else self.tol   # fp16: the gated mean rounds once more than the base's (PC: 0.053 on hp)
+        f = gate_batch(A, seed=11)
+        st = strip_encounters(A, {k: v.cpu() for k, v in f.items()})
+
+        def inputs(fb):
+            fb = {k: (v.to(dt) if v.is_floating_point() else v).to(self.dev) for k, v in fb.items()}
+            pk, inv = A.pack_index(fb["mask"], 16, inverse=True)
+            return dict(fb, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(fb["mask"]),
+                        act_idx=torch.nonzero(fb["a_mask"].reshape(-1)).squeeze(1))
+
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(128, 2, enemy_bias=True, enemy_gate=True).eval())
+        with torch.no_grad():
+            keep = torch.zeros_like(net.enemy_bias, dtype=torch.bool)
+            keep[:, :, 1:4] = True
+            keep[:, :, :, 1:4] = True
+            net.enemy_bias.normal_(0, 1.0).mul_(keep)
+            net.enemy_gate.zero_()
+        base = A.AmberNet(128, 2).eval()
+        base.load_state_dict(net.state_dict())
+        net, base = net.to(self.dev).to(dt), base.to(self.dev).to(dt)
+        b, g = inputs(f), inputs(st)
+        live = f["a_mask"].to(self.dev)
+        vk = A.load_kernel("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        try:
+            for name, rb, fused, heads in (("varlen", False, False, False), ("row_bounds", True, False, False),
+                                           ("fused_layer", False, True, False), ("packed_heads", False, False, True),
+                                           ("all", True, True, True)):
+                mod.ROW_BOUNDS = rb
+                for n_ in (net, base):
+                    n_.sdpa = True
+                    n_.varlen_attn = vk
+                    n_.fused_layer = A.load_fused_layer() if fused else None
+                    n_.row_mean = A.load_kernel("row_mean") if heads else None
+                    n_.packed_heads = heads
+                with torch.no_grad():
+                    o, r = net(b), base(g)
+                for k, x, y in zip(("policy", "outcome", "hp", "hp_floor"), o, r):
+                    if x.shape == live.shape:
+                        x, y = x[live], y[live]
+                    self.assertLess(float((x.float() - y.float()).abs().max()), tol, (name, k))
+        finally:
+            mod.ROW_BOUNDS = False
+
+
+    def test_key_gate(self):
+        """gate_key: the kernels (both, split or not) equal softmax with log g added to the encounter keys' scores
+        (and the bias); the net's sdpa_trunk, packed padded, varlen and packed-heads paths agree; at gate 0 the net
+        equals the net without encounter parts on the stripped state."""
+        import sys
+        A, V = load("amber_net"), load("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        g = torch.Generator().manual_seed(4)
+        C = A.BIAS_CLASSES
+        B, T, H, dh = 4, 70, 4, 32
+        d = H * dh
+        n = torch.randint(2, T + 1, (B,), generator=g)
+        mask = torch.arange(T)[None, :] < n[:, None]
+        qkv_pad = torch.randn(B, T, 3 * d, generator=g)
+        cls = torch.randint(0, C, (B, T), generator=g)
+        cls[:, 0] = 0
+        cls[1] = torch.where(A.enc_of(cls[1]), torch.zeros_like(cls[1]), cls[1])   # a row without encounters
+        q, k, v = qkv_pad.view(B, T, 3, H, dh).permute(2, 0, 3, 1, 4)
+        pk = A.pack_index(mask, 1)
+        qkv = qkv_pad.reshape(B * T, -1)[pk].contiguous().to(self.dev)
+        cp = cls.reshape(-1)[pk].to(torch.int32).contiguous().to(self.dev)
+        enc = A.enc_of(cls)
+        e = torch.zeros(C, dtype=torch.bool)
+        e[1:4] = True
+        tab = torch.randn(H, C, C, generator=g) * (e[:, None] | e[None, :])
+        try:
+            for tb in (None, tab):
+                for gv in (0.0, 0.3, 1.0):
+                    b_ = torch.zeros(B, H, T, T) if tb is None else \
+                        tb.reshape(H, C * C)[:, cls[:, :, None] * C + cls[:, None, :]].permute(1, 0, 2, 3)
+                    b_ = b_ + torch.where(enc, torch.log(torch.tensor(gv + 1e-30)), torch.tensor(0.0))[:, None, None, :]
+                    b_ = b_.masked_fill(~mask[:, None, None, :], float("-inf"))
+                    ref = torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=b_)
+                    ref = ref.transpose(1, 2).reshape(B * T, d)[mask.reshape(-1)]
+                    for rb in (False, True):
+                        mod.ROW_BOUNDS = rb
+                        for split in (False, True):
+                            out = V.varlen_attn(qkv, A.seq_offsets(mask).to(self.dev), H, T, cp,
+                                                None if tb is None else tb.contiguous().to(self.dev),
+                                                torch.tensor([gv], device=self.dev), split_enc=split, gate_key=True)
+                            self.assertLess(float((out.cpu() - ref).abs().max()), 3e-3 if self.dev != "cpu" else self.tol,
+                                            (tb is None, gv, rb, split))
+        finally:
+            mod.ROW_BOUNDS = False
+        f = {k_: v_.to(self.dev) for k_, v_ in gate_batch(A, seed=9).items()}
+        pk, inv = A.pack_index(f["mask"], 16, inverse=True)
+        b = dict(f, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(f["mask"]))
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(64, 2, enemy_bias=True, enemy_gate=True).eval()).to(self.dev)
+        net.sdpa = True
+        net.gate_key = True
+        with torch.no_grad():
+            keep = torch.zeros_like(net.enemy_bias, dtype=torch.bool)
+            keep[:, :, 1:4] = True
+            keep[:, :, :, 1:4] = True
+            net.enemy_bias.normal_(0, 1.0).mul_(keep)
+            net.enemy_gate.copy_(torch.tensor([0.3, 0.7, 0.5]))
+            o0, o1 = net(f), net(b)
+            net.varlen_attn = A.load_kernel("varlen_attn")
+            o2 = net(b)
+            net.row_mean, net.packed_heads = A.load_kernel("row_mean"), True
+            o5 = net(dict(b, act_idx=torch.nonzero(f["a_mask"].reshape(-1)).squeeze(1)))
+            net.packed_heads = False
+            live = f["a_mask"]
+            tol = 2e-3 if self.dev != "cpu" else self.tol
+            for w, x, y, u in zip(o0, o1, o2, o5):
+                self.assertLess(float((w - x).abs().max()), tol)
+                self.assertLess(float((x - y).abs().max()), tol)
+                if u.shape == live.shape:
+                    u, x = u[live], x[live]
+                self.assertLess(float((x - u).abs().max()), tol)
+            net.enemy_gate.zero_()
+            o4 = net(b)
+            base = A.AmberNet(64, 2).eval().to(self.dev)
+            base.load_state_dict(net.state_dict())
+            base.sdpa = True
+            ref = base({k_: v_.to(self.dev) for k_, v_ in strip_encounters(A, {k_: v_.cpu() for k_, v_ in f.items()}).items()})
+        for x, y in zip(o4, ref):
+            self.assertLess(float((x - y).abs().max()), tol)
+        # gradient reaches the gates at 0 through the key gate (training path)
+        net.train()
+        net.varlen_attn = None
+        out = net(f)
+        (out[1].float().logsumexp(-1).sum() + out[0].float().masked_fill(~f["a_mask"], 0).sum()).backward()
+        self.assertTrue(bool(torch.isfinite(net.enemy_gate.grad).all()))
+        self.assertGreater(float(net.enemy_gate.grad[:-1].abs().sum()), 0.0)
 
 
 if __name__ == "__main__":

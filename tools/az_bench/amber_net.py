@@ -22,6 +22,7 @@ projection is one Linear per segment).
 """
 
 import os
+import sys
 
 import torch
 import torch.nn as nn
@@ -66,14 +67,21 @@ def _compile_guard(fn):
 @_compile_guard
 def _gated_row_mean(row_mean, x, so, enc, g):
     """The row mean of _heads_packed with the encounter tokens weighted by the summary gate g, from row_mean (the
-    plain mean of each row's tokens after the first) on [x * other, x * enc] and on the encounter indicator, in fp32:
+    plain mean of each row's tokens after the first) on x * other and on x * enc, and exact encounter counts, in fp32:
     (S_other + g S_enc) / (n_other + g n_enc) = (m_other + g m_enc) / ((1 - f_enc) + g f_enc), the per-row counts
     cancel."""
     N, d = x.shape
     e = enc.float()[:, None]
     xf = x.float()
-    m = row_mean(torch.cat([xf * (1.0 - e), xf * e], 1).contiguous(), so)
-    f = row_mean(e.expand(N, 16).contiguous(), so)[:, :1]
+    # two row_mean calls at width d in x's dtype (the configuration the packed heads use without the flags; masking
+    # by 0 / 1 is exact): row_mean in fp32 at widths 16 / 2 d was wrong on the PC GPU (sm_86, triton 3.1.0)
+    m = torch.cat([row_mean((xf * (1.0 - e)).to(x.dtype).contiguous(), so),
+                   row_mean((xf * e).to(x.dtype).contiguous(), so)], 1).float()
+    # f_enc from exact counts (prefix sums of the indicator over each row's tokens after the first)
+    c = torch.cat([enc.new_zeros(1, dtype=torch.long), enc.long().cumsum(0)])
+    hi = so[1:]
+    lo = torch.minimum(so[:-1] + 1, hi)
+    f = ((c[hi] - c[lo]).float() / (hi - lo).clamp(min=1).float())[:, None]
     g = g.float()
     den = (1.0 - f) + g * f
     return ((m[:, :d] + g * m[:, d:]) / torch.where(den > 0, den, torch.ones_like(den))).to(x.dtype)
@@ -87,10 +95,11 @@ def _packed_classes(tt_p, ids_p, f_p):
 
 
 @_compile_guard
-def _enemy_vattn(kernel, qkv, seq_off, heads, max_len, cls_i, tab, gate):
+def _enemy_vattn(kernel, qkv, seq_off, heads, max_len, cls_i, tab, gate, gate_key=False):
     """varlen_attn with the encounter inputs (the op makes its inputs contiguous)."""
     return kernel(qkv, seq_off, heads, max_len, cls_i, None if tab is None else tab.float(),
-                  None if gate is None else gate.float().reshape(1))
+                  None if gate is None else gate.float().reshape(1), True,   # split_enc: _tab is encounter-only
+                  gate_key)
 
 
 def enc_of(cls):
@@ -209,6 +218,8 @@ class AmberNet(nn.Module):
         # (weight g) and without them (1 - g), and a last gate weights them in the summary mean. At g = 0 every
         # other token computes what the net computes on the state without encounter tokens (up to float rounding).
         self.enemy_gate = nn.Parameter(torch.zeros(layers + 1)) if enemy_gate else None
+        self.train_attn = None  # varlen_attn_train.varlen_attn_train (selfplay.py --enemy-train-kernel)
+        self.gate_key = False   # key gate (selfplay.py --enemy-gate-key): see _attend_enemy / varlen_attn gate_key
 
     def load_state_dict(self, state_dict, strict=True, **kw):
         """A checkpoint's weights; a net without the aux head ignores the checkpoint's aux_fight weights, so tools
@@ -343,6 +354,28 @@ class AmberNet(nn.Module):
         e[1:4] = True
         return self.enemy_bias[li] * (e[:, None] | e[None, :]).to(self.enemy_bias.dtype)
 
+    def _train_enemy_attn(self, qkv, so, H, T, cls, rf, tok_enc, li):
+        """Attention of layer li in training through varlen_attn_train (self.train_attn) on the packed tokens: the
+        same parts as _attend_enemy (bias; the gate as the mix of two attentions or as the key gate)."""
+        K = self.train_attn
+        C = BIAS_CLASSES
+        tab = self._tab(li).float() if self.enemy_bias is not None else None
+        if self.enemy_gate is None:
+            return K(qkv, so, H, T, cls, tab, rf)
+        e = torch.zeros(C, dtype=torch.float32, device=qkv.device)
+        e[1:4] = 1.0
+        if self.gate_key:
+            logg = torch.log(self._gate(li).float() + 1e-30)
+            base = tab if tab is not None else qkv.new_zeros(H, C, C, dtype=torch.float32)
+            return K(qkv, so, H, T, cls, base + logg * e[None, None, :], rf)
+        g = self._gate(li).to(qkv.dtype)
+        o1 = K(qkv, so, H, T, cls, tab, rf)
+        # the second part: without the encounter keys and without the bias (a constant table, -1e4 on encounter-
+        # class keys), only on the rows with encounter tokens
+        tmask = (e * -1e4)[None, None, :].expand(H, C, C).contiguous()
+        o2 = K(qkv, so, H, T, cls, tmask, rf, rows_only=True)
+        return torch.where(tok_enc, g * o1 + (1 - g) * o2, o1)
+
     def _attend_enemy(self, q, k, v, keep, li, cls, rows):
         """Attention of layer li with the encounter-token parts (cls [B, T] token classes, rows: the rows that hold
         encounter tokens). Rows without them attend as without the flag (one pass). Rows with them: g x attention
@@ -364,21 +397,57 @@ class AmberNet(nn.Module):
         if rows.numel() == 0:
             return o
         qs, ks, vs, ms, cs = q[rows], k[rows], v[rows], keep[rows], cls[rows]
+        gated = self.enemy_gate is not None
+        if gated and self.gate_key:
+            # key gate: one attention, the encounter keys' scores + log g (bias and gate as extra q / k columns)
+            H = q.shape[1]
+            cols_q, cols_k = [qs * dh ** -0.5], [ks]
+            if self.enemy_bias is not None:
+                tab = self._tab(li).to(q.dtype)
+                oh = F.one_hot(cs, tab.shape[-1]).to(q.dtype)
+                cols_q.append(torch.einsum("rtc,hcd->rhtd", oh, tab))
+                cols_k.append(oh[:, None].expand(-1, H, -1, -1))
+            logg = torch.log(self._gate(li).float() + 1e-30).to(q.dtype)
+            cols_q.append(logg.expand(*qs.shape[:-1], 1))
+            cols_k.append(enc_of(cs).to(q.dtype)[:, None, :, None].expand(-1, H, -1, -1))
+            w = sum(c.shape[-1] for c in cols_q)
+            pad = (-w) % 8
+            if pad:
+                cols_q.append(qs.new_zeros(*qs.shape[:-1], pad))
+                cols_k.append(ks.new_zeros(*ks.shape[:-1], pad))
+            oa = sdpa(torch.cat(cols_q, -1), torch.cat(cols_k, -1),
+                      torch.cat([vs, vs.new_zeros(*vs.shape[:-1], w + pad - dh)], -1), ms, 1.0)[..., :dh]
+            return o.index_copy(0, rows, oa.to(o.dtype))
         if self.enemy_bias is not None:
             tab = self._tab(li).to(q.dtype)                              # [H, C, C]
             C = tab.shape[-1]
             H = q.shape[1]
             pad = (-(dh + C)) % 8
-            qx = tab[:, cs].permute(1, 0, 2, 3)                          # [R, H, T, C]: row of the query's class
-            kx = F.one_hot(cs, C).to(q.dtype)[:, None].expand(-1, H, -1, -1)
+            oh = F.one_hot(cs, C).to(q.dtype)                            # [R, T, C]
+            # [R, H, T, C]: the row of the query's class, as a matmul (an index gather's backward accumulates with
+            # index_put: ~1 ms per layer on the PC)
+            qx = torch.einsum("rtc,hcd->rhtd", oh, tab)
+            kx = oh[:, None].expand(-1, H, -1, -1)
             z = qs.new_zeros(*qs.shape[:-1], pad)
-            oa = sdpa(torch.cat([qs * dh ** -0.5, qx, z], -1), torch.cat([ks, kx, z], -1),
-                      torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1), ms, 1.0)[..., :dh]
+            qa = torch.cat([qs * dh ** -0.5, qx, z], -1)
+            ka = torch.cat([ks, kx, z], -1)
+            va = torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1)
+            if gated:
+                # both parts in one call: the second has no bias columns (zeros) and no encounter keys
+                qn = torch.cat([qs * dh ** -0.5, qs.new_zeros(*qs.shape[:-1], C + pad)], -1)
+                R = qs.shape[0]
+                ob = sdpa(torch.cat([qa, qn]), torch.cat([ka, ka]), torch.cat([va, va]),
+                          torch.cat([ms, ms & ~enc_of(cs)[:, None, None, :]]),
+                          1.0)[..., :dh]
+                g = self._gate(li).to(o.dtype)
+                oa = g * ob[:R] + (1 - g) * ob[R:]
+            else:
+                oa = sdpa(qa, ka, va, ms, 1.0)[..., :dh]
         else:
             oa = o[rows]
-        if self.enemy_gate is not None:
-            g = self._gate(li).to(o.dtype)
-            oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
+            if gated:
+                g = self._gate(li).to(o.dtype)
+                oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
         return o.index_copy(0, rows, oa.to(o.dtype))
 
     def sdpa_trunk(self, x, mask, cls=None):
@@ -440,8 +509,18 @@ class AmberNet(nn.Module):
             return full[:M]
 
         varlen = self.varlen_attn is not None and "seq_off" in b
+        # training with the encounter parts on the packed tokens (varlen_attn_train: own kernels with gradients)
+        tvar = self.train_attn is not None and self.enemy_on and self.training and not varlen
         cls_p = cls_pad = cls_i = None
-        if self.enemy_on:
+        if tvar:
+            cls_p = token_classes(tt_p, ids_p, f_p)
+            t_so = seq_offsets(mask).to(tt_p.device)
+            cls_t = cls_p.to(torch.int32).contiguous()
+            t_rf = sys.modules["az_bench_varlen_attn_train"].row_flags(cls_t, t_so)
+            cnt = (t_so[1:] - t_so[:-1]).long()
+            tok_enc = torch.repeat_interleave(t_rf != 0, cnt)
+            tok_enc = torch.cat([tok_enc, tok_enc.new_zeros(tt_p.shape[0] - tok_enc.shape[0])])[:, None]
+        elif self.enemy_on:
             if varlen:
                 cls_p, cls_i = _packed_classes(tt_p, ids_p, f_p)
             else:
@@ -454,7 +533,7 @@ class AmberNet(nn.Module):
                 return self.varlen_attn(qkv, b["seq_off"], H, T)
             tab = None if self.enemy_bias is None else self._tab(li)
             gate = None if self.enemy_gate is None else self._gate(li)
-            return _enemy_vattn(self.varlen_attn, qkv, b["seq_off"], H, T, cls_i, tab, gate)
+            return _enemy_vattn(self.varlen_attn, qkv, b["seq_off"], H, T, cls_i, tab, gate, self.gate_key)
 
         for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
@@ -467,7 +546,9 @@ class AmberNet(nn.Module):
                 x = out_ffn(x, o, layer)
                 continue
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
-            if varlen:
+            if tvar:
+                x = x + a.out_proj(self._train_enemy_attn(qkv_p, t_so, H, T, cls_t, t_rf, tok_enc, li))
+            elif varlen:
                 x = x + a.out_proj(vattn(qkv_p.contiguous(), li))
             else:
                 qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)

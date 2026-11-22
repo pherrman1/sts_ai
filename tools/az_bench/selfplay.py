@@ -1189,7 +1189,9 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     # stripped states, split by rows with and without encounter tokens; infer_noise = the inference net vs the fp32
     # training net, both without encounter parts on the stripped states (fp16 noise floor of the comparison)
     tags = ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_noise",
-            "infer_compiled")   # infer_compiled: torch.compile(infer) vs infer, both gated (only with --compile)
+            "infer_compiled",   # infer_compiled: torch.compile(infer) vs infer, both gated (only with --compile)
+            "train_kernel", "train_kernel_bf16")   # --enemy-train-kernel: the training net with its kernels vs the
+    # padded SDPA path, in training mode, fp32 and under bf16 autocast (as the trainer runs)
     run_c = torch.compile(copy.deepcopy(infer)) if args.compile else None
     diff = {t: {k: 0.0 for k in names} for t in tags}
     nonfinite = {"train": 0, "infer": 0}   # non-finite outputs of the gated nets
@@ -1237,6 +1239,38 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
                 nonfinite["infer"] += sum(int((~torch.isfinite(o.float())).sum()) for o in ci[1:4])
                 cmp("infer_compiled", ci, ai, bt["a_mask"])
     train_net.train()
+    grad_rel = {}   # --enemy-train-kernel: per parameter max |grad kernel - grad SDPA| / max |grad SDPA| (fp32)
+    if train_net.train_attn is not None and args.train_packed:
+        ta = train_net.train_attn
+        for i in range(min(3, args.check_enemy_gate)):
+            bt = to_torch(replay.sample(rng, args.train_batch), dev)
+            bt = dict(bt, pack_idx=amber_net.pack_index(bt["mask"], 16))
+            res = []
+            for use in (ta, None):
+                train_net.train_attn = use
+                train_net.zero_grad()
+                o = train_net(bt)
+                loss = (o[0].float().masked_fill(~bt["a_mask"], 0).sum() + o[1].float().logsumexp(-1).sum()
+                        + o[2].float().logsumexp(-1).sum() + o[3].float().sum())
+                loss.backward()
+                res.append(([x.detach() for x in o],
+                            {n_: p_.grad.detach().clone() for n_, p_ in train_net.named_parameters()
+                             if p_.grad is not None}))
+                if cuda:
+                    with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+                        res[-1] = res[-1] + ([x.detach() for x in train_net(bt)],)
+            cmp("train_kernel", res[0][0], res[1][0], bt["a_mask"])
+            if cuda:
+                cmp("train_kernel_bf16", res[0][2], res[1][2], bt["a_mask"])
+            for n_, gs in res[1][1].items():
+                gk = res[0][1].get(n_)
+                if gk is None:
+                    grad_rel[n_] = float("inf")
+                    continue
+                rel = float((gk - gs).abs().max()) / max(float(gs.abs().max()), 1e-12)
+                grad_rel[n_] = max(grad_rel.get(n_, 0.0), rel)
+        train_net.train_attn = ta
+        train_net.zero_grad()
 
     def step_ms(net, strip):
         net.train()
@@ -1266,6 +1300,10 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
            "gates": [round(float(x), 4) for x in train_net.enemy_gate.detach().float().cpu()],
            "max_abs_diff": diff, "nonfinite_outputs": nonfinite,
            "train_step_ms": {"without_encounter_parts": step_ms(base, True), "with": step_ms(train_net, False)}}
+    if grad_rel:   # --enemy-train-kernel: worst parameters first
+        top = sorted(grad_rel.items(), key=lambda kv: -kv[1])
+        res["train_kernel_grad_rel_max"] = round(top[0][1], 6)
+        res["train_kernel_grad_rel_top"] = {n_: round(v, 6) for n_, v in top[:8]}
     if train_net.enemy_bias is not None:   # the same with the gates only (no class bias)
         tab, train_net.enemy_bias = train_net.enemy_bias, None
         try:
@@ -1491,6 +1529,15 @@ def main(argv=None):
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
                          "amber_net.AmberNet(enemy_bias=True), zero at the start")
+    ap.add_argument("--enemy-gate-key", action="store_true",
+                    help="--enemy-tokens: key gate instead of the mix of two attentions: one softmax with log g added "
+                         "to the encounter keys' scores (their weights times g; at g = 0 exactly the attention without "
+                         "them, as the mix). Cheaper: the mix runs a second softmax on rows with encounter tokens "
+                         "(PC 2026-11-22: +30 %% inference GPU per batch at 30 %% such rows)")
+    ap.add_argument("--enemy-train-kernel", action="store_true",
+                    help="--enemy-tokens with --train-packed: training attention through own Triton kernels with "
+                         "gradients on the packed tokens (tools/az_bench/varlen_attn_train.py; bias in the kernel, "
+                         "rows attend over their own length) instead of padded SDPA with extra q / k columns")
     ap.add_argument("--enemy-lr-scale", type=float, default=0.01,
                     help="--enemy-tokens / --enemy-map-bias: learning rate of the gates and the bias table as a share "
                          "of --lr (their own optimizer group). Adam moves each by about lr per step whatever the "
@@ -1604,6 +1651,10 @@ def main(argv=None):
         ap.error("--init-net and --resume exclude each other")
     if args.enemy_map_bias and not args.enemy_tokens:
         ap.error("--enemy-map-bias needs --enemy-tokens")
+    if args.enemy_train_kernel and not (args.enemy_tokens and args.train_packed):
+        ap.error("--enemy-train-kernel needs --enemy-tokens and --train-packed")
+    if args.enemy_gate_key and not args.enemy_tokens:
+        ap.error("--enemy-gate-key needs --enemy-tokens")
     if args.enemy_tokens and args.fused_net:
         ap.error("--enemy-tokens excludes --fused-net")
     if args.init_counters and not args.init_net:
@@ -1654,6 +1705,9 @@ def main(argv=None):
                                    aux_slots=AUX_SLOTS if args.aux_fights else 0,
                                    enemy_bias=args.enemy_map_bias, enemy_gate=args.enemy_tokens).to(dev)
     train_net.sdpa = True
+    train_net.gate_key = bool(args.enemy_gate_key)   # (deepcopied into the inference net)
+    if args.enemy_train_kernel:
+        train_net.train_attn = amber_net.load_kernel("varlen_attn_train")
     # --aux-fights / --enemy-map-bias: their parameters are a second group, so a checkpoint without them keeps its
     # optimizer state for the rest (load_opt_state).
     main_params = [p_ for n_, p_ in train_net.named_parameters() if not extra_param(n_)]
