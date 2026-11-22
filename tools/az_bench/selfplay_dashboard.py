@@ -374,7 +374,7 @@ def progress_panel(rows, cur, recent=20):
                      ymin=0, yfmt="{:.1f}") +
                '<p class="rule">Hallway: Act 1 monster rooms. Q advantage: the searched drink\'s mean root Q minus the '
                'best visited non-potion action (near 0 = the search sees no value in keeping the potion). End turns: '
-               'searched end turns with energy left; playable card = a non-status, non-curse card play was legal.</p>')
+               '% of all searched end turns that left energy while a non-status, non-curse card play was legal.</p>')
     return f"""<section class="ascbox"><h2>Keys, Recall, elites, Act 4 (finished runs)</h2>
 {tiles}
 <p class="rule">Tiles: current ascension, last ~{recent} windows. Keys count when held at the run's end. Recall % is over
