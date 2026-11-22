@@ -104,6 +104,17 @@ subcommands fail nonzero (see
 `apps/parity_test.cpp` has a CMake target `parity_test`; `parity_test.py`
 locates the binary via `STS_PARITY_BIN` or `build/parity_test`.
 
+`tools/agent/verify_changed.py` selects the verification tier from the paths
+changed against `origin/main` (rules in `AGENTS.md`, "Verification tiers"). It
+reuses `build/linux-gcc-debug` incrementally and runs CTest in parallel with a
+per-test timeout. Measured on a 4-core cloud container at `0a7008ec`
+(2026-11-22): fresh Debug build of all targets 362 s; incremental rebuild after
+touching one `src/` file 26 s (5 s for `--target one_combat`); `ctest -L
+'core|smoke' -LE needs-ml-python` 247 tests, 989 s of summed test time, 388 s
+wall with `-j4`. The slowest entries are `live_ooc_protocol` (279 s) and
+`workflow_tools` (205 s), so `-j` beyond about 4 gains little. A Release build
+of all targets takes about 30 minutes there because of `-flto`.
+
 CTest labels provide focused local verification tiers. The current CI gate
 selects `core|smoke`; the other labels remain available for affected interfaces:
 

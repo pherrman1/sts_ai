@@ -47,6 +47,10 @@ configured shared cache is unavailable or read-only. The probe runs in the
 selected native or WSL build environment and forces configuration when a
 fallback changes the binary directory.
 
+`tools/agent/verify_changed.py` runs the verification tier a change needs
+(docs, python, or native = the CI gate), chosen from the changed paths; see
+`AGENTS.md` "Verification tiers".
+
 `tools/agent/baseline_build.py` exports a baseline ref and its pinned submodule
 commits to a temporary source tree, builds one executable, and retains only the
 requested artifact under `build/baselines/`; it never creates a linked
