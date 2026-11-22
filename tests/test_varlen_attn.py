@@ -421,7 +421,7 @@ class EnemyBiasKernel(unittest.TestCase):
         self.assertGreater(float((o3[1] - o4[1]).abs().max()), 1e-3)   # the table matters
 
     def test_kernel_gate_matches_sdpa(self):
-        """gate g: g x attention over all keys + (1 - g) x without the encounter keys, with and without the bias,
+        """gate g: g x attention over all keys + (1 - g) x the same (biased) attention without the encounter keys,
         in both kernels."""
         import sys
         A, V = load("amber_net"), load("varlen_attn")
@@ -448,7 +448,7 @@ class EnemyBiasKernel(unittest.TestCase):
                                 tab.reshape(H, C * C)[:, cls[:, :, None] * C + cls[:, None, :]].permute(1, 0, 2, 3)
                             b_ = b_.masked_fill(~keys[:, None, None, :], float("-inf"))
                             return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=b_)
-                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc, bias=False)
+                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc)
                         ref = ref.transpose(1, 2).reshape(B * T, d)[mask.reshape(-1)]
                         for rb in (False, True):
                             mod.ROW_BOUNDS = rb

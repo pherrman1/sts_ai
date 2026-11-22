@@ -363,8 +363,9 @@ class AmberNet(nn.Module):
         """Attention of layer li with the encounter-token parts (cls [B, T] token classes, rows: the rows that hold
         encounter tokens; rows = _enemy_split(...)). Rows without them attend as without the flag (one pass, on their own
         longest length). Rows with them: g x attention
-        with the encounter keys and the class bias + (1 - g) x attention without the encounter keys (enemy_gate;
-        without a gate: the first part only). The bias goes in as extra q / k columns: q' = [q / sqrt(dh),
+        with the encounter keys and the class bias + (1 - g) x the same attention without the encounter keys
+        (enemy_gate; without a gate: the first part only; for a query without an encounter class that is the attention
+        of the net without encounter tokens). The bias goes in as extra q / k columns: q' = [q / sqrt(dh),
         TAB[h, cls_q, :]], k' = [k, onehot(cls_k)], so q'.k' = q.k / sqrt(dh) + TAB[h, cls_q, cls_k] and
         scaled_dot_product_attention keeps its fused kernels (a float mask [B, H, T, T] would not: the first live
         test's trainer ran about 30x slower with it)."""
@@ -406,10 +407,10 @@ class AmberNet(nn.Module):
             ka = torch.cat([ks, kx, z], -1)
             va = torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1)
             if gated:
-                # both parts in one call: the second has no bias columns (zeros) and no encounter keys
-                qn = torch.cat([qs * dh ** -0.5, qs.new_zeros(*qs.shape[:-1], C + pad)], -1)
+                # both parts in one call: the second without the encounter keys (with the bias, as varlen_attn's
+                # gate: for a query without an encounter class the bias is 0 on those keys anyway)
                 R = qs.shape[0]
-                ob = sdpa(torch.cat([qa, qn]), torch.cat([ka, ka]), torch.cat([va, va]),
+                ob = sdpa(torch.cat([qa, qa]), torch.cat([ka, ka]), torch.cat([va, va]),
                           torch.cat([ms, ms & ~enc_of(cs)[:, None, None, :]]),
                           1.0)[..., :dh]
                 g = self._gate(li).to(o.dtype)
