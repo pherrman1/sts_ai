@@ -2172,7 +2172,8 @@ class SelfplaySmoke(unittest.TestCase):
         hf = np.full((S, 56), 0.3, np.float32)
         hf[1, 5] = np.nan
         ch = {"outcome_target": ot, "outcome": np.array([0, 12, 20], np.int16), "hp_target": hq,
-              "hp_end": np.array([10, 20, 30], np.int16), "hp_floor_target": hf}
+              "hp_end": np.array([10, 20, 30], np.int16), "hp_floor_target": hf,
+              "hp_floor": np.full((S, 56), 51, np.int16)}
         self.assertEqual(sp.sanitize_ema_targets(ch, True), 2)
         np.testing.assert_array_equal(ch["outcome_target"][0], ot[0])
         self.assertEqual(float(ch["outcome_target"][1, 12]), 1.0)
@@ -2180,7 +2181,8 @@ class SelfplaySmoke(unittest.TestCase):
         self.assertEqual(int(ch["hp_target"][2, 30]), 255)
         self.assertEqual(int(ch["hp_target"][2].sum()), 255)
         self.assertTrue(np.isfinite(ch["hp_floor_target"]).all())
-        self.assertEqual(float(ch["hp_floor_target"][1, 5]), -1.0)
+        self.assertAlmostEqual(float(ch["hp_floor_target"][1, 5]), 0.2, places=6)
+        self.assertAlmostEqual(float(ch["hp_floor_target"][0, 5]), 0.3, places=6)
 
     def test_hp_ema_search_run(self):
         """--hp-ema-search: the driver hands out floor HP and per-floor HP search targets with every sample, the

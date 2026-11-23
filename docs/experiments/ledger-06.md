@@ -29335,4 +29335,5 @@ non-finite gets the one-hot real outcome / floor-end HP (per-floor non-finite en
 `ema_bad_targets`. Finite outputs unchanged. `STS_AZ_NONFINITE_GUARD=0` restores the old path.
 **Checks (cloud CPU):** `test_nonfinite_guards` (both helpers), `test_hp_ema_search_run` (2 subtests, counters 0).
 **Open:** the source of the NaN rows; the counters give their rate (2 events in ~2.5 days of live play).
+**Follow-up (review F1):** the backstop now runs before `replay.add` (which stores per-floor targets as bytes, so the first version could not fix them) and gives a bad sample its real per-floor labels (`hp_floor` / 255); the first non-zero count of either counter is logged once.
 **Knowledge impact:** this entry.
