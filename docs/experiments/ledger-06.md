@@ -29318,7 +29318,7 @@ turn the only legal action) and never searched, and none of those can leave a pl
 was over all end turns (same traces: 47.3 % of the searched ones). New counter `end_turns_all` (every real end
 turn); `end_energy_card_pct` is now over it; `end_energy_card_of_searched_pct` keeps the §853 meaning. Play unchanged.
 
-## §TBD — Non-finite net output guard at inference + EMA target backstop (`STS_AZ_NONFINITE_GUARD`, default on) → FIX, live crash of 2026-11-23 16:51 CET (cloud, 2026-11-23)
+## §855 — Non-finite net output guard at inference + EMA target backstop (`STS_AZ_NONFINITE_GUARD`, default on) → FIX, live crash of 2026-11-23 16:51 CET (cloud, 2026-11-23)
 
 **Origin:** amber_scratch stopped at 16:51 CET with `ValueError: replay: floor HP targets need one nonzero [256]
 row per sample with an outcome target` (`_set_soft_q`), right after `invalid value encountered in cast` on the
