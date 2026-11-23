@@ -29317,3 +29317,22 @@ After §853 the live share read 53.4 %: it was over *searched* end turns, but ~6
 turn the only legal action) and never searched, and none of those can leave a playable card. The §852 trace's 18.9 %
 was over all end turns (same traces: 47.3 % of the searched ones). New counter `end_turns_all` (every real end
 turn); `end_energy_card_pct` is now over it; `end_energy_card_of_searched_pct` keeps the §853 meaning. Play unchanged.
+
+## §TBD — Non-finite net output guard at inference + EMA target backstop (`STS_AZ_NONFINITE_GUARD`, default on) → FIX, live crash of 2026-11-23 16:51 CET (cloud, 2026-11-23)
+
+**Origin:** amber_scratch stopped at 16:51 CET with `ValueError: replay: floor HP targets need one nonzero [256]
+row per sample with an outcome target` (`_set_soft_q`), right after `invalid value encountered in cast` on the
+outcome (57) and per-floor HP (56) EMA targets: a whole run's search-backed chain was NaN. The same warning came once
+before (2026-11-21 00:06 CET), then as a skipped NaN training step. §851's guard covers only the floor-HP mix and
+counted 0. The net outputs reach the driver unchecked (`RunDriver::submit` copies them), so one NaN row backs up
+into the tree, the eval cache and every EMA chain of that run. **Inference (unverified):** fp16 overflow in the
+inference net (`infer.half()`), since softmaxes already run in fp32.
+**What it does:** `selfplay.py` `guard_outputs`: per inference batch, rows with a NaN/+inf logit or a non-finite
+outcome / floor-HP / per-floor-HP output get neutral outputs (logits 0, uniform outcome and HP, per-floor HP 0.5)
+on the GPU without a sync; counted in metrics `infer_nonfinite_rows`. Backstop `sanitize_ema_targets`: a chunk sample
+whose outcome target is no distribution, whose 8-bit floor HP target is empty, or whose per-floor HP target is
+non-finite gets the one-hot real outcome / floor-end HP (per-floor non-finite entries masked -1); counted in
+`ema_bad_targets`. Finite outputs unchanged. `STS_AZ_NONFINITE_GUARD=0` restores the old path.
+**Checks (cloud CPU):** `test_nonfinite_guards` (both helpers), `test_hp_ema_search_run` (2 subtests, counters 0).
+**Open:** the source of the NaN rows; the counters give their rate (2 events in ~2.5 days of live play).
+**Knowledge impact:** this entry.
