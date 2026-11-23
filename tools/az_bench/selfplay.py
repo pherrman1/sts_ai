@@ -844,8 +844,10 @@ def search_consts(device, dtype):
 
 def sanitize_ema_targets(ch, hp_ema):
     """Backstop for search-backed EMA targets that are no distribution (a NaN that reached a run's chain): such a
-    sample's outcome target becomes the one-hot real outcome, its floor HP target the one-hot real floor-end HP, and
-    non-finite per-floor HP targets become masked (-1). Returns the number of samples changed (STS_AZ_NONFINITE_GUARD)."""
+    sample's outcome target becomes the one-hot real outcome, its floor HP target the one-hot real floor-end HP and its
+    per-floor HP target the real per-floor labels (hp_floor / 255; read masked before the sample's floor). Runs on the
+    chunk before replay.add, which stores hp_floor_target as bytes. Returns the number of samples changed
+    (STS_AZ_NONFINITE_GUARD)."""
     ot = np.asarray(ch["outcome_target"], np.float32)
     bad = ~np.isfinite(ot).all(1) | ~(np.abs(ot.sum(1) - 1.0) < 0.05)
     if hp_ema:
@@ -866,8 +868,8 @@ def sanitize_ema_targets(ch, hp_ema):
             hq[idx, np.asarray(ch["hp_end"])[idx].astype(np.int64).clip(0, HP_CLASSES - 1)] = 255
             ch["hp_target"] = hq
         if "hp_floor_target" in ch:
-            hf = np.array(ch["hp_floor_target"], copy=True)
-            hf[~np.isfinite(hf)] = -1
+            hf = np.array(ch["hp_floor_target"], np.float32, copy=True)
+            hf[idx] = np.clip(np.asarray(ch["hp_floor"], np.float32)[idx], 0, 255) / 255.0
             ch["hp_floor_target"] = hf
     return n
 
@@ -2186,7 +2188,10 @@ def main(argv=None):
                     gpu_ms["infer"] += ev0.elapsed_time(ev)
             t = lap(infer_s, "sync", t)
             if nonfinite_guard:
-                infer_stats["nonfinite_rows"] += int(out["bad"][0])
+                nb = int(out["bad"][0])
+                if nb and not infer_stats["nonfinite_rows"]:
+                    print(f"# non-finite net outputs in {nb} rows: neutral outputs instead", flush=True)
+                infer_stats["nonfinite_rows"] += nb
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
                        version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
@@ -2403,10 +2408,14 @@ def main(argv=None):
                     aux_stats["pd"] += (tq[:, :, 0] * has).sum(0)
                     aux_stats["hp"] += (tq[:, :, 1] * has).sum(0)
                     aux_stats["secs"] += time.perf_counter() - t_aux
+                if ema_search and nonfinite_guard:   # before add: it stores the per-floor targets as bytes
+                    n_bad = sanitize_ema_targets(ch, hp_ema)
+                    if n_bad and not ema_stats["bad"]:
+                        print(f"# non-finite EMA targets in {n_bad} samples: real labels instead "
+                              f"(infer_nonfinite_rows {infer_stats['nonfinite_rows']})", flush=True)
+                    ema_stats["bad"] += n_bad
                 first = replay.add(ch)
                 if ema_search:   # search-backed EMA targets from the driver (whole runs)
-                    if nonfinite_guard:
-                        ema_stats["bad"] += sanitize_ema_targets(ch, hp_ema)
                     replay.set_soft_outcome(first, ch["outcome_target"], ch["hp_target"] if hp_ema else None)
                     ema_stats["samples"] += len(ch["outcome"])
                     ema_stats["real_weight"] += float(ch["ema_real_weight"].sum())
