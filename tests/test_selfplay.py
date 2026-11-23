@@ -2147,6 +2147,41 @@ class SelfplaySmoke(unittest.TestCase):
         with self.assertRaises(SystemExit):   # needs a half-life
             sp.main(args[:args.index("--value-ema-halflife")] + ["--value-ema-search", "--out-dir", "/nonexistent"])
 
+    def test_nonfinite_guards(self):
+        """guard_outputs: a row with a NaN / +inf net output gets neutral outputs and is counted (-inf logits of masked
+        actions are fine); sanitize_ema_targets: a NaN EMA target becomes the one-hot real outcome / HP."""
+        sp = load()
+        lg = torch.tensor([[0.5, -float("inf")], [float("nan"), 1.0], [1.0, 2.0]])
+        outcome = torch.randn(3, sp.OUTCOME_CLASSES)
+        outcome[2, 3] = float("inf")
+        hp = torch.randn(3, sp.HP_CLASSES)
+        hpf = torch.rand(3, 56)
+        g_lg, g_o, g_hp, g_hpf, n = sp.guard_outputs(lg, outcome, hp, hpf)
+        self.assertEqual(int(n), 2)
+        torch.testing.assert_close(g_lg[0], lg[0])
+        torch.testing.assert_close(g_o[0], outcome[0])
+        for r in (1, 2):
+            self.assertTrue(torch.all(g_lg[r] == 0) and torch.all(g_o[r] == 0) and torch.all(g_hp[r] == 0))
+            self.assertTrue(torch.all(g_hpf[r] == 0.5))
+        S = 3
+        ot = np.full((S, sp.OUTCOME_CLASSES), 1.0 / sp.OUTCOME_CLASSES, np.float16)
+        ot[1] = np.nan
+        hq = np.zeros((S, sp.HP_CLASSES), np.uint8)
+        hq[:, 40] = 255
+        hq[2] = 0
+        hf = np.full((S, 56), 0.3, np.float32)
+        hf[1, 5] = np.nan
+        ch = {"outcome_target": ot, "outcome": np.array([0, 12, 20], np.int16), "hp_target": hq,
+              "hp_end": np.array([10, 20, 30], np.int16), "hp_floor_target": hf}
+        self.assertEqual(sp.sanitize_ema_targets(ch, True), 2)
+        np.testing.assert_array_equal(ch["outcome_target"][0], ot[0])
+        self.assertEqual(float(ch["outcome_target"][1, 12]), 1.0)
+        self.assertEqual(float(ch["outcome_target"][1].sum()), 1.0)
+        self.assertEqual(int(ch["hp_target"][2, 30]), 255)
+        self.assertEqual(int(ch["hp_target"][2].sum()), 255)
+        self.assertTrue(np.isfinite(ch["hp_floor_target"]).all())
+        self.assertEqual(float(ch["hp_floor_target"][1, 5]), -1.0)
+
     def test_hp_ema_search_run(self):
         """--hp-ema-search: the driver hands out floor HP and per-floor HP search targets with every sample, the
         replay keeps them (plain and compressed window) and the HP heads train on them ("hp_ema", "hp_floor_ema");
@@ -2175,6 +2210,8 @@ class SelfplaySmoke(unittest.TestCase):
                     self.assertTrue(all(k in l and np.isfinite(l[k]) for l in losses), k)
                 if "--compress-targets" in extra:   # outcome and floor HP bytes together
                     self.assertGreater(last["replay_soft_bytes_mean"], 2)
+                self.assertEqual(last["infer_nonfinite_rows"], 0)
+                self.assertEqual(last["ema_bad_targets"], 0)
         with self.assertRaises(SystemExit):   # needs --value-ema-search
             sp.main([a for a in args if a != "--value-ema-search"] + ["--seed-base", "1", "--out-dir", "/nonexistent"])
         with self.assertRaises(SystemExit):   # needs Amber's search rules

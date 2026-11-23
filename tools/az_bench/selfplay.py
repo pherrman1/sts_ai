@@ -842,6 +842,51 @@ def search_consts(device, dtype):
     return c
 
 
+def sanitize_ema_targets(ch, hp_ema):
+    """Backstop for search-backed EMA targets that are no distribution (a NaN that reached a run's chain): such a
+    sample's outcome target becomes the one-hot real outcome, its floor HP target the one-hot real floor-end HP, and
+    non-finite per-floor HP targets become masked (-1). Returns the number of samples changed (STS_AZ_NONFINITE_GUARD)."""
+    ot = np.asarray(ch["outcome_target"], np.float32)
+    bad = ~np.isfinite(ot).all(1) | ~(np.abs(ot.sum(1) - 1.0) < 0.05)
+    if hp_ema:
+        bad |= ~(np.asarray(ch["hp_target"]) > 0).any(1)
+    if "hp_floor_target" in ch:
+        hf = np.asarray(ch["hp_floor_target"], np.float32)
+        bad |= ~np.isfinite(hf).all(1)
+    n = int(bad.sum())
+    if n:
+        idx = np.nonzero(bad)[0]
+        ot = ot.copy()
+        ot[idx] = 0
+        ot[idx, np.asarray(ch["outcome"])[idx].astype(np.int64).clip(0, OUTCOME_CLASSES - 1)] = 1
+        ch["outcome_target"] = ot.astype(np.asarray(ch["outcome_target"]).dtype)
+        if hp_ema:
+            hq = np.array(ch["hp_target"], copy=True)
+            hq[idx] = 0
+            hq[idx, np.asarray(ch["hp_end"])[idx].astype(np.int64).clip(0, HP_CLASSES - 1)] = 255
+            ch["hp_target"] = hq
+        if "hp_floor_target" in ch:
+            hf = np.array(ch["hp_floor_target"], copy=True)
+            hf[~np.isfinite(hf)] = -1
+            ch["hp_floor_target"] = hf
+    return n
+
+
+def guard_outputs(lg, outcome, hp, hpf=None):
+    """Rows with a NaN / inf net output get neutral outputs (logits 0, uniform outcome and floor HP, per-floor HP
+    0.5); returns the outputs and the number of such rows (an int32 tensor on the outputs' device, no sync). A NaN
+    logit or +inf counts; -inf logits (masked actions) do not."""
+    ok = torch.isfinite(outcome).all(-1) & torch.isfinite(hp).all(-1) & ~(torch.isnan(lg) | torch.isposinf(lg)).any(-1)
+    if hpf is not None:
+        ok &= torch.isfinite(hpf).all(-1)
+        hpf = torch.where(ok[:, None], hpf, torch.full_like(hpf, 0.5))
+    okc = ok[:, None]
+    lg = torch.where(okc, lg, torch.zeros_like(lg))
+    outcome = torch.where(okc, outcome, torch.zeros_like(outcome))
+    hp = torch.where(okc, hp, torch.zeros_like(hp))
+    return lg, outcome, hp, hpf, (~ok).sum().to(torch.int32)
+
+
 def search_values(outcome_logits, hp_logits):
     """F = E[final floor] / 57 (a win counts 57; class 0 = win, f = death on floor f) and E[HP] from the heads."""
     p = torch.softmax(outcome_logits.float(), -1)
@@ -2040,7 +2085,7 @@ def main(argv=None):
             json.dump(res, fh, indent=1)
         print(json.dumps(res), flush=True)
         return 0
-    ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
+    ema_stats = {"samples": 0, "real_weight": 0.0, "bad": 0}   # mean weight of the final outcome in the EMA targets
     # --aux-fights: rows labelled, samples with rows, label time, sums of the targets per slot (and their counts)
     aux_stats = {"rows": 0, "samples": 0, "secs": 0.0, "n": np.zeros(AUX_SLOTS), "pd": np.zeros(AUX_SLOTS),
                  "hp": np.zeros(AUX_SLOTS)}
@@ -2058,7 +2103,8 @@ def main(argv=None):
     nonfinite_run = [0]   # consecutive skipped steps
     gradbox = {"n": 0, "sum": 0.0, "max": 0.0}   # gradient norm (before clipping) of the finite steps since the last report
     # tokens: of the rows, packed batches only; early: batches handed back before the next one was gathered
-    infer_stats = {"batches": 0, "rows": 0, "syncs": 0, "tokens": 0, "early": 0, "early_packed": 0}
+    infer_stats = {"batches": 0, "rows": 0, "syncs": 0, "tokens": 0, "early": 0, "early_packed": 0, "nonfinite_rows": 0}
+    nonfinite_guard = os.environ.get("STS_AZ_NONFINITE_GUARD", "1") != "0"
     gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
     # Phase timers (logging only): cumulative wall seconds of the inference thread and of the training thread.
     #   inference: wait_pack = next_flat (waiting for rows + packing; the driver's pack_s is the packing part),
@@ -2125,6 +2171,7 @@ def main(argv=None):
                 out["dist"] = torch.zeros(R * OUTCOME_CLASSES, dtype=torch.float32, pin_memory=cuda)
             if hp_ema:   # the floor HP softmax
                 out["hpd"] = torch.zeros(R * HP_CLASSES, dtype=torch.float32, pin_memory=cuda)
+            out["bad"] = torch.zeros(1, dtype=torch.int32, pin_memory=cuda)   # rows with a non-finite net output
             return h, {k: v.numpy() for k, v in h.items()}, out
 
         sets = [buffers(), buffers()]
@@ -2138,6 +2185,8 @@ def main(argv=None):
                 if ev0 is not None:
                     gpu_ms["infer"] += ev0.elapsed_time(ev)
             t = lap(infer_s, "sync", t)
+            if nonfinite_guard:
+                infer_stats["nonfinite_rows"] += int(out["bad"][0])
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
                        version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
@@ -2280,6 +2329,14 @@ def main(argv=None):
                     else:
                         lg, outcome, hp, hpf = run(x)
                     t_ph = lap(infer_s, "forward", t_ph)
+                    if nonfinite_guard:
+                        # A row with a NaN / inf output (rare fp16 overflow in the inference net) would poison the
+                        # search tree, the eval cache and the EMA targets: it gets neutral outputs (uniform policy,
+                        # outcome and HP; per-floor HP 0.5) and is counted (metrics infer.nonfinite_rows). No sync:
+                        # the count goes to the host with the outputs. STS_AZ_NONFINITE_GUARD=0 restores the old path.
+                        lg, outcome, hp, hpf, nbad = guard_outputs(lg[:rows], outcome[:rows], hp[:rows],
+                                                                   hpf[:rows] if amber else None)
+                        out["bad"].copy_(nbad.view(1), non_blocking=True)
                     Fv, ehp = search_values(outcome[:rows], hp[:rows])
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
                     out["F"][:rows].copy_(Fv, non_blocking=True)
@@ -2348,6 +2405,8 @@ def main(argv=None):
                     aux_stats["secs"] += time.perf_counter() - t_aux
                 first = replay.add(ch)
                 if ema_search:   # search-backed EMA targets from the driver (whole runs)
+                    if nonfinite_guard:
+                        ema_stats["bad"] += sanitize_ema_targets(ch, hp_ema)
                     replay.set_soft_outcome(first, ch["outcome_target"], ch["hp_target"] if hp_ema else None)
                     ema_stats["samples"] += len(ch["outcome"])
                     ema_stats["real_weight"] += float(ch["ema_real_weight"].sum())
@@ -2613,6 +2672,7 @@ def main(argv=None):
                 **({"weight_ema_updates": counters["ema_updates"]} if ema_params is not None else {}),
                 **({"kickstart_lambda": kick["lam"]} if teacher is not None else {}),
                 "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
+                "infer_nonfinite_rows": infer_stats["nonfinite_rows"], "ema_bad_targets": ema_stats["bad"],
                 "stalls": s["stalls"], "stalls_by_type": {k: s["stalls_" + k] for k in ("fight_moves", "run_moves", "no_legal")}, "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "hp_target_bad_rows": s.get("hp_target_bad_rows", 0), "hp_target_fallbacks": s.get("hp_target_fallbacks", 0), "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,
