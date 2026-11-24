@@ -22,9 +22,12 @@ namespace sts::search {
     constexpr int kAmberIdVocab = 1024;    // amber_net.ID_VOCAB; id 0 = none / padding
     constexpr int kAmberActionTypes = 16;  // amber_net.ACTION_TYPES
 
-    constexpr std::array<int, kAmberTokenTypes> kAmberCap = {1, 1, 24, 16, 96, 32, 5, 16, 32};
+    // MAP capacity 48 (2026-11-24 pipeline audit: 32 cut the far rows in 58 % of the early-act out-of-combat
+    // decisions); the encoder writes at most amberMapTokenLimit() of them (AmberEncoder.h; default 32, the old cap).
+    constexpr std::array<int, kAmberTokenTypes> kAmberCap = {1, 1, 24, 16, 96, 32, 5, 16, 48};
     constexpr std::array<int, kAmberTokenTypes> kAmberOff = {0, 1, 2, 26, 42, 138, 170, 175, 191};
-    constexpr int kAmberMaxTokens = 223;   // kAmberOff.back() + kAmberCap.back()
+    constexpr int kAmberMaxTokens = 239;   // kAmberOff.back() + kAmberCap.back()
+    constexpr int kAmberMapTokensDefault = 32;   // the MAP limit before 2026-11-24 (STS_AZ_MAP_TOKENS unset)
     constexpr int kAmberMaxActions = 96;
     constexpr std::uint8_t kAmberNoSeg = 0xff;
 

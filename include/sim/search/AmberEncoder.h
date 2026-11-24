@@ -100,6 +100,20 @@ namespace sts::search {
     // No heap allocation. Feature layout: AmberGameEncoder.cpp.
     void amberEncodeGame(const GameContext &gc, const std::vector<GameAction> &actions, AmberTokens &out);
 
+    // SELECT_MANY order for the encoders' first kAmberMaxActions actions (2026-11-24 pipeline audit): the engine
+    // lists hand subsets in ascending mask order, so with more than 96 actions the encoded prefix never reached hand
+    // index 7 or more. When `actions` has more than kAmberMaxActions entries, reorders its MULTI_CARD_SELECT actions
+    // (stable, in the slots they occupy) by distance from the two ends of the hand: empty and whole hand, each single
+    // card and all but one, pairs and all but two, ...; ties keep the engine's order. The set of actions is unchanged;
+    // lists of at most 96 actions are left alone. handSize = BattleContext::cards.cardsInHand. Env
+    // STS_AZ_MULTISELECT_BALANCED=0 turns it off (read once; default on).
+    void amberBalanceMultiSelect(std::vector<search::Action> &actions, int handSize);
+
+    // MAP tokens amberEncodeGame writes at most: env STS_AZ_MAP_TOKENS (kAmberMapTokensDefault .. the MAP capacity
+    // kAmberCap[MAP]; tools/az_bench/selfplay.py --map-tokens), read once per process; unset = 32, the limit before
+    // the capacity was raised. Throws std::runtime_error on another value.
+    int amberMapTokenLimit();
+
     // Encounter tokens (2026-11-21, optional; RunConfig::enemyTokens, not from Amber Eye: Philipp's choice after an
     // STS2 author's design): appends one MONSTER token per fight the current act can hold, to an out-of-combat
     // encoding: the act boss, the act's 3 elites (act 4: Shield and Spear) and every encounter of the act's strong

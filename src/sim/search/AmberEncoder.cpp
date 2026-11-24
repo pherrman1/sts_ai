@@ -56,11 +56,40 @@
 //     10 sourceMonster  11 queue position/10
 #include "sim/search/AmberEncoder.h"
 
+#include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <stdexcept>
+#include <vector>
 
 #include "combat/Actions.h"
 
 namespace sts::search {
+
+    void amberBalanceMultiSelect(std::vector<search::Action> &actions, int handSize) {
+        static const bool on = [] {
+            const char *e = std::getenv("STS_AZ_MULTISELECT_BALANCED");
+            if (!e || std::strcmp(e, "1") == 0) return true;
+            if (std::strcmp(e, "0") == 0) return false;
+            throw std::runtime_error("STS_AZ_MULTISELECT_BALANCED must be 0 or 1 when set");
+        }();
+        if (!on || static_cast<int>(actions.size()) <= kAmberMaxActions) return;
+        std::vector<int> slots;
+        std::vector<search::Action> multi;
+        for (int i = 0; i < static_cast<int>(actions.size()); ++i)
+            if (actions[i].getActionType() == ActionType::MULTI_CARD_SELECT) {
+                slots.push_back(i);
+                multi.push_back(actions[i]);
+            }
+        if (multi.size() < 2) return;
+        const auto key = [handSize](const search::Action &a) {
+            const int k = __builtin_popcount(a.bits & 0x3ffu);
+            return std::min(k, handSize - k) * 2 + (k > handSize - k ? 1 : 0);
+        };
+        std::stable_sort(multi.begin(), multi.end(),
+                         [&](const search::Action &a, const search::Action &b) { return key(a) < key(b); });
+        for (std::size_t j = 0; j < slots.size(); ++j) actions[slots[j]] = multi[j];
+    }
 
     std::uint16_t amberHalf(float x) {
         // F. Giesen, float_to_half_fast3_rtne (public domain).

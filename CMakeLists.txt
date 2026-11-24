@@ -451,6 +451,11 @@ target_include_directories(amber_game_encoder_test PRIVATE include json/include)
 add_test(NAME amber_game_encoder COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:amber_game_encoder_test> 200)
 set_tests_properties(amber_game_encoder PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+# The same with the raised MAP limit (selfplay.py --map-tokens 48, STS_AZ_MAP_TOKENS).
+add_test(NAME amber_game_encoder_map48 COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:amber_game_encoder_test> 200)
+set_tests_properties(amber_game_encoder_map48 PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke"
+    ENVIRONMENT "STS_AZ_MAP_TOKENS=48")
 
 # Amber Eye's out-of-combat chance rule (stage 1 --chance-on-reveal): a step the detector calls deterministic has the
 # same public result under resampled hidden state (random-legal A20 runs, battles skipped, fixed test seeds 1..60).
@@ -462,6 +467,14 @@ set_tests_properties(amber_chance_rule PROPERTIES WORKING_DIRECTORY ${CMAKE_SOUR
 
 # Action-enumeration audit (2026-11-19): engine-valid actions vs the self-play driver's enumeration, out of combat
 # (getAllActionsInState) and in combat (SilverSearcher::enumerateActions); report-only (fixed test seeds).
+# SELECT_MANY order for the Amber encoders (amberBalanceMultiSelect): the first 96 masks reach every hand index; STS_AZ_MULTISELECT_BALANCED=0 restores the engine order.
+add_executable(multiselect_order_test tests/multiselect_order_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(multiselect_order_test PRIVATE include json/include)
+add_test(NAME multiselect_order COMMAND multiselect_order_test)
+set_tests_properties(multiselect_order PROPERTIES LABELS "core;smoke")
+add_test(NAME multiselect_order_ascending COMMAND multiselect_order_test)
+set_tests_properties(multiselect_order_ascending PROPERTIES LABELS "core;smoke" ENVIRONMENT "STS_AZ_MULTISELECT_BALANCED=0")
+
 add_executable(action_enumeration_audit_test tests/action_enumeration_audit_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(action_enumeration_audit_test PRIVATE include json/include)
 

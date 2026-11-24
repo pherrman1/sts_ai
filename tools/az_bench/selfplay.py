@@ -1649,6 +1649,12 @@ def main(argv=None):
                          "read the same way). The teacher (--teacher-ckpt) uses the setting its own checkpoint was "
                          "trained with (amber_net.input_options_from_ckpt). Offline measurement "
                          "2026-11-24: this slot's gradient carried 99.6 %% of the gradient variance")
+    ap.add_argument("--map-tokens", type=int, default=32,
+                    help="MAP tokens the out-of-combat encoder writes at most (32 = the limit before 2026-11-24, the "
+                         "default; up to 48, the capacity; env STS_AZ_MAP_TOKENS for the native encoder). The encoder "
+                         "keeps the current node, the act boss and the nearest rows; 32 cut the far rows in 58 %% of "
+                         "the early-act decisions (pipeline audit 2026-11-24). A net trained with 32 sees more tokens "
+                         "in those states (an input shift; no gate)")
     ap.add_argument("--enemy-map-bias", action="store_true",
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
@@ -1831,6 +1837,12 @@ def main(argv=None):
     if any(len(a) != 5 for a in heart_arms):
         ap.error("--heart-arms: FULL:FAST:PROB:MFULL:MFAST per arm")
 
+    if not 32 <= args.map_tokens <= 48:
+        ap.error("--map-tokens: 32 .. 48")
+    env_map = os.environ.get("STS_AZ_MAP_TOKENS")
+    if env_map not in (None, "", str(args.map_tokens)):
+        ap.error(f"STS_AZ_MAP_TOKENS={env_map} differs from --map-tokens {args.map_tokens}")
+    os.environ["STS_AZ_MAP_TOKENS"] = str(args.map_tokens)   # read once by the native encoder (amberMapTokenLimit)
     sys.path.insert(0, args.module_dir)
     import az_bench_native  # noqa: E402
 
@@ -1889,6 +1901,10 @@ def main(argv=None):
         print(f"warning: the source checkpoint was trained {'with' if conseq_src.get('run_log_loopcount') else 'without'}"
               f" --run-log-loopcount, this run is {'with' if args.run_log_loopcount else 'without'} it (an input "
               "shift of the RUN token's loopCount slot)", file=sys.stderr, flush=True)
+    if (args.resume or args.init_net) and int(conseq_src.get("map_tokens") or 32) != args.map_tokens:
+        print(f"warning: the source checkpoint was trained with --map-tokens {int(conseq_src.get('map_tokens') or 32)}, "
+              f"this run uses {args.map_tokens} (an input shift of out-of-combat states with far map rows)",
+              file=sys.stderr, flush=True)
     if not args.consequences and conseq_src.get("consequences"):
         print("warning: the source checkpoint was trained with --consequences; without the flag its consequence "
               "inputs get 0 (an input shift)", file=sys.stderr, flush=True)
@@ -2170,8 +2186,9 @@ def main(argv=None):
     if row_b[-1] < args.batch:
         row_b.append(args.batch)
     tok_b = [int(v) for v in args.tok_buckets.split(",")]
-    if args.enemy_tokens and tok_b[-1] < 223:   # up to 14 more tokens per row (az AmberTokens kAmberMaxTokens 223)
-        tok_b.append(224)
+    max_tok = 223 + args.map_tokens - 32   # live tokens per row at most (AmberTokens.h; MAP limit --map-tokens)
+    if (args.enemy_tokens or args.map_tokens > 32) and tok_b[-1] < max_tok:   # buffers sized by the last bucket
+        tok_b.append(-(-max_tok // 8) * 8)
     act_b = [int(v) for v in args.act_buckets.split(",")]
     infer_tok_b = {t: 0 for t in tok_b}   # inference batches per token bucket (the padded length of their rows)
     min_rows = max(1, min(args.batch, args.workers * args.games) // 2)
