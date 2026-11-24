@@ -42,6 +42,34 @@ ENC_KIND_BASE = 1018
 # 4..6 MAP node boss / elite / hallway fight.
 BIAS_CLASSES = 7
 
+# Consequence features (RunDriver consequences, search::amberAppendConsequences, AmberConsequences.cpp; Amber's
+# lethal action feature plus AlphaDefect's engine-computed previews): float slots [lo, hi) per token type and action
+# feature columns [lo, hi) that every encoding leaves 0 without the flag. A net trained without them continues with
+# these input weights at 0 (zero_consequence_inputs): it then computes exactly what it did before (each slot only
+# enters through these columns of a linear projection), and the columns train from the first step.
+CONSEQUENCE_FLOATS = {"player": (40, 55), "card": (42, 61), "potion": (42, 61)}
+CONSEQUENCE_ACT_FEATS = (3, 4)
+
+
+def consequence_inputs():
+    """(parameter name, column slice) of the input weights that read the consequence slots."""
+    out = [(f"proj.{t}.weight", slice(lo, hi)) for t, (lo, hi) in CONSEQUENCE_FLOATS.items()]
+    out.append(("w_f.weight", slice(*CONSEQUENCE_ACT_FEATS)))
+    return out
+
+
+def zero_consequence_inputs(named):
+    """Zeroes the consequence input columns in place. `named`: a module (its named_parameters) or a dict name ->
+    tensor (e.g. a state dict or the averaged weights by parameter name). Returns the number of zeroed weights."""
+    params = dict(named.named_parameters()) if isinstance(named, nn.Module) else named
+    n = 0
+    with torch.no_grad():
+        for name, cols in consequence_inputs():
+            if name in params:
+                params[name][:, cols].zero_()
+                n += params[name][:, cols].numel()
+    return n
+
 
 def token_classes(tt, ids, f):
     """Attention-bias class per token from tok_type [...], ids [..., 4], f [..., 64] (BIAS_CLASSES). MAP floats

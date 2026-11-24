@@ -554,6 +554,11 @@ namespace sts::azbench {
         // get one MONSTER token per fight the act can hold (search::amberAppendEncounterTokens: boss, elites, the
         // strong hallway pool), so the net sees which enemies the map's rooms lead to.
         bool enemyTokens = false;
+        // Consequence features (2026-11-24, default off; changes the net input): combat encodings get the
+        // engine-computed consequences of search::amberAppendConsequences (Amber Eye's lethal action feature plus
+        // AlphaDefect's previews: intent damage, per-card damage / block / kills, end-turn HP loss), in float slots
+        // that are 0 without it (a resumed net needs those input weights zeroed: selfplay.py --consequences).
+        bool consequences = false;
         // Search from given states (2026-11-21, decision explainability; default empty = off). With probe roots,
         // runs do not start from seeds: each run takes the next root, searches its decision once with the full
         // budget (fullSims, fullCandidates; Gumbel draws 0 unless probeNoise, i.e. the top logits are the

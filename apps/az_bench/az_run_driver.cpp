@@ -1455,6 +1455,7 @@ namespace sts::azbench {
                 }
                 const double t1 = cpuSeconds();
                 cfg.encodeCombat(view, encodeContext(node.ctx), acts, fl.tokens);
+                if (cfg.consequences) search::amberAppendConsequences(view, acts, fl.tokens);
                 if (cfg.mergeCards) search::amberMergeCards(fl.tokens);
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
@@ -1726,6 +1727,7 @@ namespace sts::azbench {
                 initObservedBattle(c, auxLive, auxKn);
                 if (!publicCombatRoot(auxLive, auxKn, auxView).empty()) continue;
                 cfg.encodeCombat(auxView, combatContext(c, false), noActions, auxTok);
+                if (cfg.consequences) search::amberAppendConsequences(auxView, noActions, auxTok);
                 if (cfg.mergeCards) search::amberMergeCards(auxTok);
                 if (cfg.compactSamples) {
                     flattenInto(auxTok, auxRow, &g.dict, &g.dictIndex);

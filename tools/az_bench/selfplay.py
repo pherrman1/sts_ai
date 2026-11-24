@@ -1634,6 +1634,13 @@ def main(argv=None):
                          "az_run_driver.h enemyTokens; the net gets gates that start at 0 (AmberNet(enemy_gate=True)), "
                          "so a resumed net computes what it did without the tokens until the gates train; not with "
                          "--fused-net")
+    ap.add_argument("--consequences", action="store_true",
+                    help="consequence features (default off; Amber Eye's 'attack is lethal' action feature plus, by "
+                         "Philipp's choice, AlphaDefect's engine-computed previews: intent damage per monster, each hand "
+                         "card's / potion's damage, kills, block, HP, energy, draws, the HP lost by ending the turn now "
+                         "and after the play; az_run_driver.h consequences, AmberConsequences.cpp). Continuing a net "
+                         "trained without them (--resume / --init-net / --teacher-ckpt), their input weights are set to 0 "
+                         "(amber_net.zero_consequence_inputs), so the net computes what it did until they train")
     ap.add_argument("--enemy-map-bias", action="store_true",
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
@@ -1843,6 +1850,7 @@ def main(argv=None):
                             lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
     explore_blob = None
+    conseq_src = {}
     if args.resume:
         ck = torch.load(args.resume, map_location=dev)
         explore_blob = ck.get("explore_state")
@@ -1851,17 +1859,26 @@ def main(argv=None):
             raise SystemExit(f"--resume {args.resume}: the checkpoint lacks {fresh}")
         train_net.load_state_dict(ck["net"], strict=not fresh)
         load_opt_state(opt, ck["opt"])
+        conseq_src = ck.get("args") or {}
         if fresh:
             print(f"# resume {args.resume}: not in the checkpoint, starting fresh: "
                   f"{sorted({k.split('.')[0] for k in fresh})}", flush=True)
         counters.update(ck["counters"])
     if args.init_net:
-        src = torch.load(args.init_net, map_location=dev)["net"]
+        src_ck = torch.load(args.init_net, map_location=dev)
+        src, conseq_src = src_ck["net"], src_ck.get("args") or {}
         own = train_net.state_dict()
         fresh = [k for k in own if k not in src or src[k].shape != own[k].shape]
         own.update({k: v for k, v in src.items() if k in own and v.shape == own[k].shape})
         train_net.load_state_dict(own)
         print(f"# init-net {args.init_net}: fresh {fresh}", flush=True)
+    # --consequences on a net trained without them: their input weights to 0 (exactly the old net at step 0).
+    conseq_zeroed = False
+    if args.consequences and (args.resume or args.init_net) and not conseq_src.get("consequences"):
+        n_zero = amber_net.zero_consequence_inputs(train_net)
+        conseq_zeroed = True
+        print(f"# consequences: {n_zero} input weights of the consequence slots set to 0 (source trained without "
+              f"them)", flush=True)
     warm0 = 0
     if args.init_counters:
         counters.update(torch.load(args.init_counters, map_location="cpu", weights_only=False)["counters"])
@@ -1880,6 +1897,9 @@ def main(argv=None):
                 and all(a.shape == b.shape for a, b in zip(saved_ema, ema_params)):
             for a, b in zip(ema_params, saved_ema):
                 a.copy_(b.to(dev))
+            if conseq_zeroed:
+                amber_net.zero_consequence_inputs(dict(zip([n_ for n_, _ in train_net.named_parameters()],
+                                                           ema_params)))
             print(f"# weight-ema: averaged weights from {args.resume} ({counters.get('ema_updates', 0)} updates)",
                   flush=True)
         else:
@@ -1898,7 +1918,10 @@ def main(argv=None):
     if args.teacher_ckpt:
         td, tl = amber_net.SIZES.get(args.teacher_net) or tuple(int(x) for x in args.teacher_net.split("x")[:2])
         teacher = amber_net.AmberNet(d=td, layers=tl, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0).to(dev)
-        teacher.load_state_dict(torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)["net"])
+        t_ck = torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)
+        teacher.load_state_dict(t_ck["net"])
+        if args.consequences and not (t_ck.get("args") or {}).get("consequences"):
+            amber_net.zero_consequence_inputs(teacher)
         teacher.sdpa = True
         teacher.eval()
         for p_ in teacher.parameters():
@@ -1992,6 +2015,7 @@ def main(argv=None):
         **({"explore_clean_keys": True} if args.explore_clean_keys else {}),
         **({"aux_fights": True} if args.aux_fights else {}),
         **({"enemy_tokens": True} if args.enemy_tokens else {}),
+        **({"consequences": True} if args.consequences else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),

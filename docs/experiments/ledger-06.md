@@ -29337,3 +29337,43 @@ non-finite gets the one-hot real outcome / floor-end HP (per-floor non-finite en
 **Open:** the source of the NaN rows; the counters give their rate (2 events in ~2.5 days of live play).
 **Follow-up (review F1):** the backstop now runs before `replay.add` (which stores per-floor targets as bytes, so the first version could not fix them) and gives a bad sample its real per-floor labels (`hp_floor` / 255); the first non-zero count of either counter is logged once.
 **Knowledge impact:** this entry.
+
+## §TBD — `--consequences`: engine-computed consequence features (Amber's lethal action feature + AlphaDefect's previews) in combat encodings; zero input weights on a resumed net = bit-identical outputs → BUILT, default off (cloud, 2026-11-24)
+
+**Origin (owner, 2026-11-24):** idea 1 of the AlphaDefect review (arXiv 2611.31076, STS2 PPO agent: removing its
+engine-computed consequences cost −8.3 points, mostly in Act 3). Amber Eye's page names action features "e.g. if an
+attack is lethal"; our encoder had none (Amber fidelity gap). The owner chose to build it together with the other
+consequences the paper lists ("auch die anderen Konsequenz-Features mit einnimmt, die das Paper erwähnt"), which
+Amber's page does not name: those are a deviation the owner chose, behind the same flag.
+**What it does:** `search::amberAppendConsequences` (`src/sim/search/AmberConsequences.cpp`, layout in its header
+comment), on with `RunConfig::consequences` (`az-run-driver --consequences`, `RunDriver(consequences=True)`,
+`selfplay.py --consequences`); runs after `amberEncodeCombat` (search leaves and the `--aux-fights` fight starts),
+before `amberMergeCards`. Every number is the engine's on copies of the public view (ADR-0002): each legal card play
+and potion drink is executed (`search::Action::execute`) and, in PLAYER_NORMAL states with shown intents, followed by
+END_TURN. PLAYER 40-54: intent damage per hit and hits per monster slot (`Monster::publicIncomingDamage`), total
+intent damage, HP lost / death by ending the turn now. Hand CARD and POTION 42-60: per monster slot damage (HP +
+block lost) and kill, block gained, own HP lost, energy change, cards drawn, fight won, fewest / most HP lost when
+the play is followed by ending the turn, opens a card selection. Action feature f[3] of PLAY_CARD / USE_POTION: the
+play kills a monster (Amber's lethal feature). Under Runic Dome (hidden intents) no intent numbers and no end-turn
+previews. Our choices: damage counts block removed; per-card values only for cards with a legal play now (no
+preview of unaffordable cards); random effects (random targets, draws) follow the view copy's RNG, i.e. one sample,
+not "determined effects only" as the paper; the copies run with the knowledge observer detached and the debug
+pointer restored (as `proveSilverUselessBlock`). The slots were 0 in every combat and out-of-combat encoding (both
+encoder tests now assert it), and the action-feature width stays 8 (only f[3] was free; the replay format is
+unchanged). **Resumed net:** with `--consequences` on a `--resume` / `--init-net` / `--teacher-ckpt` checkpoint whose
+`args` lack the flag, `amber_net.zero_consequence_inputs` sets their input columns (proj player/card/potion, `w_f`
+column 3; also the saved `--weight-ema` copy) to 0: each slot enters only through those columns of a linear
+projection, so the net's outputs are bit-identical at step 0, and the columns get gradients from the first step
+(lesson of §837/#1157). Replay samples written before carry 0 there (PLAYER 54 = 0 marks them).
+**Checks (cloud, 4 cores):** CTest `amber_encoder` (9 sample states + 600 random-walk states: only the new slots
+change, 0 without the pass, deterministic, observer sees no event, lethal flag / target damage / block / intent
+damage equal the engine's; 112 lethal plays, one forced on a 1-HP monster), `amber_game_encoder` (new slots 0 in
+every out-of-combat state of 200 runs); `tests/test_amber_consequences.py` (1.2M size: zeroed net on random
+consequence values `torch.equal` to the original net without them, segmented / flat / packed forwards; zeroed
+columns get gradients); `test_selfplay` `test_consequences_driver` (combat samples carry the features, others none;
+none without the flag), `test_consequences_resume_zeroes_inputs`. Cost (Release `amber_encoder_test --bench`, 4,000
+random-walk states): encoding 1.43 → 6.14 µs per position with the pass (+4.7 µs per net leaf).
+**Not done:** no games played with it; the live switch needs the owner's go, an independent review (it changes the
+net input) and the 5-15 min PC live test. **Open question:** whether the CPU cost lowers moves/s on the PC, and
+whether the features raise the win rate.
+**Knowledge impact:** this entry; CODE_MAP row of the Amber encoders.

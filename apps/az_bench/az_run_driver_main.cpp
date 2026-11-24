@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights] [--enemy-tokens] [--stall-log PATH] [--test-relic ENUM_NAME]...
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights] [--enemy-tokens] [--consequences] [--stall-log PATH] [--test-relic ENUM_NAME]...
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -110,6 +110,7 @@ int main(int argc, char **argv) {
         else if (a == "--rng-fix") cfg.rngFix = true;
         else if (a == "--aux-fights") cfg.auxFights = true;
         else if (a == "--enemy-tokens") cfg.enemyTokens = true;
+        else if (a == "--consequences") cfg.consequences = true;
         else if (a == "--stall-log") { stallLogPath = next(); cfg.stallLog = true; }
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;

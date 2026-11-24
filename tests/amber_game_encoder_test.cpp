@@ -278,6 +278,19 @@ int main(int argc, char **argv) {
             amberEncodeGame(gc, actions, b);
             check(liveBytes(a) == liveBytes(b), "deterministic", gc);
 
+            {   // consequence slots (amberAppendConsequences, RunConfig::consequences) stay 0 out of combat, so their
+                // zero-initialised weights leave every out-of-combat output as it was
+                const int pl = static_cast<int>(AmberTokenType::PLAYER), cd = static_cast<int>(AmberTokenType::CARD);
+                const int po = static_cast<int>(AmberTokenType::POTION);
+                bool zero = true;
+                for (int s : {pl, cd, po})
+                    for (int i = 0; i < a.n[s]; ++i)
+                        for (int j = s == pl ? 40 : 42; j <= (s == pl ? 54 : 60); ++j)
+                            zero &= a.tok[kAmberOff[s] + i].f[j] == 0;
+                for (int i = 0; i < a.nAct; ++i) zero &= a.act[i].f[3] == 0;
+                check(zero, "consequence slots unused out of combat", gc);
+            }
+
             {   // encounter tokens (RunConfig::enemyTokens): appended MONSTER tokens only, one per possible fight
                 b = a;
                 amberAppendEncounterTokens(gc, b);
