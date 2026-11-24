@@ -29338,7 +29338,7 @@ non-finite gets the one-hot real outcome / floor-end HP (per-floor non-finite en
 **Follow-up (review F1):** the backstop now runs before `replay.add` (which stores per-floor targets as bytes, so the first version could not fix them) and gives a bad sample its real per-floor labels (`hp_floor` / 255); the first non-zero count of either counter is logged once.
 **Knowledge impact:** this entry.
 
-## §TBD — `--consequences`: engine-computed consequence features (Amber's lethal action feature + AlphaDefect's previews) in combat encodings; zero input weights on a resumed net = bit-identical outputs → BUILT, default off (cloud, 2026-11-24)
+## §856 — `--consequences`: engine-computed consequence features (Amber's lethal action feature + AlphaDefect's previews) in combat encodings; zero input weights on a resumed net = bit-identical outputs → BUILT, default off (cloud, 2026-11-24)
 
 **Origin (owner, 2026-11-24):** idea 1 of the AlphaDefect review (arXiv 2611.31076, STS2 PPO agent: removing its
 engine-computed consequences cost −8.3 points, mostly in Act 3). Amber Eye's page names action features "e.g. if an
