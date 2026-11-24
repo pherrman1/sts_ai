@@ -58,9 +58,10 @@ def embed(net, b):
     W = torch.stack([net.proj[t].weight for t in ex.amber_net.TOKEN_TYPES])
     bias = torch.stack([net.proj[t].bias for t in ex.amber_net.TOKEN_TYPES])
     K = W.shape[0]
-    P = F.linear(b["f"], W.reshape(K * d, -1), bias.reshape(-1)).view(*tt.shape, K, d)
+    P = F.linear(ex.amber_net.log_run_slots(tt, b["f"], net.run_log_slots), W.reshape(K * d, -1),
+                 bias.reshape(-1)).view(*tt.shape, K, d)
     proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
-    return net.in_norm(net.type_emb(tt) + net.ids(b["ids"]).sum(2) + proj)
+    return net.in_norm(net.type_emb(tt) + net._id_emb(tt, b["ids"], 2) + proj)
 
 
 def trunk(net, b, patch=None, gate=None, attn=False):
@@ -119,7 +120,7 @@ def heads(net, x, b, gate=None):
         return torch.where((idx >= 0)[..., None], g, none.to(g.dtype))
 
     e = (net.a_type(b["a_type"]) + net.w_s(pick(b["a_src"], net.a_none[0])) + net.w_t(pick(b["a_tgt"], net.a_none[1]))
-         + net.w_f(b["a_f"]) + net.w_c(c)[:, None])
+         + net._act_feat(b["a_type"], b["a_f"]) + net.w_c(c)[:, None])
     return (net.pol(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4), net.outcome(c), net.hp(c))
 
 
@@ -880,7 +881,7 @@ def summary_grad(net, r, a):
 
     with torch.enable_grad():
         e = (net.a_type(b["a_type"]) + net.w_s(pick(b["a_src"], net.a_none[0])) + net.w_t(pick(b["a_tgt"], net.a_none[1]))
-             + net.w_f(b["a_f"]) + net.w_c(c)[:, None])
+             + net._act_feat(b["a_type"], b["a_f"]) + net.w_c(c)[:, None])
         z = net.pol(e).squeeze(-1)
         sk = r.skip()
         (z[0, a] - (z[0, sk] if sk >= 0 else 0)).backward()
