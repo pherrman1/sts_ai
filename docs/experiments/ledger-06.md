@@ -29447,7 +29447,7 @@ map rows 6–14 46 %, rows 1–5 11 %. Deaths jump at floors 6 and 23, the first
 type are unknown. **Open question:** a per-run death record (seed, floor, room, encounter) in the driver.
 **Knowledge impact:** this entry.
 
-## §TBD — Pipeline-audit input fixes: `--intent-emb` (current vs previous monster move told apart) and `--select-many-bits` (SELECT_MANY hand mask as 10 bits instead of a raw float up to 1,023) → BUILT, default off (cloud, 2026-11-24)
+## §859 — Pipeline-audit input fixes: `--intent-emb` (current vs previous monster move told apart) and `--select-many-bits` (SELECT_MANY hand mask as 10 bits instead of a raw float up to 1,023) → BUILT, default off (cloud, 2026-11-24)
 
 **Question (Philipp, 2026-11-24 23:44 CET, "Bau 1 und 2"):** items 1 and 2 of the read-only pipeline audit
 (project share `audit-20261124/REPORT.md`, main eb23315).
