@@ -29421,4 +29421,6 @@ offline A/B above is the estimate of its cost).
 through a symmetric log. Owner's choice (decision card 2026-11-24 20:55 CET, "Als Flag bauen").
 **Not done:** no games; the live switch needs the owner's go, an independent review (net input change) and the
 5-15 min PC live test. The other unscaled counters (slots 5 / 6) are left as they are.
+**Review (reviewer J, PASS with the flag off):** F1 (checkpoint-loading tools) and F2 (teacher setting from its
+checkpoint) fixed before merge via `amber_net.input_options_from_ckpt`.
 **Knowledge impact:** this entry.
