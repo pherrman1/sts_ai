@@ -1646,7 +1646,8 @@ def main(argv=None):
                     help="net input (default off): the RUN token's float slot 7 (BattleContext.loopCount, written "
                          "unscaled by the encoder) enters the input projection as log(1 + x) "
                          "(amber_net.log_run_slots; train and inference nets, so samples already in the window are "
-                         "read the same way). The teacher (--teacher-ckpt) keeps the raw input. Offline measurement "
+                         "read the same way). The teacher (--teacher-ckpt) uses the setting its own checkpoint was "
+                         "trained with (amber_net.input_options_from_ckpt). Offline measurement "
                          "2026-11-24: this slot's gradient carried 99.6 %% of the gradient variance")
     ap.add_argument("--enemy-map-bias", action="store_true",
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
@@ -1938,6 +1939,7 @@ def main(argv=None):
         teacher = amber_net.AmberNet(d=td, layers=tl, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0).to(dev)
         t_ck = torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)
         teacher.load_state_dict(t_ck["net"])
+        amber_net.input_options_from_ckpt(teacher, t_ck)   # --run-log-loopcount: the teacher's own training setting
         if args.consequences and not (t_ck.get("args") or {}).get("consequences"):
             amber_net.zero_consequence_inputs(teacher)
         teacher.sdpa = True

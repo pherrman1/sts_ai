@@ -185,6 +185,7 @@ def main(argv=None):
     # ---- the inference net as selfplay.py sets it up ----
     net = amber_net.AmberNet(d=d, layers=layers, hp_floors=56 if amber else 1, soft_policy=a["w_soft_policy"] > 0)
     net.load_state_dict(ck["net"])
+    amber_net.input_options_from_ckpt(net, ck)   # e.g. --run-log-loopcount
     infer = copy.deepcopy(net).to(dev).eval()
     infer.sdpa = True
     attn_mod = None

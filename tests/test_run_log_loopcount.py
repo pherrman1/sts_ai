@@ -90,6 +90,31 @@ class RunLogLoopCount(unittest.TestCase):
                 raw = self.net(f)
                 self.assertGreater(max(float((x - y).abs().max()) for x, y in zip(raw, want)), 1e-3)
 
+    def test_input_options_from_ckpt(self):
+        A = self.A
+        for args, want in (({"run_log_loopcount": True}, A.RUN_LOG_LOOPCOUNT_SLOTS), ({"run_log_loopcount": False}, ()),
+                           ({}, ()), (None, ())):
+            net = A.AmberNet(64, 2)
+            net.run_log_slots = (3,)
+            ck = {"net": {}} if args is None else {"net": {}, "args": args}
+            self.assertIs(A.input_options_from_ckpt(net, ck), net)
+            self.assertEqual(net.run_log_slots, want, args)
+
+    def test_explain_load_net_honours_flag(self):
+        import sys
+        import tempfile
+        sys.path.insert(0, os.path.join(ROOT, "tools", "az_bench"))
+        spec = importlib.util.spec_from_file_location("explain", os.path.join(ROOT, "tools", "az_bench", "explain.py"))
+        ex = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ex)
+        net = ex.amber_net.AmberNet(64, 2, hp_floors=56)
+        with tempfile.TemporaryDirectory() as td:
+            for flag in (True, False):
+                path = os.path.join(td, f"ck{flag}.pt")
+                torch.save({"net": net.state_dict(), "args": {"run_log_loopcount": flag}}, path)
+                got = ex.load_net(path)
+                self.assertEqual(got.run_log_slots, ex.amber_net.RUN_LOG_LOOPCOUNT_SLOTS if flag else ())
+
 
 if __name__ == "__main__":
     unittest.main()

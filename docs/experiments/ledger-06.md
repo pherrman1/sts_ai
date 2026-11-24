@@ -29410,7 +29410,9 @@ log(1 + x) mean 3.7, median 3.6, max 6.5. Held-out policy loss: log arm starts +
 **Built (PR, default off):** `selfplay.py --run-log-loopcount`: train and inference nets get
 `AmberNet.run_log_slots = (7,)`; `amber_net.log_run_slots` applies sign(x) log1p(|x|) to RUN tokens' slot 7
 before the input projection in the segmented, flat and packed forwards (token classes keep the raw floats), so
-samples already in the replay window are read the same way; the kickstart teacher keeps the raw input; excludes
+samples already in the replay window are read the same way; the kickstart teacher, `explain.py` / `explain_lab`,
+`infer_profile.py` and `capacity_probe.py` take the setting from the loaded checkpoint's `args`
+(`amber_net.input_options_from_ckpt`; review F1/F2); excludes
 `--fused-net`; a `--resume` / `--init-net` checkpoint trained with the other setting prints a warning (the flag
 is in the checkpoint's `args`). `tests/test_run_log_loopcount.py`: all layouts equal the plain net on pre-scaled
 inputs; default bit-identical. Unlike §856 there is no exact identity at step 0: the switch shifts the input (the
