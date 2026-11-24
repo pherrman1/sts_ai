@@ -29447,6 +29447,43 @@ map rows 6–14 46 %, rows 1–5 11 %. Deaths jump at floors 6 and 23, the first
 type are unknown. **Open question:** a per-run death record (seed, floor, room, encounter) in the driver.
 **Knowledge impact:** this entry.
 
+## §860 — MAP token capacity 32 → 48 (`--map-tokens`, default 32) and SELECT_MANY order for the encoders' first 96 actions (engine-side fix, default on, `STS_AZ_MULTISELECT_BALANCED=0` restores); offline: 48 map tokens shift the live net less than 30 min of training → BUILT (cloud, 2026-11-25)
+
+**Question (Philipp, 2026-11-25 00:03 CET in the audit thread, "Limit auf 48 erhöhen, und 2. auch fixen"; 00:05 CET
+delegated go to decide):** audit round 2 found (a) the out-of-combat encoder keeps at most 32 MAP tokens (current
+node, act boss, nearest rows first), so far rows (late elites, fires, the shop before the boss) are cut, and (b)
+the engine lists SELECT_MANY hand subsets in ascending mask order while the encoders keep only the first
+`kAmberMaxActions` = 96 actions, so with more than 96 subsets no encoded mask contains hand index 7 or more.
+**(a) Built:** `kAmberCap[MAP]` 48 (`kAmberMaxTokens` 239); the encoder writes at most `amberMapTokenLimit()` MAP
+tokens: env `STS_AZ_MAP_TOKENS` in [32, 48], unset = 32 (the old limit, so every encoding and game is unchanged by
+default); `selfplay.py --map-tokens N` (default 32) sets the env before the native module loads, records it in the
+checkpoint args, sizes the last token bucket for the longer rows and warns when a resumed checkpoint used another
+value; `amber_net.input_options_from_ckpt` sets the env for tools. ctest `amber_game_encoder_map48` runs the encoder
+test with 48.
+**(a) Offline shift (owner's delegated choice "flag first, gate only if needed"):** 30,591 out-of-combat states of
+200 random-legal A20 runs (battles skipped, test seeds 1-200 as `amber_game_encoder`; scratch tool, not in the
+repo), encoded with 48 MAP tokens plus encounter tokens and merged cards as the live run; 6,726 (22 %) have more
+than 32 MAP tokens (on average 9 more). 3,000 of those through the live net `ckpt_1542312` with all MAP tokens vs
+cut to 32: policy KL(32‖48) mean 0.0038 (median 0.0004, p90 0.0087), top action unchanged in 96.4 % of the
+multi-action states, |ΔF| mean 0.0059, |ΔH| 0.0022; no action loses its target. Reference, the same 32-token
+states through `ckpt_1539630` (one checkpoint, ~30 min of training, earlier): KL 0.0059, |ΔF| 0.0051. So the shift
+is about the size of half an hour of ordinary training, unlike §837's encounter tokens (live winrate 41.6 % →
+1.6 %). **Inference:** no gate needed; random-legal states are not the live state distribution (the audit counted
+58 % of early-act decisions cut), so the live PC test is the check.
+**Size (Inference):** OOC rows get up to 16 more tokens; with ~16 % OOC samples and the share above about 0.3-0.8
+more tokens per replay sample before the token dictionary deduplicates them; watch RSS in the PC test.
+**(b) Built:** `search::amberBalanceMultiSelect` (AmberEncoder.cpp), called on the self-play driver's combat action
+list (`az_run_driver.cpp` combatActions): only when the list has more than 96 actions, its MULTI_CARD_SELECT actions
+are reordered in place by distance from the two ends of the hand (empty and whole hand, each single card and all
+but one, pairs and all but two, ...; ties in engine order). The set of actions is unchanged; lists of at most 96
+are untouched, so only those rare states change (0.07 % of combat moves per the audit). The engine's own order
+(`Action.cpp`, used by Silver / one_combat) is left alone. Default on as an engine fix; `STS_AZ_MULTISELECT_BALANCED=0`
+restores. `tests/multiselect_order_test.cpp` (ctest `multiselect_order`, `multiselect_order_ascending`): 10-card
+Gambler's Brew, the first 96 reach every hand index, same set, ≤ 96 unchanged, =0 the engine order.
+**Not changed:** subsets beyond the first 96 still have no net output (their edges keep logit 0, as before).
+**Amber fidelity:** the Amber page says nothing about multi-card selection or the map size ("map" is a token type).
+**Not done:** no games. Live: with the combined restart after review, `--map-tokens 48` and the default-on order,
+5-15 min PC test.
 ## §859 — Pipeline-audit input fixes: `--intent-emb` (current vs previous monster move told apart) and `--select-many-bits` (SELECT_MANY hand mask as 10 bits instead of a raw float up to 1,023) → BUILT, default off (cloud, 2026-11-24)
 
 **Question (Philipp, 2026-11-24 23:44 CET, "Bau 1 und 2"):** items 1 and 2 of the read-only pipeline audit

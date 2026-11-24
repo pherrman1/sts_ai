@@ -144,6 +144,8 @@ namespace {
               "no combat-only tokens", gc);
         for (int s = 0; s < kAmberTokenTypes; ++s) {
             check(t.n[s] <= kAmberCap[s], "segment within capacity", gc);
+            if (s == static_cast<int>(AmberTokenType::MAP))
+                check(t.n[s] <= amberMapTokenLimit(), "MAP within STS_AZ_MAP_TOKENS", gc);
             for (int i = 0; i < t.n[s]; ++i) {
                 const AmberToken &tok = t.tok[kAmberOff[s] + i];
                 for (const auto id : tok.ids) check(id >= 0 && id < kAmberGameIdEnd, "id in vocabulary", gc);
@@ -155,7 +157,7 @@ namespace {
             const int expectAct = std::max(0, static_cast<int>(actions.size()) - kAmberMaxActions);
             bool full = false;
             for (const auto s : {AmberTokenType::MAP, AmberTokenType::CARD, AmberTokenType::RELIC})
-                if (t.n[static_cast<int>(s)] == kAmberCap[static_cast<int>(s)]) {
+                if (t.n[static_cast<int>(s)] == (s == AmberTokenType::MAP ? amberMapTokenLimit() : kAmberCap[static_cast<int>(s)])) {
                     full = true;
                     ++cutBy[s == AmberTokenType::MAP ? "MAP" : s == AmberTokenType::CARD ? "CARD" : "RELIC"];
                 }
@@ -231,7 +233,7 @@ namespace {
         for (const auto &a : actions)
             if (a.getRewardsActionType() == GameAction::RewardsActionType::CARD && a.getIdx2() != 5) ++cards;
         check(cards == 20, "fixture offers 20 reward cards", gc);
-        check(t.cut == 0 || t.n[static_cast<int>(AmberTokenType::MAP)] == kAmberCap[static_cast<int>(AmberTokenType::MAP)],
+        check(t.cut == 0 || t.n[static_cast<int>(AmberTokenType::MAP)] == amberMapTokenLimit(),
               "full reward screen: no cut outside MAP", gc);
         for (int i = 0; i < t.nAct; ++i)
             check(t.act[i].srcSeg != kAmberNoSeg || t.act[i].type == static_cast<int>(AmberActionType::SKIP_OR_LEAVE),

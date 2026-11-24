@@ -221,12 +221,16 @@ def log_run_slots(tt, f, slots):
 
 def input_options_from_ckpt(net, ck):
     """Sets the input options a checkpoint's net was trained with (its saved selfplay.py args) on net:
-    --run-log-loopcount -> run_log_slots. Returns net. Checkpoints without args (or without the flag) give the
+    --run-log-loopcount -> run_log_slots; --map-tokens -> env STS_AZ_MAP_TOKENS (for the native encoder). Returns net. Checkpoints without args (or without the flag) give the
     default (raw input). Tools that load a checkpoint call this so their outputs equal the training run's."""
     a = (ck.get("args") if isinstance(ck, dict) else None) or {}
     if not isinstance(a, dict):
         a = vars(a)
     net.run_log_slots = RUN_LOG_LOOPCOUNT_SLOTS if a.get("run_log_loopcount") else ()
+    # --map-tokens: the native out-of-combat encoder reads STS_AZ_MAP_TOKENS once, at its first call; set it here
+    # (tools load the checkpoint before they encode) unless the caller set it.
+    if a.get("map_tokens") and int(a["map_tokens"]) != 32:
+        os.environ.setdefault("STS_AZ_MAP_TOKENS", str(int(a["map_tokens"])))
     return net
 
 

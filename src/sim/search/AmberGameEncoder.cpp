@@ -66,7 +66,10 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <cstdlib>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 
 #include "combat/BattleContext.h"
 #include "constants/Events.h"
@@ -75,6 +78,21 @@
 #include "game/Neow.h"
 
 namespace sts::search {
+
+    int amberMapTokenLimit() {
+        static const int limit = [] {
+            const char *e = std::getenv("STS_AZ_MAP_TOKENS");
+            if (!e || !*e) return kAmberMapTokensDefault;
+            char *end = nullptr;
+            const long v = std::strtol(e, &end, 10);
+            const int cap = kAmberCap[static_cast<int>(AmberTokenType::MAP)];
+            if (*end || v < kAmberMapTokensDefault || v > cap)
+                throw std::runtime_error("STS_AZ_MAP_TOKENS must be an integer in [" + std::to_string(kAmberMapTokensDefault)
+                                         + ", " + std::to_string(cap) + "]");
+            return static_cast<int>(v);
+        }();
+        return limit;
+    }
 
     namespace {
 
@@ -92,6 +110,7 @@ namespace sts::search {
 
         struct Enc {
             AmberTokens &out;
+            const int mapLimit = amberMapTokenLimit();
             std::uint8_t deckTok[Deck::MAX_SIZE];
             std::uint8_t relicTok[kAmberCap[static_cast<int>(T::RELIC)]];
             std::uint8_t potTok[5];
@@ -122,7 +141,7 @@ namespace sts::search {
 
             AmberToken *push(T s, std::uint8_t *idx = nullptr) {
                 const int si = static_cast<int>(s);
-                if (out.n[si] >= kAmberCap[si]) {
+                if (out.n[si] >= (s == T::MAP ? mapLimit : kAmberCap[si])) {
                     ++out.cut;
                     return nullptr;
                 }

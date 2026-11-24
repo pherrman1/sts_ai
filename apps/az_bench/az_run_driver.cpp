@@ -1277,10 +1277,12 @@ namespace sts::azbench {
                     noEscapeEnumerator = std::make_unique<search::SilverSearcher>(bc, c);
                 }
                 cacts = noEscapeEnumerator->enumerateActions(bc);
+                search::amberBalanceMultiSelect(cacts, bc.cards.cardsInHand);   // > 96 actions: SELECT_MANY order
                 return cacts;
             }
             if (!enumerator) enumerator = std::make_unique<search::SilverSearcher>(bc, search::SilverSearchContext{});
             cacts = enumerator->enumerateActions(bc);
+            search::amberBalanceMultiSelect(cacts, bc.cards.cardsInHand);   // > 96 actions: SELECT_MANY order
             return cacts;
         };
 
