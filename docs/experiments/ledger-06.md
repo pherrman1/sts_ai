@@ -29484,4 +29484,49 @@ Gambler's Brew, the first 96 reach every hand index, same set, ≤ 96 unchanged,
 **Amber fidelity:** the Amber page says nothing about multi-card selection or the map size ("map" is a token type).
 **Not done:** no games. Live: with the combined restart after review, `--map-tokens 48` and the default-on order,
 5-15 min PC test.
+## §859 — Pipeline-audit input fixes: `--intent-emb` (current vs previous monster move told apart) and `--select-many-bits` (SELECT_MANY hand mask as 10 bits instead of a raw float up to 1,023) → BUILT, default off (cloud, 2026-11-24)
+
+**Question (Philipp, 2026-11-24 23:44 CET, "Bau 1 und 2"):** items 1 and 2 of the read-only pipeline audit
+(project share `audit-20261124/REPORT.md`, main eb23315).
+**Defects (verified in code):** (1) `AmberEncoder.cpp` `monsters()` writes a combat MONSTER token's current move id
+to `ids[1]` and its previous move id to `ids[2]` from the same id range, and `AmberNet` sums the four ids through
+one table (`self.ids(ids).sum`), so (A now, B before) and (B now, A before) are the same input; the audit counted
+34.8 % of the monster tokens of a 65,536-sample replay slice with two different move ids.
+`tests/test_input_fixes.py::test_plain_net_is_order_blind` reproduces it (swapping `ids[1]` / `ids[2]` leaves every
+output unchanged up to 1e-5). (2) `MULTI_CARD_SELECT` writes the hand-index mask as the raw float `a_f[1]`
+(1 .. 1,023; slice max 224); it enters the policy through `w_f` without normalisation. In `ckpt_1542312` the `w_f`
+column 1 has norm 0.84, so a mask of ~100 adds a vector of norm ~84 to the action embedding (`a_type` rows: 6-25).
+**Built (default off; one flag each, so they can go live separately):**
+- `--intent-emb`: `AmberNet.intent_emb` (`Embedding(1024, d)`, zero at the start) added for `ids[1]` of combat
+  MONSTER tokens only (`amber_net.intent_ids`; encounter tokens, whose `ids[3]` is an encounter kind, excluded) in
+  the segmented, flat and packed forwards and in `explain_lab.embed`. Zero table = bit-identical outputs in all
+  four layouts (test).
+- `--select-many-bits`: for `a_type == SELECT_MANY` the raw slot is set to 0 and the mask's 10 bits enter through
+  `AmberNet.w_mask` (`Linear(10, d)`; `amber_net.split_mask_bits`), in `_heads`, `_heads_packed` and `explain_lab`.
+  Transform inside the net, so replay samples need no rewrite. A `--resume` / `--init-net` net trained without it
+  starts from `w_mask[:, i] = 2^i · w_f[:, 1]` (`amber_net.mask_bits_from_raw`): the same function up to float
+  rounding (test: other actions' logits and all value heads bit-identical, SELECT_MANY logits within 1e-4
+  relative). A fresh net starts at 0.
+- Both: own AdamW groups after the existing ones (`extra_param`); `load_opt_state` now also requires the saved
+  moments' shapes to match before a later group takes them; `--weight-ema` keeps a saved average and appends the
+  new weights; checkpoints carrying the weights recreate the modules in `AmberNet.load_state_dict`, so the
+  kickstart teacher, `explain.py`, `infer_profile.py`, `capacity_probe.py` need no argument; a source checkpoint
+  with the weights but without the flag stops the run (dropping them would change the net); both exclude
+  `--fused-net`.
+**Not changed (noted):** the audit's round 2 found that the engine caps SELECT_MANY at 96 masks in ascending order,
+so hand cards from index 7 on are never offered (27 % of SELECT_MANY states, 0.07 % of combat moves). That is action
+generation, i.e. it changes games: a separate engine fix with review, not part of this net-input flag.
+**Amber fidelity:** the Amber page lists "monster intent" among the categorical ids but does not say how ids are
+combined; it says nothing about the SELECT_MANY encoding. Owner's go for both (thread message 2026-11-24 23:44 CET).
+**Checks:** `tools/agent/verify_changed.py` (python tier): repository health PASS; `test_input_fixes.py` (9),
+`test_run_log_loopcount.py`, `test_amber_net_flat.py`, `test_amber_consequences.py`, `test_packed_heads.py` PASS;
+`test_selfplay.py::ReplayTest::test_compact_eviction_fuzz` fails identically on main eb23315 in this container (no
+native module built), pre-existing.
+**Not done:** no games. Going live needs the owner's go, an independent review (net input change) and the
+5-15 min PC live test.
+**Review (reviewer K, PASS, `reviews/pr1182-review.md`):** flag off and `--intent-emb` at step 0 bit-identical in
+all layouts, fp32 / fp16; `--select-many-bits` within fp16 rounding noise. Fixed before merge: F2 (with
+`--weight-ema` and a saved average, the average's `w_mask` now comes from the average's own `w_f` column 1, not the
+training net's) and F3 (`fused_net` refuses a net with `intent_emb` / `w_mask` / `run_log_slots` instead of
+ignoring them).
 **Knowledge impact:** this entry.

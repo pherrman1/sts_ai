@@ -234,9 +234,61 @@ def input_options_from_ckpt(net, ck):
     return net
 
 
+# --intent-emb (selfplay.py): a second id table for the current intent. The encoder writes a combat MONSTER token's
+# current move id to ids[1] and its previous move id to ids[2] from the same id range (AmberEncoder.cpp monsters()),
+# and the shared table sums all four ids, so (A now, B before) and (B now, A before) were the same input (pipeline
+# audit 2026-11-24: 34.8 % of the monster tokens in a replay slice carry two different move ids). The extra table
+# (AmberNet.intent_emb, zero at the start) is added for ids[1] of combat MONSTER tokens only (not the encounter
+# tokens, whose ids[1] is a monster id), so a net without it computes the same outputs bit for bit until it trains.
+MONSTER_TYPE = TOKEN_TYPES.index("monster")
+
+
+def intent_ids(tt, ids):
+    """ids[..., 1] (the current intent's move id) of combat MONSTER tokens, 0 (the padding id) for every other token.
+    tt [...] token types, ids [..., 4]."""
+    k = ids[..., 3]
+    mon = (tt == MONSTER_TYPE) & ~((k >= ENC_KIND_BASE) & (k < ENC_KIND_BASE + 3))
+    return torch.where(mon, ids[..., 1], torch.zeros_like(ids[..., 1]))
+
+
+# --select-many-bits (selfplay.py): the SELECT_MANY action's hand-index mask (AmberEncoder.cpp MULTI_CARD_SELECT:
+# a_f[1] = the mask as a raw float, 1 .. 1023) enters the policy as its 10 bits through AmberNet.w_mask instead of
+# as one float through w_f column 1 (no normalisation between w_f and the policy MLP). The raw slot is set to 0 in
+# the forward pass, so samples already in the window are read the same way. A net trained without the flag continues
+# with w_mask column i = 2^i x w_f column 1 (mask_bits_from_raw): the same function up to float rounding.
+SELECT_MANY = 7     # AmberActionType::SELECT_MANY (include/sim/search/AmberEncoder.h)
+MASK_BITS = 10      # in.bits & 0x3ff
+MASK_SLOT = 1
+
+
+def split_mask_bits(a_type, a_f):
+    """(a_f with the mask slot of SELECT_MANY actions set to 0, the mask's bits [..., MASK_BITS] in a_f's dtype; 0
+    for every other action). a_type [...] long, a_f [..., N_ACT_FEAT]."""
+    sm = a_type == SELECT_MANY
+    m = torch.where(sm, a_f[..., MASK_SLOT].float().round(), torch.zeros_like(a_f[..., MASK_SLOT], dtype=torch.float32))
+    m = m.clamp(0, 2 ** MASK_BITS - 1).long()
+    bits = ((m[..., None] >> torch.arange(MASK_BITS, device=a_f.device)) & 1).to(a_f.dtype)
+    slot = torch.arange(a_f.shape[-1], device=a_f.device) == MASK_SLOT
+    return a_f.masked_fill(sm[..., None] & slot, 0), bits
+
+
+def mask_bits_from_raw(net):
+    """Sets net.w_mask to the raw mask's contribution (column i = 2^i x w_f column MASK_SLOT): the net then computes
+    what it computed with the raw float (up to float rounding). For a net trained without --select-many-bits."""
+    with torch.no_grad():
+        col = net.w_f.weight[:, MASK_SLOT:MASK_SLOT + 1].float()
+        scale = 2.0 ** torch.arange(MASK_BITS, device=col.device, dtype=torch.float32)
+        net.w_mask.weight.copy_((col * scale[None, :]).to(net.w_mask.weight.dtype))
+    return net
+
+
+# Parameters of the two input fixes (selfplay.py puts each in its own optimizer group, extra_param).
+INPUT_FIX_PARAMS = ("intent_emb.weight", "w_mask.weight")
+
+
 class AmberNet(nn.Module):
     def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0, enemy_bias=False,
-                 enemy_gate=False):
+                 enemy_gate=False, intent_emb=False, mask_bits=False):
         super().__init__()
         heads = heads or max(1, d // 32)
         self.type_emb = nn.Embedding(len(TOKEN_TYPES), d)
@@ -282,6 +334,14 @@ class AmberNet(nn.Module):
         # (weight g) and without them (1 - g), and a last gate weights them in the summary mean. At g = 0 every
         # other token computes what the net computes on the state without encounter tokens (up to float rounding).
         self.enemy_gate = nn.Parameter(torch.zeros(layers + 1)) if enemy_gate else None
+        # --intent-emb / --select-many-bits (see intent_ids / split_mask_bits): defined last (parameter order of older
+        # checkpoints); load_state_dict creates them when a checkpoint has them, so tools need no extra argument.
+        self.intent_emb = None
+        self.w_mask = None
+        if intent_emb:
+            self.add_intent_emb()
+        if mask_bits:
+            self.add_mask_bits()
         self.train_attn = None  # varlen_attn_train.varlen_attn_train (selfplay.py --enemy-train-kernel)
         self.gate_key = False   # key gate (selfplay.py --enemy-gate-key): see _attend_enemy / varlen_attn gate_key
 
@@ -294,7 +354,42 @@ class AmberNet(nn.Module):
             state_dict = {k: v for k, v in state_dict.items() if k != "enemy_bias"}
         if self.enemy_gate is None:
             state_dict = {k: v for k, v in state_dict.items() if k != "enemy_gate"}
+        if self.intent_emb is None and "intent_emb.weight" in state_dict:   # a --intent-emb checkpoint
+            self.add_intent_emb()
+        if self.w_mask is None and "w_mask.weight" in state_dict:           # a --select-many-bits checkpoint
+            self.add_mask_bits()
         return super().load_state_dict(state_dict, strict=strict, **kw)
+
+    def add_intent_emb(self):
+        """--intent-emb: the current-intent id table, zero (the net computes what it did without it)."""
+        w = self.ids.weight
+        self.intent_emb = nn.Embedding(ID_VOCAB, w.shape[1], padding_idx=0).to(device=w.device, dtype=w.dtype)
+        nn.init.zeros_(self.intent_emb.weight)
+        return self
+
+    def add_mask_bits(self):
+        """--select-many-bits: the SELECT_MANY mask-bit weights, zero (mask_bits_from_raw for a net trained with the
+        raw mask)."""
+        w = self.w_f.weight
+        self.w_mask = nn.Linear(MASK_BITS, w.shape[0], bias=False).to(device=w.device, dtype=w.dtype)
+        nn.init.zeros_(self.w_mask.weight)
+        return self
+
+    def _id_emb(self, tt, ids, dim):
+        """The summed id embeddings of tokens (ids [..., 4], summed over axis dim), plus the current-intent table
+        (--intent-emb) for combat MONSTER tokens."""
+        x = self.ids(ids).sum(dim)
+        if self.intent_emb is not None:
+            x = x + self.intent_emb(intent_ids(tt, ids))
+        return x
+
+    def _act_feat(self, a_type, a_f):
+        """The action float features' term of the action embedding: w_f(a_f), with --select-many-bits the mask slot
+        read as bits through w_mask."""
+        if self.w_mask is None:
+            return self.w_f(a_f)
+        a_f, bits = split_mask_bits(a_type, a_f)
+        return self.w_f(a_f) + self.w_mask(bits)
 
     def forward(self, b):
         if "tok_type" in b:
@@ -327,7 +422,8 @@ class AmberNet(nn.Module):
             return torch.where((idx >= 0)[..., None], g, none.to(g.dtype))
 
         e = (self.a_type(b["a_type"]) + self.w_s(pick(b["a_src"], self.a_none[0]))
-             + self.w_t(pick(b["a_tgt"], self.a_none[1])) + self.w_f(b["a_f"]) + self.w_c(c)[:, None])
+             + self.w_t(pick(b["a_tgt"], self.a_none[1])) + self._act_feat(b["a_type"], b["a_f"])
+             + self.w_c(c)[:, None])
         logits = self.pol(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4)
         out = (logits, self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1))
         self.aux_out = self.aux_fight(c) if self.aux_fight is not None and self.training else None
@@ -364,7 +460,7 @@ class AmberNet(nn.Module):
             return torch.where((idx >= 0)[:, None], g, none.to(g.dtype))
 
         e = (self.a_type(b["a_type"].reshape(MA)[ac]) + self.w_s(pick(b["a_src"].reshape(MA)[ac], self.a_none[0]))
-             + self.w_t(pick(b["a_tgt"].reshape(MA)[ac], self.a_none[1])) + self.w_f(b["a_f"].reshape(MA, -1)[ac])
+             + self.w_t(pick(b["a_tgt"].reshape(MA)[ac], self.a_none[1])) + self._act_feat(b["a_type"].reshape(MA)[ac], b["a_f"].reshape(MA, -1)[ac])
              + self.w_c(c)[row])
         lp = self.pol(e).squeeze(-1)
         full = lp.new_full((MA + 1,), -1e4)
@@ -388,7 +484,7 @@ class AmberNet(nn.Module):
                                        bias.reshape(-1))
         P = P.view(*tt.shape, K, d)
         proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
-        x = self.in_norm(self.type_emb(tt) + self.ids(b["ids"]).sum(2) + proj)
+        x = self.in_norm(self.type_emb(tt) + self._id_emb(tt, b["ids"], 2) + proj)
         mask = b["mask"]
         if self.enemy_on and not self.sdpa:
             raise ValueError("enemy_bias / enemy_gate need sdpa = True")
@@ -563,7 +659,7 @@ class AmberNet(nn.Module):
         P = F.linear(log_run_slots(tt_p, f_p, self.run_log_slots), W.reshape(K * d, -1),
                      bias.reshape(-1)).view(-1, K, d)
         proj = torch.gather(P, 1, tt_p[:, None, None].expand(-1, 1, d)).squeeze(1)
-        x = self.in_norm(self.type_emb(tt_p) + self.ids(ids_p).sum(1) + proj)
+        x = self.in_norm(self.type_emb(tt_p) + self._id_emb(tt_p, ids_p, 1) + proj)
         keep = mask[:, None, None, :]
         inv = b.get("unpack_idx")
 
@@ -647,6 +743,9 @@ class AmberNet(nn.Module):
                 f_t = log_run_slots(torch.zeros(f_t.shape[:-1], dtype=torch.long, device=f_t.device), f_t,
                                     self.run_log_slots)
             x = self.type_emb.weight[i] + self.ids(ids).sum(2) + self.proj[t](f_t)
+            if t == "monster" and self.intent_emb is not None:
+                x = x + self.intent_emb(intent_ids(torch.full(ids.shape[:-1], i, dtype=torch.long,
+                                                              device=ids.device), ids))
             toks.append(x)
             masks.append(b[t + "_mask"])
         x = self.in_norm(torch.cat(toks, 1))

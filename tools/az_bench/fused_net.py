@@ -222,6 +222,10 @@ def _net_kernel(
 
 
 def _weights(net, dtype):
+    if getattr(net, "intent_emb", None) is not None or getattr(net, "w_mask", None) is not None:
+        raise ValueError("fused_net: the kernel has no --intent-emb / --select-many-bits inputs (review F3)")
+    if getattr(net, "run_log_slots", ()):
+        raise ValueError("fused_net: the kernel reads the raw RUN floats (--run-log-loopcount)")
     types = list(net.proj.keys())   # TOKEN_TYPES order: tok_type indexes it
     lay = net.trunk.layers
     eps = {float(net.in_norm.eps), float(net.out_norm.eps)}
