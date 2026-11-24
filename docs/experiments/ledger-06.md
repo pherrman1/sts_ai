@@ -29447,7 +29447,7 @@ map rows 6–14 46 %, rows 1–5 11 %. Deaths jump at floors 6 and 23, the first
 type are unknown. **Open question:** a per-run death record (seed, floor, room, encounter) in the driver.
 **Knowledge impact:** this entry.
 
-## §TBD — MAP token capacity 32 → 48 (`--map-tokens`, default 32) and SELECT_MANY order for the encoders' first 96 actions (engine-side fix, default on, `STS_AZ_MULTISELECT_BALANCED=0` restores); offline: 48 map tokens shift the live net less than 30 min of training → BUILT (cloud, 2026-11-25)
+## §860 — MAP token capacity 32 → 48 (`--map-tokens`, default 32) and SELECT_MANY order for the encoders' first 96 actions (engine-side fix, default on, `STS_AZ_MULTISELECT_BALANCED=0` restores); offline: 48 map tokens shift the live net less than 30 min of training → BUILT (cloud, 2026-11-25)
 
 **Question (Philipp, 2026-11-25 00:03 CET in the audit thread, "Limit auf 48 erhöhen, und 2. auch fixen"; 00:05 CET
 delegated go to decide):** audit round 2 found (a) the out-of-combat encoder keeps at most 32 MAP tokens (current
