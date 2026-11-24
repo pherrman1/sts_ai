@@ -29487,4 +29487,9 @@ combined; it says nothing about the SELECT_MANY encoding. Owner's go for both (t
 native module built), pre-existing.
 **Not done:** no games. Going live needs the owner's go, an independent review (net input change) and the
 5-15 min PC live test.
+**Review (reviewer K, PASS, `reviews/pr1182-review.md`):** flag off and `--intent-emb` at step 0 bit-identical in
+all layouts, fp32 / fp16; `--select-many-bits` within fp16 rounding noise. Fixed before merge: F2 (with
+`--weight-ema` and a saved average, the average's `w_mask` now comes from the average's own `w_f` column 1, not the
+training net's) and F3 (`fused_net` refuses a net with `intent_emb` / `w_mask` / `run_log_slots` instead of
+ignoring them).
 **Knowledge impact:** this entry.

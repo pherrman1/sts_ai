@@ -1916,6 +1916,7 @@ def main(argv=None):
     # --intent-emb / --select-many-bits: a checkpoint trained with one needs the flag (its weights would not train
     # and load_state_dict would have attached them to the net outside the optimizer); a net trained without
     # --select-many-bits starts its mask weights from the raw mask's (the same function up to rounding).
+    mask_from_raw = False   # --select-many-bits on a net trained without it (the EMA's w_mask follows below)
     if args.resume or args.init_net:
         src_sd = ck["net"] if args.resume else src
         for flag_, key_ in (("intent_emb", "intent_emb.weight"), ("select_many_bits", "w_mask.weight")):
@@ -1923,6 +1924,7 @@ def main(argv=None):
                 raise SystemExit(f"the source checkpoint was trained with --{flag_.replace('_', '-')}: pass the flag "
                                  "(dropping its weights would change the net)")
         if args.select_many_bits and "w_mask.weight" not in src_sd:
+            mask_from_raw = True
             amber_net.mask_bits_from_raw(train_net)
             print("# select-many-bits: mask weights from the raw mask column (w_f[:, 1] x 2^i)", flush=True)
         if args.intent_emb and "intent_emb.weight" not in src_sd:
@@ -1966,6 +1968,12 @@ def main(argv=None):
             if conseq_zeroed:
                 amber_net.zero_consequence_inputs(dict(zip([n_ for n_, _ in train_net.named_parameters()],
                                                            ema_params)))
+            if mask_from_raw:   # the averaged net's mask weights from its own raw mask column (review F2)
+                ema_ = dict(zip(names_, ema_params))
+                with torch.no_grad():
+                    col_ = ema_["w_f.weight"][:, amber_net.MASK_SLOT:amber_net.MASK_SLOT + 1]
+                    ema_["w_mask.weight"].copy_(col_ * 2.0 ** torch.arange(amber_net.MASK_BITS, device=col_.device,
+                                                                           dtype=col_.dtype)[None, :])
             print(f"# weight-ema: averaged weights from {args.resume} ({counters.get('ema_updates', 0)} updates)",
                   flush=True)
         else:
