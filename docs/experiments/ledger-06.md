@@ -29424,3 +29424,25 @@ through a symmetric log. Owner's choice (decision card 2026-11-24 20:55 CET, "Al
 **Review (reviewer J, PASS with the flag off):** F1 (checkpoint-loading tools) and F2 (teacher setting from its
 checkpoint) fixed before merge via `amber_net.input_options_from_ckpt`.
 **Knowledge impact:** this entry.
+
+## §TBD — Equal-weight checkpoint averages (8 / 16 × 30 min) vs single checkpoint, plus loss-floor breakdown → INCONCLUSIVE (PC, 2026-11-24)
+
+**Origin:** AlphaDefect (arXiv 2611.31076) reports +2.4..+4.8 pts from EMA weights and most losses at Act-3 bosses.
+Offline check without any live change (Philipp 2026-11-24, ideas 2 and 5).
+**Setup:** amber_scratch 1.22M net (128x4), benchmark `fix_repo` d6a2f67b `tools/az_bench/selfplay.py` via
+`bench_run.sh` / seed guard, seeds 160200000..160200999, A20, 128 sims every move, `--rng-fix`, no savescum,
+enemy-token flags, `--min-replay 1e12`. Arms: regular ckpt 1529346 (21:00 CET), avg8 = float64 mean of `net` of
+ckpts 1509219..1529346, avg16 = 1488445..1529346 (crosses the LR restart 3e-4 at step 1493707). Same flags,
+only `--init-net` differs; all loads `fresh []`.
+**Result (paired per seed):** reg 35.0 %, avg8 35.7 % (+0.7 pp, 95 % CI −3.0..+4.4, McNemar p 0.75), avg16 34.2 %
+(−0.8 pp, −4.5..+2.9, p 0.71). Heart reach 42.1 / 43.2 / 41.8 %. `tools/sprt_gate.py` (gainer and nonregression,
+replayed on the fixed sample): CAP everywhere. Two regular ckpts 6 h apart differ on ~344 seeds, so this design
+resolves only ≥ ~4 pp. **Conclusion:** no measurable gain or harm from 30-min checkpoint averaging; the paper's
+effect size is neither confirmed nor excluded.
+**Loss breakdown** (benchmarks 03/09/15 CET, ckpts 1400441/1457204/1493595, 1943 losses): Act 1 28.8 %, Act 2
+41.9 %, Act 3 17.6 %, Act 4 11.6 % (Heart 10.6 %). Act bosses 31 % (floor 16 13.2 %, 33 10.6 %, 50+51 7.2 %),
+map rows 6–14 46 %, rows 1–5 11 %. Deaths jump at floors 6 and 23, the first rows that can hold elites
+(**Inference**: early elites). Unlike the paper, Act-3 bosses are a minor loss source here.
+**Gap:** non-Heart deaths have no per-run record (only a floor histogram in `metrics.jsonl`), so encounter and room
+type are unknown. **Open question:** a per-run death record (seed, floor, room, encounter) in the driver.
+**Knowledge impact:** this entry.
