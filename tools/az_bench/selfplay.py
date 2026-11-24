@@ -1403,9 +1403,21 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
 
 
 def extra_param(name):
-    """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table, --enemy-tokens gates): the
-    optimizer's second group."""
-    return name.startswith("aux_fight.") or name in ("enemy_bias", "enemy_gate")
+    """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table, --enemy-tokens gates,
+    --intent-emb table, --select-many-bits weights): optimizer groups after the main one."""
+    return (name.startswith("aux_fight.") or name in ("enemy_bias", "enemy_gate")
+            or name in amber_net.INPUT_FIX_PARAMS)
+
+
+def _state_shapes_match(saved, saved_ids, my_ids, opt):
+    """True when the saved Adam moments of the parameters saved_ids have the shapes of this optimizer's parameters
+    my_ids (indices in opt.state_dict() order): a later group that only has as many parameters is not taken."""
+    params = [p_ for g in opt.param_groups for p_ in g["params"]]
+    for a, b in zip(saved_ids, my_ids):
+        st = saved["state"].get(a, saved["state"].get(str(a)))
+        if st is not None and "exp_avg" in st and tuple(st["exp_avg"].shape) != tuple(params[b].shape):
+            return False
+    return True
 
 
 def load_opt_state(opt, saved):
@@ -1420,7 +1432,8 @@ def load_opt_state(opt, saved):
     state, groups = {}, []
     for k, g in enumerate(mg):
         g = dict(g)
-        if k == 0 or (k < len(sg) and len(sg[k]["params"]) == len(g["params"])):
+        if k == 0 or (k < len(sg) and len(sg[k]["params"]) == len(g["params"])
+                      and _state_shapes_match(saved, sg[k]["params"], g["params"], opt)):
             src = sg[k]
             for a, b in zip(src["params"], g["params"]):
                 if a in saved["state"] or str(a) in saved["state"]:
@@ -1649,6 +1662,17 @@ def main(argv=None):
                          "read the same way). The teacher (--teacher-ckpt) uses the setting its own checkpoint was "
                          "trained with (amber_net.input_options_from_ckpt). Offline measurement "
                          "2026-11-24: this slot's gradient carried 99.6 %% of the gradient variance")
+    ap.add_argument("--intent-emb", action="store_true",
+                    help="net input (default off): a second id table for a combat MONSTER token's ids[1] (its current "
+                         "intent), so the current and the previous move (ids[2], same id range) are told apart "
+                         "(amber_net.intent_ids; pipeline audit 2026-11-24). Zero at the start: a resumed net computes "
+                         "the same outputs bit for bit until it trains. Own optimizer group")
+    ap.add_argument("--select-many-bits", action="store_true",
+                    help="net input (default off): the SELECT_MANY action's hand-index mask (a_f[1], a raw float up "
+                         "to 1023) enters the policy as its 10 bits through a weight of its own (AmberNet.w_mask), the "
+                         "raw slot as 0 (amber_net.split_mask_bits; samples in the window are read the same way). "
+                         "Continuing a net trained without it, w_mask starts as 2^i x w_f column 1 "
+                         "(amber_net.mask_bits_from_raw: the same function up to float rounding). Own optimizer group")
     ap.add_argument("--enemy-map-bias", action="store_true",
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
@@ -1798,6 +1822,8 @@ def main(argv=None):
         ap.error("--enemy-tokens excludes --fused-net")
     if args.run_log_loopcount and args.fused_net:
         ap.error("--run-log-loopcount excludes --fused-net (its kernel reads the raw floats)")
+    if (args.intent_emb or args.select_many_bits) and args.fused_net:
+        ap.error("--intent-emb / --select-many-bits exclude --fused-net (its kernel has no such inputs)")
     if args.init_counters and not args.init_net:
         ap.error("--init-counters needs --init-net")
     if args.kickstart_mix and not args.teacher_ckpt:
@@ -1844,7 +1870,8 @@ def main(argv=None):
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
     train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0,
                                    aux_slots=AUX_SLOTS if args.aux_fights else 0,
-                                   enemy_bias=args.enemy_map_bias, enemy_gate=args.enemy_tokens).to(dev)
+                                   enemy_bias=args.enemy_map_bias, enemy_gate=args.enemy_tokens,
+                                   intent_emb=args.intent_emb, mask_bits=args.select_many_bits).to(dev)
     train_net.sdpa = True
     train_net.gate_key = bool(args.enemy_gate_key)   # (deepcopied into the inference net)
     if args.run_log_loopcount:   # (deepcopied into the inference net)
@@ -1856,9 +1883,11 @@ def main(argv=None):
     main_params = [p_ for n_, p_ in train_net.named_parameters() if not extra_param(n_)]
     aux_params = [p_ for n_, p_ in train_net.named_parameters() if n_.startswith("aux_fight.")]
     enemy_params = [p_ for n_, p_ in train_net.named_parameters() if n_ in ("enemy_bias", "enemy_gate")]
+    # --intent-emb / --select-many-bits: one group each, after the others (load_opt_state matches groups by position)
+    fix_groups = [{"params": [p_]} for n_, p_ in train_net.named_parameters() if n_ in amber_net.INPUT_FIX_PARAMS]
     opt = torch.optim.AdamW([{"params": main_params}] + ([{"params": aux_params}] if aux_params else [])
                             + ([{"params": enemy_params, "lr_scale": args.enemy_lr_scale, "weight_decay": 0.0}]
-                               if enemy_params else []),
+                               if enemy_params else []) + fix_groups,
                             lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
     explore_blob = None
@@ -1884,6 +1913,22 @@ def main(argv=None):
         own.update({k: v for k, v in src.items() if k in own and v.shape == own[k].shape})
         train_net.load_state_dict(own)
         print(f"# init-net {args.init_net}: fresh {fresh}", flush=True)
+    # --intent-emb / --select-many-bits: a checkpoint trained with one needs the flag (its weights would not train
+    # and load_state_dict would have attached them to the net outside the optimizer); a net trained without
+    # --select-many-bits starts its mask weights from the raw mask's (the same function up to rounding).
+    mask_from_raw = False   # --select-many-bits on a net trained without it (the EMA's w_mask follows below)
+    if args.resume or args.init_net:
+        src_sd = ck["net"] if args.resume else src
+        for flag_, key_ in (("intent_emb", "intent_emb.weight"), ("select_many_bits", "w_mask.weight")):
+            if key_ in src_sd and not getattr(args, flag_):
+                raise SystemExit(f"the source checkpoint was trained with --{flag_.replace('_', '-')}: pass the flag "
+                                 "(dropping its weights would change the net)")
+        if args.select_many_bits and "w_mask.weight" not in src_sd:
+            mask_from_raw = True
+            amber_net.mask_bits_from_raw(train_net)
+            print("# select-many-bits: mask weights from the raw mask column (w_f[:, 1] x 2^i)", flush=True)
+        if args.intent_emb and "intent_emb.weight" not in src_sd:
+            print("# intent-emb: current-intent table starts at 0", flush=True)
     # --consequences on a net trained without them: their input weights to 0 (exactly the old net at step 0).
     if bool(conseq_src.get("run_log_loopcount")) != bool(args.run_log_loopcount) and (args.resume or args.init_net):
         print(f"warning: the source checkpoint was trained {'with' if conseq_src.get('run_log_loopcount') else 'without'}"
@@ -1912,6 +1957,10 @@ def main(argv=None):
             ap.error("--weight-ema: decay in (0, 1)")
         ema_params = [p_.detach().clone().float() for p_ in train_net.parameters()]
         saved_ema = ck.get("ema") if args.resume else None
+        names_ = [n_ for n_, _ in train_net.named_parameters()]
+        if saved_ema is not None and len(saved_ema) < len(ema_params) \
+                and all(n_ in amber_net.INPUT_FIX_PARAMS for n_ in names_[len(saved_ema):]):
+            saved_ema = list(saved_ema) + ema_params[len(saved_ema):]   # new input-fix weights: their current values
         if saved_ema is not None and len(saved_ema) == len(ema_params) \
                 and all(a.shape == b.shape for a, b in zip(saved_ema, ema_params)):
             for a, b in zip(ema_params, saved_ema):
@@ -1919,6 +1968,12 @@ def main(argv=None):
             if conseq_zeroed:
                 amber_net.zero_consequence_inputs(dict(zip([n_ for n_, _ in train_net.named_parameters()],
                                                            ema_params)))
+            if mask_from_raw:   # the averaged net's mask weights from its own raw mask column (review F2)
+                ema_ = dict(zip(names_, ema_params))
+                with torch.no_grad():
+                    col_ = ema_["w_f.weight"][:, amber_net.MASK_SLOT:amber_net.MASK_SLOT + 1]
+                    ema_["w_mask.weight"].copy_(col_ * 2.0 ** torch.arange(amber_net.MASK_BITS, device=col_.device,
+                                                                           dtype=col_.dtype)[None, :])
             print(f"# weight-ema: averaged weights from {args.resume} ({counters.get('ema_updates', 0)} updates)",
                   flush=True)
         else:
