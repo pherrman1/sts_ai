@@ -111,6 +111,19 @@ namespace sts::search {
     // Tokens past the MONSTER cap are counted in out.cut. Deterministic; no heap allocation after the first call.
     void amberAppendEncounterTokens(const GameContext &gc, AmberTokens &out);
 
+    // Consequence features (2026-11-24, optional; RunConfig::consequences; Amber Eye's "if an attack is lethal"
+    // action feature plus, by Philipp's choice, the engine-computed consequences of AlphaDefect, arXiv 2611.31076
+    // section 2.2): fills float slots of `out` that amberEncodeCombat and amberEncodeGame leave 0, for a combat
+    // encoding of `state` with `actions` (the same state and action list, called right after amberEncodeCombat and
+    // before amberMergeCards). Every number comes from the engine on copies of `state` (the search's public view):
+    // each legal card play / potion drink is executed, and in PLAYER_NORMAL states without hidden intents also
+    // followed by END_TURN. Layout (AmberConsequences.cpp): PLAYER 40-54 (intent damage per monster slot, end-turn
+    // preview), CARD (hand) and POTION 42-60 (per-target damage and kills, block, HP, energy, draws, win, end-turn
+    // after the play), action f[3] = the play kills a monster. Never touches another slot, so with all new weights 0
+    // the net computes what it did without them. Deterministic; the knowledge observer and debug pointer are kept.
+    void amberAppendConsequences(const BattleContext &state, const std::vector<search::Action> &actions,
+                                 AmberTokens &out);
+
     // Card stacks (2026-11-17, optional; RunConfig::mergeCards): merges CARD tokens that are identical in every id
     // and float (out of combat ignoring the master-deck index, slot 11 of deck cards) into one token, the first
     // occurrence, with CARD slot 41 = (copies - 1) / 10 (0 for a single card, so a card without copies encodes as

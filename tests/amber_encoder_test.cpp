@@ -6,9 +6,12 @@
 //   - capacity: tokens past a segment's capacity and actions past kAmberMaxActions are counted in `cut`;
 //   - every action's src / tgt names a live token, and play-card / potion actions name their card / potion
 //     (and target monster when they need one);
+//   - consequence features (amberAppendConsequences) touch only their own slots, match the engine and are inert
+//     for the knowledge observer;
 //   - amberHalf rounds as numpy's float32 -> float16 cast (CombatTokNet's combatTokRoundHalf).
 // With --bench it also reports thread-CPU microseconds per position (no assertion) on states of a random walk
 // from the sample states (std::mt19937_64(0) picks actions; no game seed is drawn), next to combatTokEncodeRoot.
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -24,6 +27,7 @@
 
 #include "combat/Actions.h"
 #include "sim/search/AmberEncoder.h"
+#include "sim/search/CombatKnowledge.h"
 #include "sim/search/CombatTokNet.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverWireJson.h"
@@ -439,7 +443,144 @@ int main(int argc, char **argv) {
         require(a.cut == 17 + 5, "cut " + std::to_string(a.cut) + " != 22");
     }
 
+    // consequence features (amberAppendConsequences): only their slots change (so with zero weights for them the
+    // net computes what it did without them), those slots are 0 without the pass, deterministic, the live
+    // knowledge observer sees nothing and the debug pointer is kept; the numbers match the engine.
+    int conseqStates = 0, conseqPreviewed = 0, conseqKills = 0, conseqIntents = 0;
+    {
+        struct Counting : CombatKnowledgeObserver {
+            int events = 0;
+            void observeCombatKnowledgeEvent(const CombatKnowledgeEvent &) override { ++events; }
+        } counting;
+        auto newSlot = [](int seg, int j) {
+            if (seg == static_cast<int>(AmberTokenType::PLAYER)) return j >= 40 && j <= 54;
+            if (seg == static_cast<int>(AmberTokenType::CARD) || seg == static_cast<int>(AmberTokenType::POTION))
+                return j >= 42 && j <= 60;
+            return false;
+        };
+        static AmberTokens c;
+        // the sample roots and states of a short random walk from them (std::mt19937_64(1); no game seed)
+        std::vector<Root> cs(roots.begin(), roots.end());
+        {
+            std::mt19937_64 rng(1);
+            for (int g = 0; cs.size() < roots.size() + 600 && g < 600; ++g) {
+                const auto &r0 = roots[g % roots.size()];
+                BattleContext s = r0.state;
+                for (int step = 0; step < 60 && cs.size() < roots.size() + 600; ++step) {
+                    auto acts = enumerate(s);
+                    if (acts.empty()) break;
+                    if (step) cs.push_back({s, r0.context});
+                    acts[std::uniform_int_distribution<std::size_t>(0, acts.size() - 1)(rng)].execute(s);
+                }
+            }
+        }
+        for (std::size_t r = 0; r < cs.size(); ++r) {
+            const auto &root = cs[r];
+            const auto acts = enumerate(root.state);
+            const std::string where = "consequences row " + std::to_string(r);
+            amberEncodeCombat(root.state, root.context, acts, a);
+            std::memcpy(&b, &a, sizeof(a));
+            BattleContext *const debugBefore = g_debug_bc;
+            g_combatKnowledgeObserver = &counting;
+            amberAppendConsequences(root.state, acts, b);
+            g_combatKnowledgeObserver = nullptr;
+            require(counting.events == 0, where + " reached the knowledge observer");
+            require(g_debug_bc == debugBefore, where + " debug pointer not restored");
+            std::memset(&c, 0x5a, sizeof(c));
+            amberEncodeCombat(root.state, root.context, acts, c);
+            amberAppendConsequences(root.state, acts, c);
+            require(sameLive(b, c), where + " not deterministic");
+            require(a.n == b.n && a.nAct == b.nAct && a.cut == b.cut, where + " token / action counts changed");
+            bool previewed = false;
+            for (int s = 0; s < kAmberTokenTypes; ++s)
+                for (int i = 0; i < a.n[s]; ++i) {
+                    const auto &x = a.tok[kAmberOff[s] + i], &y = b.tok[kAmberOff[s] + i];
+                    require(x.ids == y.ids, where + " ids changed");
+                    for (int j = 0; j < kAmberFloat; ++j) {
+                        if (newSlot(s, j)) {
+                            require(x.f[j] == 0, where + " consequence slot used by the encoder: seg "
+                                    + std::to_string(s) + " slot " + std::to_string(j));
+                            if (j == 42 && y.f[j] != 0) previewed = true;
+                        } else {
+                            require(x.f[j] == y.f[j], where + " base slot changed: seg " + std::to_string(s)
+                                    + " slot " + std::to_string(j));
+                        }
+                    }
+                }
+            for (int i = 0; i < a.nAct; ++i) {
+                const auto &x = a.act[i], &y = b.act[i];
+                require(x.f[3] == 0, where + " action f[3] used by the encoder");
+                require(x.type == y.type && x.srcSeg == y.srcSeg && x.tgtSeg == y.tgtSeg && x.srcIdx == y.srcIdx
+                        && x.tgtIdx == y.tgtIdx, where + " action changed");
+                for (int j = 0; j < kAmberActFeat; ++j)
+                    if (j != 3) require(x.f[j] == y.f[j], where + " action feature changed");
+            }
+            const BattleContext &st = root.state;
+            const AmberToken &pl = b.at(AmberTokenType::PLAYER, 0);
+            require(pl.f[54] == 0x3c00, where + " PLAYER 54");
+            for (int k = 0; k < 5 && !st.intentsHidden; ++k) {
+                const Monster &m = st.monsters.arr[k];
+                if (m.id == MonsterId::INVALID || m.isDeadOrEscaped() || !m.isAttacking()) continue;
+                const int hits = std::max(1, m.getMoveBaseDamage(st).attackCount);
+                const float want = static_cast<float>(m.publicIncomingDamage(st)) / static_cast<float>(hits) / 10.0f;
+                require(pl.f[40 + k] == amberHalf(want), where + " intent damage slot " + std::to_string(k));
+                ++conseqIntents;
+            }
+            // every play's lethal flag and the card's per-target kill / damage = the engine's play on a copy
+            const bool normal = st.inputState == InputState::PLAYER_NORMAL && st.outcome == Outcome::UNDECIDED;
+            for (int i = 0; i < b.nAct && normal; ++i) {
+                const auto &enc = b.act[i];
+                if (enc.type != static_cast<std::uint8_t>(AmberActionType::PLAY_CARD)
+                    || enc.srcSeg != static_cast<std::uint8_t>(AmberTokenType::CARD))
+                    continue;
+                BattleContext cp = st;
+                acts[i].execute(cp);
+                bool kill = false;
+                for (int k = 0; k < 5; ++k) {
+                    const Monster &m0 = st.monsters.arr[k], &m1 = cp.monsters.arr[k];
+                    if (m0.id == MonsterId::INVALID || m0.isDeadOrEscaped()) continue;
+                    kill |= (m1.isDying() || m1.isHalfDead()) && !m1.isEscaping();
+                }
+                require(enc.f[3] == (kill ? 0x3c00 : 0), where + " lethal flag of action " + std::to_string(i));
+                conseqKills += kill;
+                const AmberToken &ct = b.at(AmberTokenType::CARD, enc.srcIdx);
+                require(ct.f[42] == 0x3c00, where + " played card not previewed");
+                if (enc.tgtSeg == static_cast<std::uint8_t>(AmberTokenType::MONSTER)) {
+                    const int k = acts[i].getTargetIdx();
+                    const Monster &m0 = st.monsters.arr[k], &m1 = cp.monsters.arr[k];
+                    const int dmg = std::max(0, (m0.curHp + m0.block) - (std::max(0, m1.curHp) + m1.block));
+                    require(ct.f[43 + k] == amberHalf(dmg / 10.0f), where + " damage to the target");
+                }
+                require(ct.f[53] == amberHalf((cp.player.block - st.player.block) / 10.0f), where + " block");
+            }
+            if (previewed) ++conseqPreviewed;
+            ++conseqStates;
+        }
+        require(conseqPreviewed > 0, "no sample state got a card / potion preview");
+        require(conseqIntents > 0, "no sample state has an attack intent");
+        // a 1-HP monster: some legal attack on it is lethal
+        bool lethalSeen = false;
+        for (const auto &root : roots) {
+            BattleContext s = root.state;
+            if (s.inputState != InputState::PLAYER_NORMAL || s.outcome != Outcome::UNDECIDED) continue;
+            int k = 0;
+            for (; k < 5; ++k) if (s.monsters.arr[k].id != MonsterId::INVALID && !s.monsters.arr[k].isDeadOrEscaped()) break;
+            if (k == 5) continue;
+            s.monsters.arr[k].curHp = 1;
+            s.monsters.arr[k].block = 0;
+            const auto acts = enumerate(s);
+            amberEncodeCombat(s, root.context, acts, a);
+            amberAppendConsequences(s, acts, a);
+            for (int i = 0; i < a.nAct; ++i)
+                if (a.act[i].f[3] == 0x3c00) lethalSeen = true;
+            if (lethalSeen) break;
+        }
+        require(lethalSeen, "no lethal play found against a 1-HP monster");
+    }
+
     nlohmann::json report = {{"states", states}, {"mutators", muts.size()},
+                             {"consequence_states", conseqStates}, {"consequence_previewed", conseqPreviewed},
+                             {"consequence_lethal_plays", conseqKills}, {"consequence_intents", conseqIntents},
                              {"live_tokens_per_state", states ? static_cast<double>(liveTokens) / states : 0.0}};
 
     if (bench) {
@@ -468,6 +609,12 @@ int main(int argc, char **argv) {
                 if (k == 0) for (int s = 0; s < kAmberTokenTypes; ++s) tokens += a.n[s];
             }
         const double t1 = cpuSeconds();
+        for (const auto &p : walk) {
+            amberEncodeCombat(p.state, roots[p.root].context, p.acts, a);
+            amberAppendConsequences(p.state, p.acts, a);
+            sink += a.tok[1].f[52];
+        }
+        const double tc = cpuSeconds();
         CombatTokInputs in;
         std::vector<SilverSearcher::Edge> edges;
         int errs = 0;
@@ -485,7 +632,8 @@ int main(int argc, char **argv) {
         const double n = static_cast<double>(walk.size());
         report["bench"] = {{"positions", walk.size()}, {"reps", reps},
                            {"amber_us_per_position", 1e6 * (t1 - t0) / (n * reps)},
-                           {"wire_json_us_per_position", 1e6 * (t2 - t1) / n},
+                           {"amber_consequences_us_per_position", 1e6 * (tc - t1) / n},
+                           {"wire_json_us_per_position", 1e6 * (t2 - tc) / n},
                            {"wire_json_errors", errs},
                            {"walk_live_tokens_per_state", static_cast<double>(tokens) / n},
                            {"sink", sink & 1}};

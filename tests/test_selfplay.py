@@ -1986,6 +1986,94 @@ class SelfplaySmoke(unittest.TestCase):
             if on:
                 self.assertGreater(enc_samples, 0)
 
+    def test_consequences_driver(self):
+        """RunDriver(consequences=True): combat samples carry the consequence features (PLAYER float 54 = 1, some
+        hand card / potion previewed, CARD / POTION 42 = 1), out-of-combat samples none; without the flag no sample
+        has a nonzero consequence slot (amber_net.CONSEQUENCE_FLOATS, action feature 3)."""
+        sp = load()
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+        A_ = sp.amber_net
+        types = {t: A_.TOKEN_TYPES.index(t) for t in A_.CONSEQUENCE_FLOATS}
+        for on in (True, False):
+            drv = nat.RunDriver(workers=1, games=2, seed_base=1994, max_runs=2, ascension=20, full_sims=8,
+                                fast_sims=4, full_candidates=4, fast_candidates=2, max_pending=0, consequences=on)
+            R, T, A = 8, 212, 96
+            views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                     "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                     "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                     "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                     "a_mask": np.zeros(R * A, np.bool_)}
+            rng = np.random.default_rng(0)
+            chunks = []
+            drv.start()
+            try:
+                while drv.stats()["runs_done"] < 2:
+                    got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                    if got is None:
+                        continue
+                    ticket, rows, _, _, Ap = got
+                    drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32),
+                               rng.random(rows).astype(np.float32), np.full(rows, 40, np.float32))
+                    c = drv.take_samples()
+                    if c is not None:
+                        chunks.append(c)
+            finally:
+                drv.stop()
+            c = drv.take_samples()
+            if c is not None:
+                chunks.append(c)
+            combat = previewed = lethal = 0
+            for c in chunks:
+                off, aoff = c["tok_off"], c["act_off"]
+                f = c["f"].reshape(-1, 64).astype(np.float32)
+                af = c["a_f"].reshape(-1, 8).astype(np.float32)
+                for i in range(len(off) - 1):
+                    tt, fi = c["tok_type"][off[i]:off[i + 1]], f[off[i]:off[i + 1]]
+                    used = any(np.any(fi[tt == k][:, lo:hi] != 0) for t, k in types.items()
+                               for lo, hi in [A_.CONSEQUENCE_FLOATS[t]])
+                    lethal_i = np.any(af[aoff[i]:aoff[i + 1], 3] != 0)
+                    if not (on and int(c["combat"][i])):
+                        self.assertFalse(used or lethal_i, (on, int(c["combat"][i])))
+                        continue
+                    combat += 1
+                    self.assertEqual(float(fi[tt == types["player"]][0, 54]), 1.0)
+                    previewed += bool(np.any(fi[(tt == types["card"]) | (tt == types["potion"])][:, 42] == 1))
+                    lethal += bool(lethal_i)
+            if on:
+                self.assertGreater(combat, 0)
+                self.assertGreater(previewed, 0)
+                self.assertGreater(lethal, 0)
+
+    def test_consequences_resume_zeroes_inputs(self):
+        """--consequences on a checkpoint trained without them sets the consequence input weights to 0 (amber_net.
+        zero_consequence_inputs; no train step here, so the saved columns stay exactly 0) and records the flag."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "596", "--ascension", "1",
+                  "--compact-samples", "--utility", "amber"]
+        with tempfile.TemporaryDirectory() as d:
+            def ckpt():
+                return sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "4"]), 0)
+            c0 = ckpt()
+            net0 = torch.load(c0, map_location="cpu", weights_only=False)["net"]
+            cols = sp.amber_net.consequence_inputs()
+            self.assertTrue(all(float(net0[n][:, s].abs().sum()) > 0 for n, s in cols))
+            no_train = list(common)
+            no_train[no_train.index("--min-replay") + 1] = "1000000"
+            self.assertEqual(sp.main(no_train + ["--out-dir", d, "--max-runs", "6", "--resume", c0,
+                                                 "--consequences"]), 0)
+            ck1 = torch.load(ckpt(), map_location="cpu", weights_only=False)
+            self.assertTrue(ck1["args"]["consequences"])
+            for n, s in cols:
+                self.assertEqual(float(ck1["net"][n][:, s].abs().sum()), 0.0, n)
+                self.assertTrue(torch.equal(ck1["net"][n][:, :s.start], net0[n][:, :s.start]), n)
+
     def test_compact_samples_run(self):
         """--compact-samples with --max-pending 0: the driver hands out compact chunks (indices inside their run
         dictionaries, a dictionary shared by many samples), the run plays, trains and reports the window's memory."""

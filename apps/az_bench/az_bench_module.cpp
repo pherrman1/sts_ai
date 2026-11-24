@@ -437,7 +437,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
                          int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights,
                          bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
-                         double captureRate, bool stallLog) {
+                         double captureRate, bool stallLog, bool consequences) {
                  azbench::RunConfig c;
                  c.stallLog = stallLog;
                  for (const auto &h : probeRoots) c.probeRoots.push_back(h.gc);
@@ -502,6 +502,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                  c.exploreCleanKeys = exploreCleanKeys;
                  c.auxFights = auxFights;
                  c.enemyTokens = enemyTokens;
+                 c.consequences = consequences;
                  c.savescum = savescum;
                  c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -529,7 +530,8 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false,
              py::arg("aux_fights") = false, py::arg("enemy_tokens") = false,
              py::arg("probe_roots") = std::vector<GameStateHandle>{},
-             py::arg("probe_noise") = false, py::arg("capture_rate") = 0.0, py::arg("stall_log") = false)
+             py::arg("probe_noise") = false, py::arg("capture_rate") = 0.0, py::arg("stall_log") = false,
+             py::arg("consequences") = false)
         .def("take_probe_results",   // RunConfig::probeRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  const auto v = d.takeProbeResults();
