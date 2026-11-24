@@ -29425,7 +29425,7 @@ through a symmetric log. Owner's choice (decision card 2026-11-24 20:55 CET, "Al
 checkpoint) fixed before merge via `amber_net.input_options_from_ckpt`.
 **Knowledge impact:** this entry.
 
-## §TBD — Equal-weight checkpoint averages (8 / 16 × 30 min) vs single checkpoint, plus loss-floor breakdown → INCONCLUSIVE (PC, 2026-11-24)
+## §858 — Equal-weight checkpoint averages (8 / 16 × 30 min) vs single checkpoint, plus loss-floor breakdown → INCONCLUSIVE (PC, 2026-11-24)
 
 **Origin:** AlphaDefect (arXiv 2611.31076) reports +2.4..+4.8 pts from EMA weights and most losses at Act-3 bosses.
 Offline check without any live change (Philipp 2026-11-24, ideas 2 and 5).
