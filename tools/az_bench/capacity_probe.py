@@ -277,7 +277,9 @@ def main(argv=None):
     teacher = None
     if args.teacher_ckpt:
         teacher, _ = make_net(args.teacher_net, dev, soft)
-        teacher.load_state_dict(torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)["net"])
+        t_ck = torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)
+        teacher.load_state_dict(t_ck["net"])
+        amber_net.input_options_from_ckpt(teacher, t_ck)   # e.g. --run-log-loopcount
         teacher.eval()
         for p_ in teacher.parameters():
             p_.requires_grad_(False)
@@ -288,7 +290,9 @@ def main(argv=None):
         torch.manual_seed(args.seed)
         net, shape = make_net(spec, dev, soft)
         if args.init_student:   # continue a saved net (--save-nets file) of this shape
-            net.load_state_dict(torch.load(args.init_student, map_location=dev, weights_only=False)["net"])
+            s_ck = torch.load(args.init_student, map_location=dev, weights_only=False)
+            net.load_state_dict(s_ck["net"])
+            amber_net.input_options_from_ckpt(net, s_ck)
             print(f"# init-student {args.init_student}", flush=True)
         params = sum(p.numel() for p in net.parameters())
         print(f"# net {spec}: d {shape[0]}, layers {shape[1]}, heads {shape[2]}, {params} parameters", flush=True)
@@ -309,6 +313,7 @@ def main(argv=None):
         net, shape = make_net("0.44M", dev, soft)
         ck = torch.load(args.init_ckpt, map_location=dev, weights_only=False)   # our own checkpoint
         net.load_state_dict(ck["net"])
+        amber_net.input_options_from_ckpt(net, ck)
         params = sum(p.numel() for p in net.parameters())
         curve, skipped, wall = train_one("0.44M@ckpt", net, rv, train_pos, held_batches, args, dev, log)
         results.append({"net": "0.44M@ckpt", "d": shape[0], "layers": shape[1], "heads": shape[2], "params": params,

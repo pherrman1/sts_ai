@@ -436,13 +436,15 @@ def load_replay(path, extra=False):
 
 
 def load_net(ckpt):
-    sd = torch.load(ckpt, map_location="cpu", weights_only=False)["net"]
+    ck = torch.load(ckpt, map_location="cpu", weights_only=False)
+    sd = ck["net"]
     d = sd["type_emb.weight"].shape[1]
     layers = 1 + max(int(k.split(".")[2]) for k in sd if k.startswith("trunk.layers."))
     net = amber_net.AmberNet(d=d, layers=layers, hp_floors=sd["hp_floor.2.weight"].shape[0],
                              soft_policy=any(k.startswith("pol_soft.") for k in sd),
                              aux_slots=(sd["aux_fight.2.weight"].shape[0] // 2) if "aux_fight.2.weight" in sd else 0)
     net.load_state_dict(sd)
+    amber_net.input_options_from_ckpt(net, ck)   # e.g. --run-log-loopcount
     net.sdpa = True
     return net.eval()
 
