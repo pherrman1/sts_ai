@@ -1873,6 +1873,9 @@ def main(argv=None):
         train_net.load_state_dict(own)
         print(f"# init-net {args.init_net}: fresh {fresh}", flush=True)
     # --consequences on a net trained without them: their input weights to 0 (exactly the old net at step 0).
+    if not args.consequences and conseq_src.get("consequences"):
+        print("warning: the source checkpoint was trained with --consequences; without the flag its consequence "
+              "inputs get 0 (an input shift)", file=sys.stderr, flush=True)
     conseq_zeroed = False
     if args.consequences and (args.resume or args.init_net) and not conseq_src.get("consequences"):
         n_zero = amber_net.zero_consequence_inputs(train_net)

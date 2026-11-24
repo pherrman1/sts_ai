@@ -29376,4 +29376,5 @@ random-walk states): encoding 1.43 → 6.14 µs per position with the pass (+4.7
 **Not done:** no games played with it; the live switch needs the owner's go, an independent review (it changes the
 net input) and the 5-15 min PC live test. **Open question:** whether the CPU cost lowers moves/s on the PC, and
 whether the features raise the win rate.
+**Review (reviewer K, PASS):** `--resume` / `--init-net` of a `--consequences` checkpoint without the flag now prints a warning (F4).
 **Knowledge impact:** this entry; CODE_MAP row of the Amber encoders.
