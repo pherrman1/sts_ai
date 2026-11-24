@@ -29379,7 +29379,7 @@ whether the features raise the win rate.
 **Review (reviewer K, PASS):** `--resume` / `--init-net` of a `--consequences` checkpoint without the flag now prints a warning (F4).
 **Knowledge impact:** this entry; CODE_MAP row of the Amber encoders.
 
-## §TBD — Gradient noise of the stage-1 training loss: B_simple ~1.7k samples (batch 1,024), but 99.6 % of the gradient variance from the unscaled RUN slot 7 (`loopCount`); `--run-log-loopcount` (log(1 + x) before the input projection) → BUILT, default off (cloud, 2026-11-24)
+## §857 — Gradient noise of the stage-1 training loss: B_simple ~1.7k samples (batch 1,024), but 99.6 % of the gradient variance from the unscaled RUN slot 7 (`loopCount`); `--run-log-loopcount` (log(1 + x) before the input projection) → BUILT, default off (cloud, 2026-11-24)
 
 **Question (Philipp, 2026-11-24 19:26 CET, after the spire-mentor read; "only if it does not interrupt the
 training"):** is the live batch (1,024 samples) far below the gradient noise scale, as spire-mentor found for its
