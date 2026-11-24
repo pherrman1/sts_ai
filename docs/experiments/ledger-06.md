@@ -29378,3 +29378,45 @@ net input) and the 5-15 min PC live test. **Open question:** whether the CPU cos
 whether the features raise the win rate.
 **Review (reviewer K, PASS):** `--resume` / `--init-net` of a `--consequences` checkpoint without the flag now prints a warning (F4).
 **Knowledge impact:** this entry; CODE_MAP row of the Amber encoders.
+
+## §TBD — Gradient noise of the stage-1 training loss: B_simple ~1.7k samples (batch 1,024), but 99.6 % of the gradient variance from the unscaled RUN slot 7 (`loopCount`); `--run-log-loopcount` (log(1 + x) before the input projection) → BUILT, default off (cloud, 2026-11-24)
+
+**Question (Philipp, 2026-11-24 19:26 CET, after the spire-mentor read; "only if it does not interrupt the
+training"):** is the live batch (1,024 samples) far below the gradient noise scale, as spire-mentor found for its
+PPO run (their batch doublings at a plateau gave about +4 points each)?
+**Data:** 65,536 samples drawn uniformly (seed 20261124) from the replay window saved at step 1,493,707 (10M
+samples), read-only on the PC with `nice 19 / ionice -c3` in 77 s (live moves/s 4,071 before, 3,993 after); the
+gathered batches (37 MB) and the scripts `slice_replay.py`, `gradnoise_az.py`, `analyze_grads.py`,
+`finetune_ab.py` are in the project share `gradnoise-20261124/` (not in the repo). Checkpoints `ckpt_1493707.pt`
+and `ckpt_1518639.pt` (live 1.22M net, enemy tokens, aux fights, soft policy). CPU only, cloud, 4 cores; the loss
+is `selfplay.losses` with the live weights, fp32, no clipping.
+**Method:** 1,024 micro-batches of 64; per micro-batch gradient; B_simple = b tr(Σ_b) / |G|² with the unbiased
+estimators (McCandlish et al. 2018), raw and Adam-preconditioned (v from the checkpoint); jackknife over 16 groups,
+median of 16 group estimates, trimming, per-parameter-block split.
+**Result:** heavy-tailed. At step 1,518,639 one micro-batch had |g|² = 17.9M (median 204); the 10 largest carried
+75 % of Σ|g|², and `proj.run.weight` carried 99.6 % of tr(Σ) and |G|². Per sample, one sample reached a gradient
+norm of 270k (median 61). The cause is RUN float slot 7 = `BattleContext.loopCount`, written unscaled by
+`AmberEncoder.cpp` (values 100-6,728 in the slice; above 20 in 71 % of the samples); `cardsDrawn / 10` and
+`energyWasted / 10` reach 151 / 145. Robust B_simple (raw): median of 16 groups 1,117 (step 1,518,639) / 3,956
+(step 1,493,707); 5 % trimmed 782 / 1,889. With slot 7 as log(1 + x): max |g|² 1,366, top-10 share 4 %, B_simple
+raw 1,740 [jackknife 1,590-1,910]; clamp at 20 gives 1,732 [1,580-1,900]; log of slots 5-7 1,338. The
+Adam-preconditioned estimates stay unstable (median-of-groups 9k-31k, full estimate ~240k): not interpreted.
+**Use of the slot (forward only, 256 batches, step 1,518,639):** slot 7 = 0 raises the policy loss 0.808 → 0.824
+(policy KL 0.016 to the live net), hp_ema 2.079 → 2.091; clamp at 20: KL 0.012; halved: KL 0.004.
+**Offline continuation A/B (144 steps of 1,024 from step 1,518,639, the checkpoint's AdamW state, lr 2.52e-4,
+clip 1.0; 49k train / 16k held-out samples):** pre-clip gradient norm raw mean 19.3, median 7.7, max 204; with
+log(1 + x) mean 3.7, median 3.6, max 6.5. Held-out policy loss: log arm starts +0.013, the gap is 0.002-0.006 after
+24-48 steps; both arms then overfit the 49k samples. No learning benefit is visible at this size: **inconclusive**.
+**Built (PR, default off):** `selfplay.py --run-log-loopcount`: train and inference nets get
+`AmberNet.run_log_slots = (7,)`; `amber_net.log_run_slots` applies sign(x) log1p(|x|) to RUN tokens' slot 7
+before the input projection in the segmented, flat and packed forwards (token classes keep the raw floats), so
+samples already in the replay window are read the same way; the kickstart teacher keeps the raw input; excludes
+`--fused-net`; a `--resume` / `--init-net` checkpoint trained with the other setting prints a warning (the flag
+is in the checkpoint's `args`). `tests/test_run_log_loopcount.py`: all layouts equal the plain net on pre-scaled
+inputs; default bit-identical. Unlike §856 there is no exact identity at step 0: the switch shifts the input (the
+offline A/B above is the estimate of its cost).
+**Amber fidelity:** the Amber page does not say how numeric features are scaled; spire-mentor feeds every number
+through a symmetric log. Owner's choice (decision card 2026-11-24 20:55 CET, "Als Flag bauen").
+**Not done:** no games; the live switch needs the owner's go, an independent review (net input change) and the
+5-15 min PC live test. The other unscaled counters (slots 5 / 6) are left as they are.
+**Knowledge impact:** this entry.

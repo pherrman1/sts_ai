@@ -1255,6 +1255,7 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
                               aux_slots=AUX_SLOTS if train_net.aux_fight is not None else 0).to(dev)
     base.load_state_dict(train_net.state_dict())
     base.sdpa = True
+    base.run_log_slots = train_net.run_log_slots
     base_inf = copy.deepcopy(base).eval()
     base_inf.sdpa = True
     for k in ("varlen_attn", "fused_layer", "row_mean", "packed_heads"):
@@ -1641,6 +1642,12 @@ def main(argv=None):
                          "and after the play; az_run_driver.h consequences, AmberConsequences.cpp). Continuing a net "
                          "trained without them (--resume / --init-net / --teacher-ckpt), their input weights are set to 0 "
                          "(amber_net.zero_consequence_inputs), so the net computes what it did until they train")
+    ap.add_argument("--run-log-loopcount", action="store_true",
+                    help="net input (default off): the RUN token's float slot 7 (BattleContext.loopCount, written "
+                         "unscaled by the encoder) enters the input projection as log(1 + x) "
+                         "(amber_net.log_run_slots; train and inference nets, so samples already in the window are "
+                         "read the same way). The teacher (--teacher-ckpt) keeps the raw input. Offline measurement "
+                         "2026-11-24: this slot's gradient carried 99.6 %% of the gradient variance")
     ap.add_argument("--enemy-map-bias", action="store_true",
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
@@ -1788,6 +1795,8 @@ def main(argv=None):
         ap.error("--enemy-gate-key needs --enemy-tokens")
     if args.enemy_tokens and args.fused_net:
         ap.error("--enemy-tokens excludes --fused-net")
+    if args.run_log_loopcount and args.fused_net:
+        ap.error("--run-log-loopcount excludes --fused-net (its kernel reads the raw floats)")
     if args.init_counters and not args.init_net:
         ap.error("--init-counters needs --init-net")
     if args.kickstart_mix and not args.teacher_ckpt:
@@ -1837,6 +1846,8 @@ def main(argv=None):
                                    enemy_bias=args.enemy_map_bias, enemy_gate=args.enemy_tokens).to(dev)
     train_net.sdpa = True
     train_net.gate_key = bool(args.enemy_gate_key)   # (deepcopied into the inference net)
+    if args.run_log_loopcount:   # (deepcopied into the inference net)
+        train_net.run_log_slots = amber_net.RUN_LOG_LOOPCOUNT_SLOTS
     if args.enemy_train_kernel:
         train_net.train_attn = amber_net.load_kernel("varlen_attn_train")
     # --aux-fights / --enemy-map-bias: their parameters are a second group, so a checkpoint without them keeps its
@@ -1873,6 +1884,10 @@ def main(argv=None):
         train_net.load_state_dict(own)
         print(f"# init-net {args.init_net}: fresh {fresh}", flush=True)
     # --consequences on a net trained without them: their input weights to 0 (exactly the old net at step 0).
+    if bool(conseq_src.get("run_log_loopcount")) != bool(args.run_log_loopcount) and (args.resume or args.init_net):
+        print(f"warning: the source checkpoint was trained {'with' if conseq_src.get('run_log_loopcount') else 'without'}"
+              f" --run-log-loopcount, this run is {'with' if args.run_log_loopcount else 'without'} it (an input "
+              "shift of the RUN token's loopCount slot)", file=sys.stderr, flush=True)
     if not args.consequences and conseq_src.get("consequences"):
         print("warning: the source checkpoint was trained with --consequences; without the flag its consequence "
               "inputs get 0 (an input shift)", file=sys.stderr, flush=True)

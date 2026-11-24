@@ -199,6 +199,26 @@ def load_fused_layer():
     return (m.ln_qkv, m.fused_out_ffn)
 
 
+# --run-log-loopcount (selfplay.py): RUN float slots that enter the input projection as sign(x) log(1 + |x|)
+# instead of raw. Slot 7 is BattleContext.loopCount, which the encoder writes unscaled (AmberEncoder.cpp RUN slot 7:
+# 100 .. 6,728 in the stage-1 replay); its proj.run gradient carried 99.6 % of the gradient variance (offline
+# gradient-noise measurement 2026-11-24). Only the projection input changes (token_classes keep the raw floats).
+RUN_LOG_LOOPCOUNT_SLOTS = (7,)
+
+
+def log_run_slots(tt, f, slots):
+    """f with the given float slots of RUN tokens (tok_type == 0) as sign(x) log1p(|x|); f unchanged when slots is
+    empty. tt [...] token types, f [..., 64]; returns a new tensor (f is not written)."""
+    if not slots:
+        return f
+    run = (tt == TOKEN_TYPES.index("run"))
+    f = f.clone()
+    for s in slots:
+        x = f[..., s]
+        f[..., s] = torch.where(run, torch.sign(x) * torch.log1p(x.abs()), x)
+    return f
+
+
 class AmberNet(nn.Module):
     def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0, enemy_bias=False,
                  enemy_gate=False):
@@ -208,6 +228,7 @@ class AmberNet(nn.Module):
         self.ids = nn.Embedding(ID_VOCAB, d, padding_idx=0)
         self.proj = nn.ModuleDict({t: nn.Linear(N_FLOAT, d) for t in TOKEN_TYPES})
         self.in_norm = nn.LayerNorm(d)
+        self.run_log_slots = ()   # --run-log-loopcount: RUN float slots log-scaled before the projection
         enc = nn.TransformerEncoderLayer(d, heads, 4 * d, dropout=0.0, activation="gelu", batch_first=True,
                                          norm_first=True)
         self.trunk = nn.TransformerEncoder(enc, layers, enable_nested_tensor=False)
@@ -348,7 +369,8 @@ class AmberNet(nn.Module):
         W = torch.stack([self.proj[t].weight for t in TOKEN_TYPES])          # [K, d, 64]
         bias = torch.stack([self.proj[t].bias for t in TOKEN_TYPES])         # [K, d]
         K = W.shape[0]
-        P = torch.nn.functional.linear(b["f"], W.reshape(K * d, -1), bias.reshape(-1))
+        P = torch.nn.functional.linear(log_run_slots(tt, b["f"], self.run_log_slots), W.reshape(K * d, -1),
+                                       bias.reshape(-1))
         P = P.view(*tt.shape, K, d)
         proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
         x = self.in_norm(self.type_emb(tt) + self.ids(b["ids"]).sum(2) + proj)
@@ -523,7 +545,8 @@ class AmberNet(nn.Module):
         W = torch.stack([self.proj[t].weight for t in TOKEN_TYPES])
         bias = torch.stack([self.proj[t].bias for t in TOKEN_TYPES])
         K = W.shape[0]
-        P = F.linear(f_p, W.reshape(K * d, -1), bias.reshape(-1)).view(-1, K, d)
+        P = F.linear(log_run_slots(tt_p, f_p, self.run_log_slots), W.reshape(K * d, -1),
+                     bias.reshape(-1)).view(-1, K, d)
         proj = torch.gather(P, 1, tt_p[:, None, None].expand(-1, 1, d)).squeeze(1)
         x = self.in_norm(self.type_emb(tt_p) + self.ids(ids_p).sum(1) + proj)
         keep = mask[:, None, None, :]
@@ -604,7 +627,11 @@ class AmberNet(nn.Module):
         toks, masks = [], []
         for i, t in enumerate(TOKEN_TYPES):
             ids = b[t + "_ids"]
-            x = self.type_emb.weight[i] + self.ids(ids).sum(2) + self.proj[t](b[t + "_f"])
+            f_t = b[t + "_f"]
+            if t == "run" and self.run_log_slots:
+                f_t = log_run_slots(torch.zeros(f_t.shape[:-1], dtype=torch.long, device=f_t.device), f_t,
+                                    self.run_log_slots)
+            x = self.type_emb.weight[i] + self.ids(ids).sum(2) + self.proj[t](f_t)
             toks.append(x)
             masks.append(b[t + "_mask"])
         x = self.in_norm(torch.cat(toks, 1))
