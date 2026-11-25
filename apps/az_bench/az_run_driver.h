@@ -320,6 +320,32 @@ namespace sts::azbench {
     inline const char *stallTypeName(int t) { return t == 0 ? "fight_moves" : t == 1 ? "run_moves" : "no_legal"; }
     std::string stallLogJson(const StallLog &r);   // one JSON object (no newline), names spelled out
 
+    // Death log (RunConfig::deathLog, 2026-11-25, diagnostic, default off): one record per finished run (wins too)
+    // with where and how it ended: the run's last fight (entry HP, potions at entry, turns), the deck, relics and
+    // potions at the end. Logging only: play is unchanged.
+    struct DeathLog {
+        std::uint64_t seed = 0;
+        int asc = 0;
+        int result = 0;                          // 0 loss, 1 win (Heart kill), 2 keyless act 3 victory
+        int end = 0;                             // 0 game, 1 stall fight_moves, 2 stall run_moves, 3 stall no_legal,
+                                                 // 4 no fair view, 5 invalid action
+        int act = 0, floor = 0, mapY = 0, room = 0, screen = 0;   // at the end; room = Room, screen = ScreenState
+        int curHp = 0, maxHp = 0, gold = 0;      // GameContext HP at the end (a stall in a fight: the entry HP)
+        int inFight = 0;                         // the run ended in its last fight (not won)
+        int fights = 0;                          // fights entered
+        // The run's last fight entered (fightFloor -1 = none): where, and the state entering it.
+        int fightAct = 0, fightFloor = -1, fightMapY = 0, fightRoom = 0, encounter = 0;
+        int entryHp = 0, entryMaxHp = 0;
+        std::vector<int> entryPotions;           // Potion (non-empty slots) entering the fight
+        int turn = 0, fightMoves = 0;            // BattleContext::turn and real decisions at the fight's end
+        int fightHp = 0;                         // the player's fight HP at the end
+        std::vector<std::array<int, 3>> monsters;   // (MonsterId, curHp, maxHp) not dead or escaped at the end
+        std::vector<std::pair<int, int>> deck;   // (CardId, upgraded) at the end
+        std::vector<int> relics, potions;        // RelicId, Potion (non-empty slots) at the end
+        std::int64_t elites = 0, rest = 0, smith = 0;
+    };
+    std::string deathLogJson(const DeathLog &r);   // one JSON object (no newline), names spelled out
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -539,6 +565,9 @@ namespace sts::azbench {
         // Stall log (2026-11-21, diagnostic, default off; StallLog, takeStallLogs): records every run ended by a stall
         // guard with its last StallLog::kTrail real decisions. Logging only: play is unchanged.
         bool stallLog = false;
+        // Death log (2026-11-25, diagnostic, default off; DeathLog, takeDeathLogs): records every finished run.
+        // Logging only: play is unchanged.
+        bool deathLog = false;
         // Fight-outcome auxiliary targets (2026-11-21, default off; NOT from Amber Eye, whose page lists no such
         // head: Philipp's choice after an STS2 author's run net "predict[s] fight outcomes of the current boss, all 3
         // elites, and a random sample of 4 regular encounters"). Every kept out-of-combat sample also stores the
@@ -898,6 +927,13 @@ namespace sts::azbench {
             out.swap(stallLogs_);
             return out;
         }
+        // Death log (RunConfig::deathLog): the records since the last call (moved out).
+        std::vector<DeathLog> takeDeathLogs() {
+            std::lock_guard<std::mutex> l(deathLogM_);
+            std::vector<DeathLog> out;
+            out.swap(deathLogs_);
+            return out;
+        }
         // RunConfig::probeRoots: the results so far (moved out) and the count of roots done (all recorded).
         std::vector<ProbeResult> takeProbeResults() {
             std::lock_guard<std::mutex> l(probeM_);
@@ -955,6 +991,8 @@ namespace sts::azbench {
         std::vector<HeartRunLog> heartLogs_;
         std::mutex stallLogM_;
         std::vector<StallLog> stallLogs_;
+        std::mutex deathLogM_;
+        std::vector<DeathLog> deathLogs_;
         std::atomic<std::int64_t> probeNext_{0}, probesDone_{0};
         std::mutex probeM_;
         std::vector<ProbeResult> probeResults_;

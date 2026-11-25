@@ -29530,3 +29530,27 @@ all layouts, fp32 / fp16; `--select-many-bits` within fp16 rounding noise. Fixed
 training net's) and F3 (`fused_net` refuses a net with `intent_emb` / `w_mask` / `run_log_slots` instead of
 ignoring them).
 **Knowledge impact:** this entry.
+
+## §TBD — `--death-log`: one record per finished run (room, encounter, entry HP, potions, turns, deck) for the fixed-seed benchmark → BUILT, default off (cloud, 2026-11-25)
+
+**Question (owner, 2026-11-25 10:21 CET, via the self-play thread):** §858 found death spikes at floors 6 and 23 but
+the benchmark records only a floor histogram, so whether they are elites is an inference. Record per benchmark run
+where and how it died. Logging only, no play change.
+**Tooling:** `RunConfig::deathLog` (`selfplay.py --death-log PATH`, appends JSONL; `az-run-driver --death-log PATH`;
+`RunDriver(death_log=True)` + `take_death_logs()`), default off. One record per finished run, wins too: `seed`,
+`asc`, `result` (`loss` / `win` / `keyless_victory`), `end` (`game`, `stall_fight_moves`, `stall_run_moves`,
+`stall_no_legal`, `no_fair_view`, `invalid_action`), final `act` / `floor` / `map_y` / `room` / `screen` / HP / gold,
+`in_fight` (the run ended in its last fight, not won), `fights` entered, and `fight` = the last fight entered: act,
+floor, map row, room (`MONSTER`, `ELITE`, `BOSS`, `EVENT`, ...), encounter, entry HP / max HP, potions at entry,
+`turn` (`BattleContext::turn` at its end), real decisions, player fight HP at the end, monsters left (id, HP, max
+HP). Plus the deck (card enum names, `+` = upgraded) with `deck_summary` (attack / skill / power / curse / status
+counts, upgraded), relics and potions at the end, and elites / rest / smith counts. The selfplay metrics row has
+`death_log` = records written so far. The driver's only always-on change is an int `endCause` per run, set where a
+run is ended by a stall guard, a lost fair view or an invalid action (no read outside the log).
+**Checks (cloud, Debug, fake net / random net, CTest seeds):** `az-run-driver --workers 1 --games 3 --runs 6 --fast
+--seed-base 1`: output identical with and without the flag except timing fields; 6 records. `selfplay.py` (CPU,
+random net, A20, seeds 540-543, `--min-replay 1e6`): same death floors and sample counts with and without the flag;
+4 records (2× Three Sentries on floor 7, Small Slimes, Cultist). New CTest `az_run_driver_death_log` (core;smoke),
+`tests/test_selfplay.py::DeathLogTest` (records with flag, none without). `tools/agent/verify_changed.py`: see PR.
+**Not done:** no benchmark seeds played. The benchmark scheduler adds `--death-log <bench dir>/deaths.jsonl`.
+**Knowledge impact:** this entry.

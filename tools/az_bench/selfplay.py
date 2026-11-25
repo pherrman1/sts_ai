@@ -1594,6 +1594,11 @@ def main(argv=None):
                          "run ended by a stall guard (a loss: fight past --max-fight-moves decisions, run past 50,000 "
                          "decisions, or no legal action) to <out-dir>/stall_log.jsonl: type, seed, floor, encounter, "
                          "fight state and the last 30 real decisions. The per-type counts are in every metrics row")
+    ap.add_argument("--death-log", default=None, metavar="PATH",
+                    help="diagnostic (2026-11-25, default off; play and training unchanged): append one JSON record "
+                         "per finished run (wins too) to PATH: result, end cause, act, floor, room, the last fight "
+                         "(room, encounter, entry HP / max HP, potions at entry, turns, monsters left), deck with a "
+                         "type summary, relics and potions at the end")
     ap.add_argument("--heart-log", type=float, default=0.0, metavar="RATE",
                     help="diagnostic (2026-11-19, default 0 = off; play and training unchanged): append one JSON record "
                          "per finished run that fought the Heart to <out-dir>/heart_runs.jsonl.gz: every kill, other "
@@ -2111,7 +2116,8 @@ def main(argv=None):
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
         **({"heart_log_rate": args.heart_log} if args.heart_log > 0 else {}),
-        **({"stall_log": True} if args.stall_log else {}))
+        **({"stall_log": True} if args.stall_log else {}),
+        **({"death_log": True} if args.death_log else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
@@ -2151,6 +2157,18 @@ def main(argv=None):
             for r in recs:
                 f.write(r + "\n")
         stall_logged[0] += len(recs)
+    death_logged = [0]   # records (this process)
+
+    def drain_death_log():
+        if not args.death_log:
+            return
+        recs = drv.take_death_logs()
+        if not recs:
+            return
+        with open(args.death_log, "a") as f:
+            for r in recs:
+                f.write(r + "\n")
+        death_logged[0] += len(recs)
     if args.savescum:
         print(f"# savescum: {'on until a file SAVESCUM_OFF appears in --out-dir' if savescum else 'off (SAVESCUM_OFF seen before this resume)'}",
               flush=True)
@@ -2912,6 +2930,9 @@ def main(argv=None):
             if args.stall_log:
                 drain_stall_log()
                 row["stall_log"] = stall_logged[0]
+            if args.death_log:
+                drain_death_log()
+                row["death_log"] = death_logged[0]
             if args.heart_log > 0:
                 drain_heart_log()
                 row["heart_log"] = {"records": heart_logged[0], "kills": heart_logged[1]}
@@ -2942,6 +2963,7 @@ def main(argv=None):
         drv.stop()
         drain_heart_log()
         drain_stall_log()
+        drain_death_log()
         path, c = save_ckpt(counters["step"], drv.stats(), time.time())
         print(json.dumps({"final_checkpoint": path, "errors": errors, "counters": c}), flush=True)
         if args.replay_save:

@@ -228,6 +228,11 @@ add_test(NAME az_run_driver_fight_start_end_off COMMAND $<TARGET_FILE:az-run-dri
          --test-relic NEOWS_LAMENT --test-relic MERCURY_HOURGLASS --stall-log az_run_driver_fight_start_end_off.jsonl)
 set_tests_properties(az_run_driver_fight_start_end_off PROPERTIES LABELS "core;smoke" ENVIRONMENT "STS_AZ_FIGHT_START_END=0"
                      PASS_REGULAR_EXPRESSION "no_legal [1-9][0-9]*; fights ended at start 0.*stall log: [1-9]")
+# Death log (--death-log, diagnostic, default off): one record per finished run.
+add_test(NAME az_run_driver_death_log COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --death-log az_run_driver_death_log.jsonl)
+set_tests_properties(az_run_driver_death_log PROPERTIES LABELS "core;smoke"
+                     PASS_REGULAR_EXPRESSION "death log: 6 records")
 add_test(NAME az_run_driver_aux_fights_compact COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --aux-fights --compact-samples)
 set_tests_properties(az_run_driver_aux_fights_compact PROPERTIES LABELS "core;smoke")

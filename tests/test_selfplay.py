@@ -1461,6 +1461,59 @@ class AuxFightsTest(unittest.TestCase):
             self.assertTrue((again.rows(40, 10)["aux_mask"] == 31).all())
 
 
+@unittest.skipUnless(MODULES, "az_bench_native not built")
+class DeathLogTest(unittest.TestCase):
+    def test_death_log_driver(self):
+        """RunDriver(death_log=True): one JSON record per finished run (seed, result, the last fight's room,
+        encounter, entry HP, turns, deck summary); without the flag no record."""
+        nat = native()
+        for on in (True, False):
+            drv = nat.RunDriver(workers=1, games=2, seed_base=1994, max_runs=2, ascension=20, full_sims=8,
+                                fast_sims=4, full_candidates=4, fast_candidates=2, max_pending=0, death_log=on)
+            R, T, A = 8, 212, 96
+            views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                     "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                     "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                     "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                     "a_mask": np.zeros(R * A, np.bool_)}
+            rng = np.random.default_rng(0)
+            drv.start()
+            try:
+                while drv.stats()["runs_done"] < 2:
+                    got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                    if got is None:
+                        continue
+                    ticket, rows, _, _, Ap = got
+                    drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32),
+                               rng.random(rows).astype(np.float32), np.full(rows, 40, np.float32))
+                    drv.take_samples()
+            finally:
+                drv.stop()
+            recs = [json.loads(r) for r in drv.take_death_logs()]
+            if not on:
+                self.assertEqual(recs, [])
+                continue
+            self.assertEqual(sorted(r["seed"] for r in recs), [1994, 1995])
+            for r in recs:
+                self.assertEqual(r["asc"], 20)
+                self.assertIn(r["result"], ("loss", "win", "keyless_victory"))
+                self.assertEqual(r["end"], "game")
+                self.assertGreaterEqual(r["fights"], 1)
+                f = r["fight"]
+                self.assertIn(f["room"], ("MONSTER", "ELITE", "BOSS", "EVENT"))
+                self.assertGreater(f["entry_hp"], 0)
+                self.assertGreaterEqual(f["entry_max_hp"], f["entry_hp"])
+                self.assertGreaterEqual(f["turn"], 0)
+                self.assertTrue(f["encounter"])
+                if r["result"] == "loss" and r["in_fight"]:
+                    self.assertEqual(f["floor"], r["floor"])
+                    self.assertEqual(f["end_hp"], 0)
+                self.assertEqual(r["deck_size"], len(r["deck"]))
+                self.assertEqual(sum(r["deck_summary"][k] for k in ("attack", "skill", "power", "curse", "status")),
+                                 r["deck_size"])
+                self.assertTrue(r["relics"])
+
+
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
 class SelfplaySmoke(unittest.TestCase):
     def test_aux_fights_resume(self):
