@@ -2779,11 +2779,10 @@ namespace sts::azbench {
                 for (auto &x : rtPi) { x = std::exp(x - mx); z += x; }
                 for (auto &x : rtPi) x /= z;
                 double wR = 0;
-                if (cfg.maxTargets && mode == 0) {   // tree under maxTargets: the root's max-Q edge
-                    const int b = maxQEdge(root);
+                const int b = cfg.maxTargets && mode == 0 ? maxQEdge(root) : -1;
+                if (b >= 0) {   // tree under maxTargets: the root's max-Q edge
                     for (int i = 0; i < k; ++i) rtW[i] = i == b ? 1.0 : 0.0;
-                    if (b < 0) wR = 1.0;
-                } else {
+                } else {   // (tree without an edge with >= maxBackup visits: the visit mix, as addBackedNode)
                     rootTargetWeights(k, rtLogit.data(), g.probeCnt.data(), rtPi.data(), pick, mode, cfg.qRescale, rtW.data(), wR);
                 }
                 if (root.dist.size() != static_cast<std::size_t>(kOutcomeClasses))

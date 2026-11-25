@@ -3135,6 +3135,14 @@ class MaxTargetsTest(unittest.TestCase):
                 self.assertGreater(len(d), 10)
                 np.testing.assert_allclose(d.sum(1), 1, atol=1e-5)
                 np.testing.assert_allclose(d @ fv, cat["search_value"], atol=1e-5)
+        # M above any visit count: no edge qualifies, every node falls back to the visit mix, which is the mean
+        # backup's search result (and the mean backup's play).
+        mean, _ = self._run(nat)
+        mix, _ = self._run(nat, max_backup=100000, max_targets=True)
+        np.testing.assert_array_equal(mean["policy"], mix["policy"])
+        np.testing.assert_allclose(mix["search_dist"].astype(np.float64), mean["search_dist"].astype(np.float64),
+                                   atol=1e-5)
+        np.testing.assert_allclose(mix["search_value"], mean["search_value"], atol=1e-5)
         for rt in (0, 1, 2):
             with self.subTest(hp=True, root_target=rt):
                 cat, _ = self._run(nat, hp=True, max_backup=1, max_targets=True, root_target=rt)

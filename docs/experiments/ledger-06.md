@@ -29682,12 +29682,13 @@ storage): a node's backed result D (outcome distribution [57], floor HP distribu
 expected floor HP) is its max-Q edge's (backed Q of §865, edges with >= M visits, first on ties); a chance edge's D
 the outcome-visit-weighted mixture of its outcome children's; a leaf's its own evaluation; a node with visited edges
 but none with >= M visits mixes its evaluation and its edges' D with weights 1 and n_e. Root: `--root-target tree` =
-the max-Q edge's D, `policy` / `pick` = `rootTargetWeights` over the edges' backed D (instead of their mean leaves).
+the max-Q edge's D (no edge with >= M visits: the same visit mix), `policy` / `pick` = `rootTargetWeights` over the edges' backed D (instead of their mean leaves).
 `Sample::searchValue` = the root's backed value. Off: identical to main (policy hash default + Amber rules).
 **Checks (cloud, Release module, fake net):** `tests/test_selfplay.py::MaxTargetsTest`: with hp weights 0 (value = F
 of the distribution) every sample's search value equals F of its search distribution to 1e-5 for M = 1, M = 2 and
 Amber rules, as for mean targets (the backed value and the backed distribution follow the same line); HP targets
-(utility AMBER, `search_ema_hp`) for root target tree / policy / pick pass the driver's sum-to-1 checks; refusals.
+(utility AMBER, `search_ema_hp`) for root target tree / policy / pick pass the driver's sum-to-1 checks; refusals; with M above any visit count (no edge qualifies, every node falls back to the visit mix) play and
+search targets equal the mean backup's (review fix: the root's tree reading had dropped the search in that case).
 Observation (random fake net, not evidence about the real net): mean F of the targets 0.494 (max backup, mean targets)
 -> 0.513 (max targets), the expected upward bias of a max over noisy values.
 **Not done:** no benchmark or live run. Going live needs the owner's decision (self-play would also play with
