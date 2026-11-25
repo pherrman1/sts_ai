@@ -29630,3 +29630,27 @@ p = 0.30); at 128 -1.2 pp (p = 0.57); C1 64 -> 128 +1.1 pp (p = 0.59); default 6
 "no progress past chance nodes" explanation of the 64 -> 128 plateau is not supported; on this checkpoint 128 sims
 with the default widening gave +4.3 pp (p = 0.022), so the earlier flat 64 -> 128 reading may not hold here.
 **Knowledge impact:** this entry.
+
+## §865 — `--max-backup M`: max instead of mean backup at decision nodes of the Amber self-play search → BUILT, default off (cloud, 2026-11-25)
+
+**Question (owner, 2026-11-25 18:56 CET):** does passing the max of the children's values up the tree (instead of
+the mean) at deterministic decision nodes play better at 64 sims? Chance nodes keep averaging (an expectation).
+**Deliberate deviation** from Amber Eye and mctx, which average every simulation's leaf value into every node on its
+path (`backup`, `az_run_driver.cpp`); requested by the owner, so not a fidelity fix.
+**Tooling:** `RunConfig::maxBackup` (`RunDriver(max_backup=M)`, `selfplay.py --max-backup M`, 0 = off, negative
+refused). Same rule as Silver's `STS_SILVER_MAX_BACKUP` (§762): after the usual mean backup, bottom-up along the
+path, an edge's backed Q is its child's backed value (a chance edge: the outcome-visit-weighted mean of its outcome
+children's backed values); a node's backed value is the max Q over its edges with >= M visits, else its mean w / n.
+Selection (`selectNonRoot`), the root's completed Q (Gumbel halving, final pick, improved-policy target) read the
+backed Q; node means (`searchValue`), the EMA / HP leaf-distribution sums and the diagnostic per-edge counters stay
+means. The old driver's `az_driver.cpp` defines another `sts::azbench::Edge`; the run driver's struct is renamed
+`RunEdge` (an ODR clash that was harmless only while both were 88 bytes; growing one corrupted the heap).
+**Checks (cloud, Release module, fake net = fixed function of each row's inputs, seeds 1994-1996):**
+`tests/test_selfplay.py::MaxBackupTest`: two default runs identical, explicit `max_backup=0` identical to omitting
+it, M = 1 differs, M = -1 raises. Policy hash + moves / evals / floors of main `a7698c2` vs this branch with the flag
+off: identical for the default config and for Amber rules (`chance_on_reveal`, `cross_combat`, `sim_help`,
+`q_rescale`); `parallel_nodes = 2` is nondeterministic run to run on main too, so not compared.
+**Not done:** no benchmark seeds played here. Pre-registered rule for the PC benchmark (fixed seeds
+160200000-160200999, one checkpoint, both arms paired at 64 sims, otherwise the usual benchmark flags): adopt M = 1
+only if it gains >= +2.5 pp paired over the mean backup; otherwise keep the mean backup.
+**Knowledge impact:** this entry.
