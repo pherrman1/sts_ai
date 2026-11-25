@@ -29670,7 +29670,7 @@ fewer in act 3 / elites. Extra training downtime ~9 min.
 neither clearly better nor clearly worse; resolution at 1000 paired seeds is ~±4 pp.
 **Knowledge impact:** this entry.
 
-## §TBD — `--max-targets`: search targets from the max-backed tree (with `--max-backup`) → BUILT, default off (cloud, 2026-11-25)
+## §867 — `--max-targets`: search targets from the max-backed tree (with `--max-backup`) → BUILT, default off (cloud, 2026-11-25)
 
 **Question (owner, 2026-11-25 21:27 CET, relayed by the self-play thread):** with max backup, the targets should also
 come from the max backup. §865 changes only what the search reads; the outcome / HP search targets (`--value-ema-search`,
