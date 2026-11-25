@@ -29555,7 +29555,7 @@ random net, A20, seeds 540-543, `--min-replay 1e6`): same death floors and sampl
 **Not done:** no benchmark seeds played. The benchmark scheduler adds `--death-log <bench dir>/deaths.jsonl`.
 **Knowledge impact:** this entry.
 
-## §TBD — `--widening-c` / `--widening-alpha`: chance-node progressive widening constants of the Amber self-play driver as flags → BUILT, default off (cloud, 2026-11-25)
+## §862 — `--widening-c` / `--widening-alpha`: chance-node progressive widening constants of the Amber self-play driver as flags → BUILT, default off (cloud, 2026-11-25)
 
 **Question (owner, 2026-11-25 15:39 CET, step 1 of the coordinator's plateau plan):** `RunConfig` (`az_run_driver.h`)
 uses Silver's widening constants C = 3.7028, alpha = 0.52389 (`az_driver.h`). A chance edge (END_TURN, draws, any
