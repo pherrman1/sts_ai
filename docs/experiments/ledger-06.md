@@ -29531,7 +29531,7 @@ training net's) and F3 (`fused_net` refuses a net with `intent_emb` / `w_mask` /
 ignoring them).
 **Knowledge impact:** this entry.
 
-## §TBD — `--death-log`: one record per finished run (room, encounter, entry HP, potions, turns, deck) for the fixed-seed benchmark → BUILT, default off (cloud, 2026-11-25)
+## §861 — `--death-log`: one record per finished run (room, encounter, entry HP, potions, turns, deck) for the fixed-seed benchmark → BUILT, default off (cloud, 2026-11-25)
 
 **Question (owner, 2026-11-25 10:21 CET, via the self-play thread):** §858 found death spikes at floors 6 and 23 but
 the benchmark records only a floor histogram, so whether they are elites is an inference. Record per benchmark run
