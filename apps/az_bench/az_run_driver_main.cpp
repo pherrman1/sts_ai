@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights] [--enemy-tokens] [--consequences] [--stall-log PATH] [--test-relic ENUM_NAME]...
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights] [--enemy-tokens] [--consequences] [--stall-log PATH] [--death-log PATH] [--test-relic ENUM_NAME]...
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     cfg.keepFast = 0.2;
     int batch = 64;
     double maxSeconds = 600;
+    std::string deathLogPath;   // --death-log: one JSON line per finished run (RunConfig::deathLog)
     std::string stallLogPath;   // --stall-log: one JSON line per stalled run (RunConfig::stallLog)
     bool constValue = false;   // F = 0.5, no HP: only terminal leaves steer the search
     for (int i = 1; i < argc; ++i) {
@@ -112,6 +113,7 @@ int main(int argc, char **argv) {
         else if (a == "--enemy-tokens") cfg.enemyTokens = true;
         else if (a == "--consequences") cfg.consequences = true;
         else if (a == "--stall-log") { stallLogPath = next(); cfg.stallLog = true; }
+        else if (a == "--death-log") { deathLogPath = next(); cfg.deathLog = true; }
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
@@ -263,6 +265,16 @@ int main(int argc, char **argv) {
         std::size_t n = 0;
         for (const auto &r : d.takeStallLogs()) { out << azbench::stallLogJson(r) << '\n'; ++n; }
         std::printf("stall log: %zu records -> %s\n", n, stallLogPath.c_str());
+    }
+    if (cfg.deathLog) {
+        std::ofstream out(deathLogPath);
+        std::size_t n = 0, losses = 0;
+        for (const auto &r : d.takeDeathLogs()) {
+            out << azbench::deathLogJson(r) << '\n';
+            ++n;
+            losses += r.result == 0 ? 1 : 0;
+        }
+        std::printf("death log: %zu records (%zu losses) -> %s\n", n, losses, deathLogPath.c_str());
     }
     std::printf("memory: pool_nodes %lld pool_gc %lld pool_bc %lld pool_real %lld pool_outer %lld edge_cap %lld "
                 "pending_cap %lld move_dist_cap %lld cache_entries %lld done %lld\n",
