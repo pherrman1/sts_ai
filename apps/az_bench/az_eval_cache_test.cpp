@@ -31,7 +31,7 @@
 // Sample::expandToken), that every compact sample refers to a dictionary and that the dictionaries hold fewer tokens
 // than the samples do (the point of it).
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact]
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact] [--root-target 1|2]
 #include <algorithm>
 #include <limits>
 #include <cmath>
@@ -265,6 +265,7 @@ int main(int argc, char **argv) {
         else if (a == "--compact") compact = true;
         else if (a == "--hp-nan-every") hpNanEvery = std::stoi(next());
         else if (a == "--parallel-nodes") cfg.parallelNodes = std::stoi(next());
+        else if (a == "--root-target") cfg.rootTarget = std::stoi(next());
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -333,6 +334,7 @@ int main(int argc, char **argv) {
         azbench::RunConfig plain = cfg;
         plain.searchEmaLambda = 0;
         plain.searchEmaHp = false;
+        plain.rootTarget = 0;
         const Result p = play(plain, false, true);   // the same fake net, distributions not submitted
         std::printf("{\"ema\": {\"lambda\": %g, \"max_value_gap\": %.3g, \"max_sum_gap\": %.3g, \"full_only\": %d, \"base_digest\": \"%016llx\", "
                     "\"plain_digest\": \"%016llx\"}}\n", cfg.searchEmaLambda, a.maxValueGap, a.maxSumGap, cfg.searchEmaFullOnly ? 1 : 0,
@@ -341,7 +343,8 @@ int main(int argc, char **argv) {
             std::fprintf(stderr, "FAIL: the search-backed distributions changed the moves or samples\n");
             fail = 1;
         }
-        if (a.maxValueGap > 1e-5) { std::fprintf(stderr, "FAIL: searchValue != F(searchDist)\n"); fail = 1; }
+        // rootTarget != 0: searchDist is no longer the tree mean that the scalar searchValue is.
+        if (cfg.rootTarget == 0 && a.maxValueGap > 1e-5) { std::fprintf(stderr, "FAIL: searchValue != F(searchDist)\n"); fail = 1; }
         // Targets come from float16 chain distributions (~1e-3 relative per term).
         if (a.maxSumGap > 5e-3) { std::fprintf(stderr, "FAIL: distributions do not sum to 1\n"); fail = 1; }
     }
@@ -364,6 +367,19 @@ int main(int argc, char **argv) {
                     static_cast<long long>(a.stats.hpTargetBadRows), static_cast<long long>(a.stats.hpTargetFallbacks));
         if ((hpNanEvery > 0) != (a.stats.hpTargetBadRows > 0)) { std::fprintf(stderr, "FAIL: skipped HP rows do not match the broken net rows\n"); fail = 1; }
         if (a.stats.hpTargetFallbacks != 0) { std::fprintf(stderr, "FAIL: an HP target fell back to the real HP\n"); fail = 1; }
+    }
+    if (cfg.rootTarget != 0) {
+        // RunConfig::rootTarget: the same moves and samples as the tree reading, other targets.
+        azbench::RunConfig tree = cfg;
+        tree.rootTarget = 0;
+        const Result t = play(tree, false);
+        std::printf("{\"root_target\": {\"mode\": %d, \"base_digest\": \"%016llx\", \"tree_base_digest\": \"%016llx\", "
+                    "\"digest\": \"%016llx\", \"tree_digest\": \"%016llx\", \"tree_value_gap\": %.3g, \"value_gap\": %.3g}}\n",
+                    cfg.rootTarget, static_cast<unsigned long long>(a.baseDigest), static_cast<unsigned long long>(t.baseDigest),
+                    static_cast<unsigned long long>(a.digest), static_cast<unsigned long long>(t.digest), t.maxValueGap, a.maxValueGap);
+        if (t.baseDigest != a.baseDigest || t.samples != a.samples) { std::fprintf(stderr, "FAIL: rootTarget changed the moves or samples\n"); fail = 1; }
+        if (t.digest == a.digest) { std::fprintf(stderr, "FAIL: rootTarget did not change the targets\n"); fail = 1; }
+        if (!(a.maxValueGap > 1e-4)) { std::fprintf(stderr, "FAIL: rootTarget's searchDist is the tree mean\n"); fail = 1; }
     }
     return fail;
 }

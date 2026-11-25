@@ -360,6 +360,13 @@ set_tests_properties(az_eval_cache_ema_hp_nan PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_ema_hp_parallel COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --utility amber --amber-search --ema 0.9 --ema-hp --parallel-nodes 4)
 set_tests_properties(az_eval_cache_ema_hp_parallel PROPERTIES LABELS "core;smoke")
+# RunConfig::rootTarget 1 (policy) / 2 (pick): the same moves and samples as the tree reading, other targets.
+add_test(NAME az_eval_cache_root_target_policy COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --utility amber --amber-search --ema 0.9 --ema-hp --parallel-nodes 4 --root-target 1)
+set_tests_properties(az_eval_cache_root_target_policy PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_root_target_pick COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --utility amber --amber-search --ema 0.9 --ema-hp --root-target 2)
+set_tests_properties(az_eval_cache_root_target_pick PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search --ema 0.9)
 set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smoke")

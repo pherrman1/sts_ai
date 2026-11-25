@@ -17,7 +17,8 @@
 
 using namespace sts;
 
-// --self-test-q: completedQValues against hand-computed Gumbel MuZero completed Q (mctx qtransform_completed_by_mix_value).
+// --self-test-q: completedQValues against hand-computed Gumbel MuZero completed Q (mctx qtransform_completed_by_mix_value),
+// and rootTargetWeights (RunConfig::rootTarget) on the same tree.
 static int selfTestQ() {
     int fails = 0;
     auto near = [&](double a, double b, const char *what) {
@@ -44,6 +45,25 @@ static int selfTestQ() {
     near(q[0], 0.0, "novisit q0"); near(q[2], 0.0, "novisit q2");
     azbench::completedQValues(3, logit, n0, w, 0.7, false, q);
     near(q[1], 0.7, "novisit raw q1");
+    // rootTargetWeights (RunConfig::rootTarget) on the same three edges; improved policy pi' = .5 .3 .2.
+    const double pi[3] = {0.5, 0.3, 0.2};
+    double wE[3], wR = 0;
+    azbench::rootTargetWeights(3, logit, n, pi, 1, 0, true, wE, wR);   // tree: n / (1 + sum n), 1 / (1 + sum n)
+    near(wE[0], 0.5, "tree w0"); near(wE[1], 0.25, "tree w1"); near(wE[2], 0.0, "tree w2"); near(wR, 0.25, "tree root");
+    // policy, rescale: edge 2's .2 goes to vMix = (D_root + 3 (.25 D0 + .5 D1) / .75) / 4 = .25 D_root + .25 D0 + .5 D1.
+    azbench::rootTargetWeights(3, logit, n, pi, 1, 1, true, wE, wR);
+    near(wE[0], 0.5 + 0.2 * 0.25, "policy w0"); near(wE[1], 0.3 + 0.2 * 0.5, "policy w1"); near(wE[2], 0.0, "policy w2");
+    near(wR, 0.2 * 0.25, "policy root");
+    // Applied to values: the D_i = Q_i, D_root = .5 case gives sum pi' q_completed with the unrescaled vMix .375.
+    near(wE[0] * 0.6 + wE[1] * 0.2 + wR * 0.5, 0.5 * 0.6 + 0.3 * 0.2 + 0.2 * 0.375, "policy value");
+    azbench::rootTargetWeights(3, logit, n, pi, 1, 1, false, wE, wR);   // no rescale: unvisited -> root evaluation
+    near(wE[0], 0.5, "policy raw w0"); near(wE[1], 0.3, "policy raw w1"); near(wR, 0.2, "policy raw root");
+    azbench::rootTargetWeights(3, logit, n, pi, 1, 2, true, wE, wR);   // pick edge 1: its mean only
+    near(wE[0], 0.0, "pick w0"); near(wE[1], 1.0, "pick w1"); near(wE[2], 0.0, "pick w2"); near(wR, 0.0, "pick root");
+    azbench::rootTargetWeights(3, logit, n, pi, 2, 2, true, wE, wR);   // pick unvisited edge 2: vMix
+    near(wE[0], 0.25, "pick2 w0"); near(wE[1], 0.5, "pick2 w1"); near(wR, 0.25, "pick2 root");
+    azbench::rootTargetWeights(3, logit, n0, pi, 0, 1, true, wE, wR);   // no visits: all to the root evaluation
+    near(wE[0] + wE[1] + wE[2], 0.0, "novisit policy edges"); near(wR, 1.0, "novisit policy root");
     std::printf("completed-Q self test: %s\n", fails ? "FAIL" : "ok");
     return fails ? 1 : 0;
 }

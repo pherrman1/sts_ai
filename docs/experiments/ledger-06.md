@@ -29574,4 +29574,42 @@ explicit default constants identical to omitting them; C = 1 / alpha = 0.5 diffe
 **Not done:** no benchmark seeds played. The fixed-seed benchmark (160200000-160200999, current checkpoint, C in
 {3.7028, 1.0 with alpha 0.5} at 64 and 128 sims, paired) runs on the PC. Pre-registered rule: adopt if C = 1.0 gains
 >= +2.5 pp paired at 64 sims, or the 64 -> 128 step rises to >= +2.5 pp; otherwise keep.
+## §TBD — `--root-target tree|policy|pick`: how a searched move's search result D_m (EMA outcome / HP targets) is read from the root → BUILT, default off (cloud, 2026-11-25)
+
+**Question (owner, 2026-11-25 15:51 CET):** try a weighted root backup, and a variant that passes up only the
+chosen move's value, for the search-backed value / HP targets. Amber Eye says only "the search result"; the current
+reading (mean over the root evaluation and every simulation's leaf, mctx-standard) is not an Amber deviation, so this
+is the owner's choice to try, not a fidelity fix.
+**Tooling:** `RunConfig::rootTarget` (`selfplay.py --root-target`, `RunDriver(root_target=0|1|2)`), needs
+`--value-ema-search`. 0 tree = unchanged. 1 policy = Σ_i π'_i D_i with Gumbel's improved policy
+π' = softmax(logit + σ·completedQ) (the policy target) and D_i the edge's mean backed-up leaf; an unvisited edge's
+share goes to the distribution analogue of completedQ's vMix (prior-weighted visited means mixed with the root
+evaluation; without `--q-rescale` to the root evaluation). 2 pick = the mean leaf of the search's pick (before
+pick-rate exploration; vMix if unvisited). Same weights for the outcome distribution, the floor HP distribution and
+per-floor HP (`--hp-ema-search`); `rootTargetWeights` in `az_run_driver.h`. The per-root-edge sums are the probe's
+accumulators, now also kept in normal runs when the flag is on (+[k][256] doubles for the HP distribution). The
+scalar `Sample::searchValue` (stored, not trained), selection and policy target are unchanged. Probe results always
+carry both readings (`search_dist_policy` / `search_dist_pick`, P(win), E[HP]); `tools/az_bench/root_target_probe.py`
+reports the shift against tree on captured out-of-combat roots.
+**Checks (cloud, Debug, fake net):** flag off: `az-eval-cache-test` digests (`--ema 0.9`; `--utility amber
+--amber-search --ema 0.9 --ema-hp` with and without `--parallel-nodes 4`) identical to main d92ff4c. `--self-test-q`
+extended with hand-computed weights (tree, policy with/without rescale, pick visited/unvisited, no visits). New CTests
+`az_eval_cache_root_target_policy` / `_pick` (core;smoke): same moves and samples as tree, different targets. On 4
+Neow probe roots with an 11-22 checkpoint, an independent numpy reconstruction of tree / policy / pick from the
+per-edge probe output matches the driver to < 2e-8. `tests/test_selfplay.py::SelfplaySmoke::test_root_target_run`
+(CPU, random net, test seeds 780 / 790): policy and pick runs train on finite outcome / HP EMA targets; the flag
+without `--value-ema-search` is refused.
+**Offline shift (owner's go 2026-11-25 16:23 CET; cloud CPU, Release):** live net `ckpt_bench_1635474.pt` (step
+1635474, 39.2 % on the fixed 1000 seeds; sha256 ef41e509…bb6e; `--consequences --enemy-tokens`, map tokens 48),
+500 out-of-combat roots captured from capture runs on seeds 160260000.. (frozen net, 32/8 sims, nothing trained),
+each searched once noise-free with the live run's full budget (64 sims, 8 candidates, `amber_probe.LIVE_SEARCH`).
+Mean P(win) of D_m: net 0.198, tree 0.182, policy 0.194, pick 0.194; |policy − tree| 0.012 (p90 0.027), policy and
+pick differ by < 0.001 on average (π' at the root sits almost entirely on the pick). Total variation of the 57-class
+distribution against tree 0.039 (policy) / 0.040 (pick). E[HP at the end of the floor] +0.3 on average, at campfires
++2.9 (|gap| 10). The shift is larger at 3-4 legal actions (+0.015) than at 2 (+0.008) or ≥ 9 (+0.007); boss relic
+(+0.047, n = 5), Neow (+0.023), keys / relic rewards (+0.022). So the tree mean is ~1.2 points more pessimistic than
+the played line, because it averages in the explored worse moves. Combat roots are not covered (probe roots are
+out-of-combat only). Results: `/mnt/project-files/root-target-20261125/root_target_500.json`.
+**Not done:** no training with the flag; whether the targets get better (calibration, win rate) is open. Going live
+needs an independent review, the owner's go and a 15-min PC test.
 **Knowledge impact:** this entry.

@@ -1807,6 +1807,11 @@ def main(argv=None):
     ap.add_argument("--replay-hp-bytes", type=int, default=96,
                     help="--hp-ema-search with --compress-targets: bytes per window sample added to the target byte "
                          "ring for the floor HP targets (metric replay_soft_bytes_mean counts both)")
+    ap.add_argument("--root-target", choices=("tree", "policy", "pick"), default="tree",
+                    help="--value-ema-search: how a searched move's search result (outcome, and with --hp-ema-search "
+                         "the HP targets) is read from the root: tree (default) = mean over the root evaluation and "
+                         "all simulations' leaves; policy = Gumbel improved policy x each root edge's mean leaf; pick "
+                         "= the played edge's mean leaf (az_run_driver.h RunConfig::rootTarget)")
     ap.add_argument("--value-ema-moves", choices=("full", "all"), default="full",
                     help="--value-ema-search: the EMA chain over full-search moves only (Amber Eye; half-life in full "
                          "moves) or over all searched moves (half-life in searched moves)")
@@ -1854,6 +1859,8 @@ def main(argv=None):
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
     if args.hp_ema_search and not args.value_ema_search:
         ap.error("--hp-ema-search needs --value-ema-search")
+    if args.root_target != "tree" and not args.value_ema_search:
+        ap.error("--root-target policy/pick needs --value-ema-search")
     if args.hp_ema_search and not (args.chance_on_reveal or args.cross_combat or args.sim_help):
         ap.error("--hp-ema-search needs Amber's search rules (--chance-on-reveal, --cross-combat or --sim-help)")
     amber = args.utility in ("amber", "amber2", "amber2-root")   # Amber's per-floor H (heads, labels)
@@ -2126,7 +2133,8 @@ def main(argv=None):
         **({"stall_log": True} if args.stall_log else {}),
         **({"death_log": True} if args.death_log else {}),
         **({"widening_c": args.widening_c} if args.widening_c is not None else {}),
-        **({"widening_alpha": args.widening_alpha} if args.widening_alpha is not None else {}))
+        **({"widening_alpha": args.widening_alpha} if args.widening_alpha is not None else {}),
+        **({"root_target": {"policy": 1, "pick": 2}[args.root_target]} if args.root_target != "tree" else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
@@ -2920,6 +2928,7 @@ def main(argv=None):
             if ema_lam > 0:
                 row["value_ema"] = {"halflife": args.value_ema_halflife, "search": ema_search,
                                     "moves": args.value_ema_moves if ema_search else None, "hp": hp_ema,
+                                    **({"root_target": args.root_target} if args.root_target != "tree" else {}),
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
             if args.aux_fights:   # fight starts labelled so far, their samples, mean P(death) / HP left per slot

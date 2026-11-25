@@ -141,6 +141,15 @@ namespace sts::azbench {
     void completedQValues(int k, const float *logit, const std::int32_t *n, const double *w, double value,
                           bool rescale, double *q);
 
+    // RunConfig::rootTarget: the search result as wRoot D_root + sum_i wEdge[i] D_i (D_i: the mean backed-up leaf of
+    // root edge i, n[i] its simulations; D_root: the root's net evaluation); the weights sum to 1 and wEdge[i] = 0
+    // when n[i] = 0. pi: Gumbel's improved policy over the k edges (sums to 1); pick: the played edge. mode 0 tree
+    // (n[i] / (1 + sum n), 1 / (1 + sum n)), 1 policy, 2 pick. An unvisited edge's weight goes to completedQ's vMix,
+    // (D_root + sum n * sum_visited prior_i D_i / sum_visited prior_i) / (1 + sum n) with the prior softmax(logit),
+    // when rescale (completedQValues' qRescale), else to D_root.
+    void rootTargetWeights(int k, const float *logit, const std::int32_t *n, const double *pi, int pick, int mode,
+                           bool rescale, double *wEdge, double &wRoot);
+
     // Amber Eye exploration (RunConfig::exploreAmber): the finished runs in which an item appeared, by the item's
     // smallest gap m to the top pick in that run (m = 0: the search picked it itself). Gaps m > 0 go into bins of
     // kBin (the last bin takes m >= (kBins - 1) kBin, where exp(-m / 4) < 5e-5).
@@ -555,6 +564,18 @@ namespace sts::azbench {
         //     left it (Sample::hpFloorTarget, HP / 255, -1 before the sample's floor).
         // Sample::hpEnd / hpFloor keep the real labels. The selection is unchanged.
         bool searchEmaHp = false;
+        // Root target (2026-11-25, default 0 = tree, Philipp's choice to try; Amber Eye says only "the search
+        // result"): how the search result D_m of a searched move (outcome distribution and, with searchEmaHp, the
+        // floor HP distribution and per-floor HP) is read from the root. Needs searchEmaLambda > 0.
+        //   0 tree: the mean over the root evaluation and every simulation's leaf (above; bit-identical to before);
+        //   1 policy: sum over root edges of Gumbel's improved policy pi' = softmax(logit + sigma completedQ) (the
+        //     policy target) times the edge's mean backed-up leaf; an unvisited edge's share goes to the
+        //     distribution analogue of completedQ's vMix (qRescale; the root evaluation without it);
+        //   2 pick: the mean backed-up leaf of the played edge only (the search's pick, before pick-rate
+        //     exploration; vMix as above if it is unvisited).
+        // rootTargetWeights gives the weights. The scalar Sample::searchValue, the selection and the policy target
+        // are unchanged. Costs per run [k][57] (+ [k][256] and [k][56] with searchEmaHp) doubles of per-edge sums.
+        int rootTarget = 0;
         // Heart search probe (2026-11-18, diagnostic, default empty = off). When a run reaches the Heart fight, its
         // game state at the fight's start is stored and the fight is played heartArms.size() x heartReps times from
         // that same state (same game RNG at the start; job j plays arm j % arms, rep j / arms), each with the arm's
@@ -846,6 +867,11 @@ namespace sts::azbench {
         std::int32_t rootN = 0;
         double searchValue = 0, sigma = 0, searchPWin = 0, searchEhp = 0;
         std::vector<float> searchDist, searchHpf;   // searchHpf: utility AMBER / AMBER2, as ProbeEdge::hpf
+        // The search result read as RunConfig::rootTarget 1 (policy) and 2 (pick), whatever rootTarget is: outcome
+        // distribution [57], its P(win) and the expected HP at the end of the floor (searchDist / searchPWin /
+        // searchEhp are the run's own rootTarget).
+        std::vector<float> searchDistPolicy, searchDistPick;
+        double searchPWinPolicy = 0, searchPWinPick = 0, searchEhpPolicy = 0, searchEhpPick = 0;
         std::vector<ProbeEdge> edges;
         Sample sample;   // the root's encoded tokens and actions (copied layout; policy = improved policy)
     };
