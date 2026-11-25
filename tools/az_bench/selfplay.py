@@ -1600,6 +1600,11 @@ def main(argv=None):
                          "node's backed value is the max Q over its edges with >= M visits (none: the mean). Read by "
                          "selection, the root's completed Q and the policy target; value targets stay means "
                          "(az_run_driver.h RunConfig::maxBackup)")
+    ap.add_argument("--max-targets", action="store_true",
+                    help="search targets (2026-11-25, default off; needs --max-backup and --value-ema-search): the "
+                         "outcome / HP search targets and the scalar search value come from the max-backed tree "
+                         "(decision nodes: the max-Q edge's result, chance edges: visit-weighted mixture) instead of "
+                         "the mean leaves; --root-target tree = the root's max-Q edge (RunConfig::maxTargets)")
     ap.add_argument("--widening-alpha", type=float, default=None,
                     help="search (2026-11-25, default unset = 0.52389): the exponent alpha of --widening-c")
     ap.add_argument("--stall-log", action="store_true",
@@ -1865,6 +1870,8 @@ def main(argv=None):
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
     if args.hp_ema_search and not args.value_ema_search:
         ap.error("--hp-ema-search needs --value-ema-search")
+    if args.max_targets and not (args.max_backup > 0 and args.value_ema_search):
+        ap.error("--max-targets needs --max-backup M > 0 and --value-ema-search")
     if args.root_target != "tree" and not args.value_ema_search:
         ap.error("--root-target policy/pick needs --value-ema-search")
     if args.hp_ema_search and not (args.chance_on_reveal or args.cross_combat or args.sim_help):
@@ -2141,7 +2148,8 @@ def main(argv=None):
         **({"widening_c": args.widening_c} if args.widening_c is not None else {}),
         **({"widening_alpha": args.widening_alpha} if args.widening_alpha is not None else {}),
         **({"root_target": {"policy": 1, "pick": 2}[args.root_target]} if args.root_target != "tree" else {}),
-        **({"max_backup": args.max_backup} if args.max_backup else {}))
+        **({"max_backup": args.max_backup} if args.max_backup else {}),
+        **({"max_targets": True} if args.max_targets else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item

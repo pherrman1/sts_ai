@@ -29669,3 +29669,28 @@ fewer in act 3 / elites. Extra training downtime ~9 min.
 **Decision:** rule not met -> keep the mean backup (flag stays, default off). **Inference:** at 64 sims max backup is
 neither clearly better nor clearly worse; resolution at 1000 paired seeds is ~±4 pp.
 **Knowledge impact:** this entry.
+
+## §867 — `--max-targets`: search targets from the max-backed tree (with `--max-backup`) → BUILT, default off (cloud, 2026-11-25)
+
+**Question (owner, 2026-11-25 21:27 CET, relayed by the self-play thread):** with max backup, the targets should also
+come from the max backup. §865 changes only what the search reads; the outcome / HP search targets (`--value-ema-search`,
+`--hp-ema-search`) and the scalar search value stay mean backups, and `--root-target policy` weights each root edge's
+mean leaf. A further **deliberate deviation** from Amber Eye (mean search result).
+**Tooling:** `RunConfig::maxTargets` (`RunDriver(max_targets=True)`, `selfplay.py --max-targets`; needs `--max-backup
+M > 0` and `--value-ema-search`, refused otherwise). At move end, by recursion over the finished tree (no per-node
+storage): a node's backed result D (outcome distribution [57], floor HP distribution [256], per-floor HP [56],
+expected floor HP) is its max-Q edge's (backed Q of §865, edges with >= M visits, first on ties); a chance edge's D
+the outcome-visit-weighted mixture of its outcome children's; a leaf's its own evaluation; a node with visited edges
+but none with >= M visits mixes its evaluation and its edges' D with weights 1 and n_e. Root: `--root-target tree` =
+the max-Q edge's D (no edge with >= M visits: the same visit mix), `policy` / `pick` = `rootTargetWeights` over the edges' backed D (instead of their mean leaves).
+`Sample::searchValue` = the root's backed value. Off: identical to main (policy hash default + Amber rules).
+**Checks (cloud, Release module, fake net):** `tests/test_selfplay.py::MaxTargetsTest`: with hp weights 0 (value = F
+of the distribution) every sample's search value equals F of its search distribution to 1e-5 for M = 1, M = 2 and
+Amber rules, as for mean targets (the backed value and the backed distribution follow the same line); HP targets
+(utility AMBER, `search_ema_hp`) for root target tree / policy / pick pass the driver's sum-to-1 checks; refusals; with M above any visit count (no edge qualifies, every node falls back to the visit mix) play and
+search targets equal the mean backup's (review fix: the root's tree reading had dropped the search in that case).
+Observation (random fake net, not evidence about the real net): mean F of the targets 0.494 (max backup, mean targets)
+-> 0.513 (max targets), the expected upward bias of a max over noisy values.
+**Not done:** no benchmark or live run. Going live needs the owner's decision (self-play would also play with
+`--max-backup`, which §866 did not adopt) and the 15-min live check.
+**Knowledge impact:** this entry.

@@ -3073,5 +3073,86 @@ class MaxBackupTest(unittest.TestCase):
             nat.RunDriver(workers=1, games=1, max_backup=-1)
 
 
+
+@unittest.skipUnless(MODULES, "az_bench_native not built")
+class MaxTargetsTest(unittest.TestCase):
+    def _run(self, nat, hp=False, **kw):
+        extra = dict(utility=1, chance_on_reveal=True, cross_combat=True, sim_help=True, search_ema_hp=True) if hp \
+            else dict(hp_weight_combat=0.0, hp_weight_ooc=0.0)
+        drv = nat.RunDriver(workers=1, games=2, seed_base=760, max_runs=3, ascension=20, full_sims=8, fast_sims=4,
+                            full_candidates=4, fast_candidates=2, keep_full=1.0, keep_fast=1.0, search_ema_lambda=0.8,
+                            **extra, **kw)
+        R, T, A = 8, 212, 96
+        views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                 "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                 "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                 "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                 "a_mask": np.zeros(R * A, np.bool_)}
+        rng = np.random.default_rng(0)
+        fv = np.arange(57, dtype=np.float64)
+        fv[0] = 57.0
+        fv /= 57.0
+        chunks = []
+        drv.start()
+        try:
+            while drv.stats()["runs_done"] < 3:
+                got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                if got is None:
+                    continue
+                ticket, rows, _, _, Ap = got
+                p = rng.random((rows, 57)) + 1e-3
+                p /= p.sum(1, keepdims=True)
+                h = rng.random((rows, 256)) + 1e-3
+                h /= h.sum(1, keepdims=True)
+                drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32), (p @ fv).astype(np.float32),
+                           (h @ np.arange(256)).astype(np.float32),
+                           rng.random((rows, 56)).astype(np.float32) if hp else None, 0, p.astype(np.float32),
+                           h.astype(np.float32) if hp else None)
+                c = drv.take_samples()
+                if c is not None:
+                    chunks.append(c)
+        finally:
+            drv.stop()
+        c = drv.take_samples()
+        if c is not None:
+            chunks.append(c)
+        return {k: np.concatenate([x[k] for x in chunks]) for k in chunks[0]}, fv
+
+    def test_max_targets_driver(self):
+        """RunDriver(max_targets=True) with max_backup: the search result is the max-backed line's, so with hp weights
+        0 (value = F) each sample's search value is F of its search distribution, as with mean targets; root_target
+        policy / pick and the HP targets (utility AMBER, search_ema_hp) run with distributions summing to 1;
+        max_targets without max_backup or search_ema_lambda is refused."""
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+        for kw in ({"max_backup": 1, "max_targets": True}, {"max_backup": 2, "max_targets": True},
+                   {"max_backup": 1, "max_targets": True, "chance_on_reveal": True, "cross_combat": True,
+                    "sim_help": True, "q_rescale": True}):
+            with self.subTest(kw=kw):
+                cat, fv = self._run(nat, **kw)
+                d = cat["search_dist"].astype(np.float64)
+                self.assertGreater(len(d), 10)
+                np.testing.assert_allclose(d.sum(1), 1, atol=1e-5)
+                np.testing.assert_allclose(d @ fv, cat["search_value"], atol=1e-5)
+        # M above any visit count: no edge qualifies, every node falls back to the visit mix, which is the mean
+        # backup's search result (and the mean backup's play).
+        mean, _ = self._run(nat)
+        mix, _ = self._run(nat, max_backup=100000, max_targets=True)
+        np.testing.assert_array_equal(mean["policy"], mix["policy"])
+        np.testing.assert_allclose(mix["search_dist"].astype(np.float64), mean["search_dist"].astype(np.float64),
+                                   atol=1e-5)
+        np.testing.assert_allclose(mix["search_value"], mean["search_value"], atol=1e-5)
+        for rt in (0, 1, 2):
+            with self.subTest(hp=True, root_target=rt):
+                cat, _ = self._run(nat, hp=True, max_backup=1, max_targets=True, root_target=rt)
+                np.testing.assert_allclose(cat["search_dist"].astype(np.float64).sum(1), 1, atol=1e-5)
+                self.assertTrue(np.isfinite(cat["hp_floor_target"]).all())
+        with self.assertRaises(ValueError):
+            nat.RunDriver(workers=1, games=1, max_targets=True, search_ema_lambda=0.8)
+        with self.assertRaises(ValueError):
+            nat.RunDriver(workers=1, games=1, max_targets=True, max_backup=1)
+
+
 if __name__ == "__main__":
     unittest.main()
