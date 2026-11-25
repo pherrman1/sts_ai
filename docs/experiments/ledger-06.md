@@ -29655,7 +29655,7 @@ off: identical for the default config and for Amber rules (`chance_on_reveal`, `
 only if it gains >= +2.5 pp paired over the mean backup; otherwise keep the mean backup.
 **Knowledge impact:** this entry.
 
-## §TBD — Max backup (`--max-backup 1`) vs mean backup on the fixed-seed benchmark at 64 sims → NEGATIVE, default kept (PC, 2026-11-25)
+## §866 — Max backup (`--max-backup 1`) vs mean backup on the fixed-seed benchmark at 64 sims → NEGATIVE, default kept (PC, 2026-11-25)
 
 **Question:** §865: does max backup at decision nodes (chance edges averaging) raise the A20 win rate at 64 sims?
 Pre-registered rule (before the run): adopt M = 1 only if it gains >= +2.5 pp paired; otherwise keep the mean backup.
