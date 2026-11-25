@@ -522,6 +522,36 @@ namespace sts::azbench {
         for (int i = 0; i < k; ++i) q[i] = (q[i] - lo) / range;
     }
 
+    void rootTargetWeights(int k, const float *logit, const std::int32_t *n, const double *pi, int pick, int mode,
+                           bool rescale, double *wEdge, double &wRoot) {
+        double sumN = 0;
+        for (int i = 0; i < k; ++i) { wEdge[i] = 0; sumN += n[i]; }
+        if (mode == 0) {
+            for (int i = 0; i < k; ++i) wEdge[i] = n[i] / (1.0 + sumN);
+            wRoot = 1.0 / (1.0 + sumN);
+            return;
+        }
+        double unvisited = 0;   // the weight of unvisited edges, which goes to vMix
+        if (mode == 1) {
+            for (int i = 0; i < k; ++i) (n[i] ? wEdge[i] : unvisited) += pi[i];
+        } else {
+            if (pick >= 0 && pick < k && n[pick]) wEdge[pick] = 1;
+            else unvisited = 1;
+        }
+        wRoot = 0;
+        if (unvisited <= 0) return;
+        if (!rescale || sumN <= 0) { wRoot = unvisited; return; }
+        double mxLogit = -1e300;
+        for (int i = 0; i < k; ++i) mxLogit = std::max(mxLogit, static_cast<double>(logit[i]));
+        double piVisited = 0;
+        for (int i = 0; i < k; ++i)
+            if (n[i]) piVisited += std::exp(logit[i] - mxLogit);
+        wRoot = unvisited / (1.0 + sumN);
+        const double share = unvisited * sumN / (1.0 + sumN) / std::max(piVisited, 1e-300);
+        for (int i = 0; i < k; ++i)
+            if (n[i]) wEdge[i] += share * std::exp(logit[i] - mxLogit);
+    }
+
     // --- search state ---------------------------------------------------------------------------------------------
 
     struct Edge {
@@ -676,10 +706,12 @@ namespace sts::azbench {
         std::unordered_map<std::uint64_t, std::uint32_t> dictIndex;
         // RunConfig::probeRoots: this run's root (-1 = a normal run), its result so far and, per root edge, the sums
         // of its simulations' leaf outcome distributions [k][57] and expected HP at the end of the root's floor, and
-        // the simulation counts.
+        // the simulation counts. The same per-edge sums serve RunConfig::rootTarget != 0 (also in normal runs),
+        // which with searchEmaHp adds the floor HP distributions probeHpd [k][256].
         std::int64_t probe = -1;
         ProbeResult probeRes;
         std::vector<double> probeDist, probeHp, probeHpf;   // probeHpf [k][56]: utility AMBER / AMBER2
+        std::vector<double> probeHpd;
         std::vector<std::int32_t> probeCnt;
     };
 
@@ -1131,6 +1163,10 @@ namespace sts::azbench {
             throw std::invalid_argument("run driver: searchEmaHp needs searchEmaLambda > 0");
         if (cfg_.searchEmaHp && !(cfg_.chanceOnReveal || cfg_.crossCombat || cfg_.simHelp))
             throw std::invalid_argument("run driver: searchEmaHp needs Amber's search rules (chanceOnReveal, crossCombat or simHelp)");
+        if (cfg_.rootTarget < 0 || cfg_.rootTarget > 2)
+            throw std::invalid_argument("run driver: rootTarget 0 (tree), 1 (policy) or 2 (pick)");
+        if (cfg_.rootTarget != 0 && !(cfg_.searchEmaLambda > 0))
+            throw std::invalid_argument("run driver: rootTarget needs searchEmaLambda > 0");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
         if (cfg_.workers > kMaxWorkers) throw std::invalid_argument("run driver: at most 64 workers");
         if (cfg_.parallelNodes < 0 || cfg_.parallelNodes > 255)
@@ -1605,6 +1641,7 @@ namespace sts::azbench {
         const bool emaOn = cfg.searchEmaLambda > 0;
         const bool hpOn = cfg.searchEmaHp;                    // floor HP distribution targets from the search
         const bool hpfOn = hpOn && usesAmberH(cfg.utility);   // ... and per-floor HP targets
+        const bool edgeSums = emaOn && cfg.rootTarget != 0;   // per-root-edge sums of the leaves (rootTarget)
         auto hpClass = [](int hp) { return std::clamp(hp, 0, kHpClasses - 1); };
         // searchEmaHp: the HP entries of a run-ending node. Death (alive false): HP 0 on its floor and after; a
         // keyless victory: hp on its floor, 0 after; a Heart kill (win): hp on its floor and after (as endRun's
@@ -1673,13 +1710,20 @@ namespace sts::azbench {
                     throw std::logic_error("run driver: leaf without an outcome distribution");
                 for (int k = 0; k < kOutcomeClasses; ++k) g.rootDist[k] += leaf.dist[k];
                 if (hpOn) addHp(g, leaf);
-                if (g.probe >= 0 && path.front().node == 0 && path.front().edge >= 0) {   // probe: per root edge
+                if ((g.probe >= 0 || edgeSums) && path.front().node == 0 && path.front().edge >= 0) {   // per root edge
                     const int e = path.front().edge;
                     for (int k = 0; k < kOutcomeClasses; ++k) g.probeDist[static_cast<std::size_t>(e) * kOutcomeClasses + k] += leaf.dist[k];
-                    double eh = 0;
-                    if (leaf.hpHot >= 0) eh = leaf.hpHot;
-                    else for (int k = 0; k < kHpClasses; ++k) eh += k * static_cast<double>(leaf.hpd[k]);
-                    g.probeHp[e] += eh;
+                    if (hpOn) {
+                        double eh = 0;
+                        if (leaf.hpHot >= 0) eh = leaf.hpHot;
+                        else for (int k = 0; k < kHpClasses; ++k) eh += k * static_cast<double>(leaf.hpd[k]);
+                        g.probeHp[e] += eh;
+                        if (edgeSums) {
+                            double *d = g.probeHpd.data() + static_cast<std::size_t>(e) * kHpClasses;
+                            if (leaf.hpHot >= 0) d[leaf.hpHot] += 1.0;
+                            else for (int k = 0; k < kHpClasses; ++k) d[k] += leaf.hpd[k];
+                        }
+                    }
                     if (hpfOn)
                         for (int f = 0; f < kFloors; ++f) g.probeHpf[static_cast<std::size_t>(e) * kFloors + f] += leaf.hpfv[f];
                     ++g.probeCnt[e];
@@ -2564,11 +2608,14 @@ namespace sts::azbench {
                     if (order[i] < static_cast<int>(g.rootUnder.size()) && g.rootUnder[order[i]]) g.cand.push_back(order[i]);
             const int mc = static_cast<int>(g.cand.size());
             g.phasesLeft = mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
-            if (g.probe >= 0) {   // probe root: per-edge sums of the simulations' leaves; the initial candidates
+            if (g.probe >= 0 || edgeSums) {   // per-edge sums of the simulations' leaves
                 g.probeDist.assign(static_cast<std::size_t>(k) * kOutcomeClasses, 0.0);
                 g.probeHp.assign(k, 0.0);
                 g.probeHpf.assign(hpfOn ? static_cast<std::size_t>(k) * kFloors : 0, 0.0);
+                g.probeHpd.assign(edgeSums && hpOn ? static_cast<std::size_t>(k) * kHpClasses : 0, 0.0);
                 g.probeCnt.assign(k, 0);
+            }
+            if (g.probe >= 0) {   // probe root: the initial candidates
                 g.probeRes.edges.assign(k, ProbeEdge{});
                 for (int e : g.cand) g.probeRes.edges[e].candidate = true;
             }
@@ -2617,12 +2664,65 @@ namespace sts::azbench {
                 }
             }
             ++wk.st.searchedMoves;
+            // RunConfig::rootTarget (mode 1 policy, 2 pick): the search result as rootTargetWeights' weighted sum of
+            // the root evaluation and the per-edge mean leaves: outcome distribution dist [57], with searchEmaHp the
+            // floor HP distribution hpd [256] (when its per-edge sums exist), per-floor HP hpf [56] (hpfOn) and the
+            // expected HP at the end of the floor ehp. pi' is the policy target's softmax(logit + sigma q).
+            thread_local std::vector<double> rtPi, rtW;
+            thread_local std::vector<float> rtLogit;
+            auto readRoot = [&](int mode, double *dist, double *hpd, double *hpf, double &ehp) {
+                const int k = static_cast<int>(root.edges.size());
+                rtPi.resize(k);
+                rtW.resize(k);
+                rtLogit.resize(k);
+                double mx = -1e300, z = 0;
+                for (int i = 0; i < k; ++i) {
+                    rtLogit[i] = root.edges[i].logit;
+                    rtPi[i] = root.edges[i].logit + sigma * q[i];
+                    mx = std::max(mx, rtPi[i]);
+                }
+                for (auto &x : rtPi) { x = std::exp(x - mx); z += x; }
+                for (auto &x : rtPi) x /= z;
+                double wR = 0;
+                rootTargetWeights(k, rtLogit.data(), g.probeCnt.data(), rtPi.data(), pick, mode, cfg.qRescale, rtW.data(), wR);
+                if (root.dist.size() != static_cast<std::size_t>(kOutcomeClasses))
+                    throw std::logic_error("run driver: root without an outcome distribution");
+                for (int c = 0; c < kOutcomeClasses; ++c) dist[c] = wR * root.dist[c];
+                ehp = 0;
+                if (hpOn) {
+                    if (root.hpHot >= 0) ehp = wR * root.hpHot;
+                    else for (int c = 0; c < kHpClasses; ++c) ehp += wR * c * static_cast<double>(root.hpd[c]);
+                }
+                if (hpd) {
+                    for (int c = 0; c < kHpClasses; ++c) hpd[c] = 0;
+                    if (root.hpHot >= 0) hpd[root.hpHot] += wR;
+                    else for (int c = 0; c < kHpClasses; ++c) hpd[c] += wR * root.hpd[c];
+                }
+                if (hpf) for (int f = 0; f < kFloors; ++f) hpf[f] = wR * root.hpfv[f];
+                for (int i = 0; i < k; ++i) {
+                    const int c = g.probeCnt[i];
+                    if (c <= 0 || rtW[i] == 0) continue;
+                    const double a = rtW[i] / c;
+                    const std::size_t e = static_cast<std::size_t>(i);
+                    for (int j = 0; j < kOutcomeClasses; ++j) dist[j] += a * g.probeDist[e * kOutcomeClasses + j];
+                    if (hpOn) ehp += a * g.probeHp[i];
+                    if (hpd) for (int j = 0; j < kHpClasses; ++j) hpd[j] += a * g.probeHpd[e * kHpClasses + j];
+                    if (hpf) for (int f = 0; f < kFloors; ++f) hpf[f] += a * g.probeHpf[e * kFloors + f];
+                }
+            };
             // The search result of this move: the root's mean backed-up distribution (a chain move: kept as float16).
             thread_local std::array<float, kOutcomeClasses> moveResult;
             const bool inChain = emaOn && (g.full || !cfg.searchEmaFullOnly);
+            thread_local std::array<double, kOutcomeClasses> rtDist;
+            thread_local std::array<double, kHpClasses> rtHpd;
+            thread_local std::array<double, kFloors> rtHpf;
+            double rtEhp = 0;
+            if (edgeSums) readRoot(cfg.rootTarget, rtDist.data(), hpOn ? rtHpd.data() : nullptr, hpfOn ? rtHpf.data() : nullptr, rtEhp);
             if (emaOn) {
                 const double inv = 1.0 / std::max(1, root.n);
                 for (int k = 0; k < kOutcomeClasses; ++k) moveResult[k] = static_cast<float>(g.rootDist[k] * inv);
+                if (edgeSums)
+                    for (int k = 0; k < kOutcomeClasses; ++k) moveResult[k] = static_cast<float>(rtDist[k]);
                 if (inChain)
                     for (int k = 0; k < kOutcomeClasses; ++k) g.moveDist.push_back(search::amberHalf(moveResult[k]));
                 if (hpOn) {
@@ -2630,7 +2730,19 @@ namespace sts::azbench {
                     double sum = 0;
                     for (int k = 0; k < kHpClasses; ++k) sum += g.rootHpd[k];
                     if (std::abs(sum * inv - 1.0) > 1e-3) throw std::logic_error("run driver: floor HP search result does not sum to 1");
-                    if (inChain) {
+                    if (edgeSums) {
+                        double s2 = 0;
+                        for (int k = 0; k < kHpClasses; ++k) s2 += rtHpd[k];
+                        if (std::abs(s2 - 1.0) > 1e-3) throw std::logic_error("run driver: rootTarget floor HP search result does not sum to 1");
+                        if (inChain) {
+                            for (int k = 0; k < kHpClasses; ++k) g.floorHpd.push_back(static_cast<float>(rtHpd[k] / s2));
+                            if (hpfOn) {
+                                const int fl = std::clamp(root.nfloor, 1, kFloors);
+                                g.moveHpfFloor.push_back(static_cast<std::uint8_t>(fl));
+                                for (int f = fl; f <= kFloors; ++f) g.moveHpf.push_back(search::amberHalf(static_cast<float>(rtHpf[f - 1])));
+                            }
+                        }
+                    } else if (inChain) {
                         for (int k = 0; k < kHpClasses; ++k) g.floorHpd.push_back(static_cast<float>(g.rootHpd[k] / sum));
                         if (hpfOn) {
                             const int fl = std::clamp(root.nfloor, 1, kFloors);
@@ -2653,7 +2765,19 @@ namespace sts::azbench {
                 r.searchPWin = moveResult[0];
                 double eh = 0;
                 for (int c = 0; c < kHpClasses; ++c) eh += c * g.rootHpd[c];
-                r.searchEhp = eh * inv;
+                r.searchEhp = edgeSums ? rtEhp : eh * inv;
+                {   // both rootTarget readings, whatever the run's own
+                    std::array<double, kOutcomeClasses> d;
+                    double e2 = 0;
+                    readRoot(1, d.data(), nullptr, nullptr, e2);
+                    r.searchDistPolicy.assign(d.begin(), d.end());
+                    r.searchPWinPolicy = d[0];
+                    r.searchEhpPolicy = e2;
+                    readRoot(2, d.data(), nullptr, nullptr, e2);
+                    r.searchDistPick.assign(d.begin(), d.end());
+                    r.searchPWinPick = d[0];
+                    r.searchEhpPick = e2;
+                }
                 if (hpfOn) {
                     r.searchHpf.resize(kFloors);
                     for (int f = 0; f < kFloors; ++f) r.searchHpf[f] = static_cast<float>(g.rootHpf[f] * inv);

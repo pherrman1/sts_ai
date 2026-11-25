@@ -2361,6 +2361,33 @@ class SelfplaySmoke(unittest.TestCase):
             sp.main([a for a in args if a not in ("--chance-on-reveal", "--cross-combat", "--sim-help")]
                     + ["--seed-base", "1", "--out-dir", "/nonexistent"])
 
+    def test_root_target_run(self):
+        """--root-target policy / pick: a run with HP search targets trains on finite targets and logs the reading;
+        the flag needs --value-ema-search."""
+        sp = load()
+        sp.TAKE_CHUNK = 1
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--max-runs", "16", "--eval-cache", "--merge-cards",
+                "--packed-h2d", "--utility", "amber", "--chance-on-reveal", "--cross-combat", "--sim-help",
+                "--value-ema-halflife", "8", "--value-ema-search", "--hp-ema-search", "--parallel-nodes", "4"]
+        for mode, seed in (("policy", "780"), ("pick", "790")):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as d:
+                self.assertEqual(sp.main(args + ["--root-target", mode, "--seed-base", seed, "--out-dir", d]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+                last = rows[-1]
+                self.assertGreater(last["train_steps"], 0)
+                self.assertEqual(last["value_ema"]["root_target"], mode)
+                losses = [r["loss"] for r in rows if r["loss"]]
+                for k in ("outcome_ema", "hp_ema", "hp_floor_ema"):
+                    self.assertTrue(all(k in l and np.isfinite(l[k]) for l in losses), k)
+                self.assertEqual(last["ema_bad_targets"], 0)
+        with self.assertRaises(SystemExit):   # needs --value-ema-search
+            sp.main([a for a in args if a not in ("--value-ema-search", "--hp-ema-search")]
+                    + ["--root-target", "pick", "--seed-base", "1", "--out-dir", "/nonexistent"])
+
     def test_value_ema_search_driver(self):
         """Driver level (every searched move kept): the EMA targets are the recursion of ema_outcome_targets over
         the chain moves' search-backed distributions (full moves only, or all searched moves), a fast move outside
