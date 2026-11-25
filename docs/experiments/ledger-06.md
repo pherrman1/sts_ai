@@ -29574,7 +29574,7 @@ explicit default constants identical to omitting them; C = 1 / alpha = 0.5 diffe
 **Not done:** no benchmark seeds played. The fixed-seed benchmark (160200000-160200999, current checkpoint, C in
 {3.7028, 1.0 with alpha 0.5} at 64 and 128 sims, paired) runs on the PC. Pre-registered rule: adopt if C = 1.0 gains
 >= +2.5 pp paired at 64 sims, or the 64 -> 128 step rises to >= +2.5 pp; otherwise keep.
-## §TBD — `--root-target tree|policy|pick`: how a searched move's search result D_m (EMA outcome / HP targets) is read from the root → BUILT, default off (cloud, 2026-11-25)
+## §864 — `--root-target tree|policy|pick`: how a searched move's search result D_m (EMA outcome / HP targets) is read from the root → BUILT, default off (cloud, 2026-11-25)
 
 **Question (owner, 2026-11-25 15:51 CET):** try a weighted root backup, and a variant that passes up only the
 chosen move's value, for the search-backed value / HP targets. Amber Eye says only "the search result"; the current
