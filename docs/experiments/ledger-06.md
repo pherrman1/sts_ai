@@ -29631,7 +29631,7 @@ p = 0.30); at 128 -1.2 pp (p = 0.57); C1 64 -> 128 +1.1 pp (p = 0.59); default 6
 with the default widening gave +4.3 pp (p = 0.022), so the earlier flat 64 -> 128 reading may not hold here.
 **Knowledge impact:** this entry.
 
-## §TBD — `--max-backup M`: max instead of mean backup at decision nodes of the Amber self-play search → BUILT, default off (cloud, 2026-11-25)
+## §865 — `--max-backup M`: max instead of mean backup at decision nodes of the Amber self-play search → BUILT, default off (cloud, 2026-11-25)
 
 **Question (owner, 2026-11-25 18:56 CET):** does passing the max of the children's values up the tree (instead of
 the mean) at deterministic decision nodes play better at 64 sims? Chance nodes keep averaging (an expectation).
