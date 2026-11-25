@@ -29592,7 +29592,7 @@ scalar `Sample::searchValue` (stored, not trained), selection and policy target 
 carry both readings (`search_dist_policy` / `search_dist_pick`, P(win), E[HP]); `tools/az_bench/root_target_probe.py`
 reports the shift against tree on captured out-of-combat roots.
 **Checks (cloud, Debug, fake net):** flag off: `az-eval-cache-test` digests (`--ema 0.9`; `--utility amber
---amber-search --ema 0.9 --ema-hp` with and without `--parallel-nodes 4`) identical to main d92ff4c. `--self-test-q`
+--amber-search --ema 0.9 --ema-hp` plain / `--parallel-nodes 4` / `--compact`) identical to main b07d3de. `--self-test-q`
 extended with hand-computed weights (tree, policy with/without rescale, pick visited/unvisited, no visits). New CTests
 `az_eval_cache_root_target_policy` / `_pick` (core;smoke): same moves and samples as tree, different targets. On 4
 Neow probe roots with an 11-22 checkpoint, an independent numpy reconstruction of tree / policy / pick from the
@@ -29609,7 +29609,7 @@ distribution against tree 0.039 (policy) / 0.040 (pick). E[HP at the end of the 
 +2.9 (|gap| 10). The shift is larger at 3-4 legal actions (+0.015) than at 2 (+0.008) or ≥ 9 (+0.007); boss relic
 (+0.047, n = 5), Neow (+0.023), keys / relic rewards (+0.022). So the tree mean is ~1.2 points more pessimistic than
 the played line, because it averages in the explored worse moves. Combat roots are not covered (probe roots are
-out-of-combat only). Results: `/mnt/project-files/root-target-20261125/root_target_500.json`.
+out-of-combat only), although the flag changes the targets of combat roots too. Results: `/mnt/project-files/root-target-20261125/root_target_500.json`.
 **Not done:** no training with the flag; whether the targets get better (calibration, win rate) is open. Going live
 needs an independent review, the owner's go and a 15-min PC test.
 **Knowledge impact:** this entry.
