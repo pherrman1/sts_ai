@@ -386,6 +386,15 @@ namespace sts::azbench {
         // leaf-distribution sums stay mean backups. Same rule as Silver's STS_SILVER_MAX_BACKUP (§762).
         // RunDriver(max_backup=) / selfplay.py --max-backup M.
         int maxBackup = 0;
+        // Max-backed search targets (2026-11-25, owner's request; needs maxBackup > 0 and searchEmaLambda > 0): the
+        // search result D (outcome distribution, floor HP distribution, per-floor HP, expected HP) and the scalar
+        // Sample::searchValue are read from the max-backed tree instead of the mean leaves. A node's backed D is its
+        // max-Q edge's (over edges with >= maxBackup visits, first on ties), a chance edge's the outcome-visit-
+        // weighted mixture of its outcome children, a leaf's its own evaluation; a node with visited edges but none
+        // with enough visits mixes its evaluation and its edges' backed D by visits (1 and n_e). At the root: rootTarget
+        // 0 (tree) = the max-Q edge's D, 1 (policy) / 2 (pick) = rootTargetWeights over the edges' backed D. Computed
+        // at move end by recursion over the finished tree. RunDriver(max_targets=) / selfplay.py --max-targets.
+        bool maxTargets = false;
         double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
         Utility utility = Utility::FLOOR_HP;   // H (see Utility); AMBER needs per-floor HP results in submit
         // FLOOR_HP only (2026-11-17, default off): a keyless act 3 victory (the run ends after the act 3 boss without

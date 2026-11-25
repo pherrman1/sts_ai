@@ -1171,6 +1171,8 @@ namespace sts::azbench {
             throw std::invalid_argument("run driver: searchEmaHp needs Amber's search rules (chanceOnReveal, crossCombat or simHelp)");
         if (cfg_.rootTarget < 0 || cfg_.rootTarget > 2)
             throw std::invalid_argument("run driver: rootTarget 0 (tree), 1 (policy) or 2 (pick)");
+        if (cfg_.maxTargets && !(cfg_.maxBackup > 0 && cfg_.searchEmaLambda > 0))
+            throw std::invalid_argument("run driver: maxTargets needs maxBackup > 0 and searchEmaLambda > 0");
         if (cfg_.rootTarget != 0 && !(cfg_.searchEmaLambda > 0))
             throw std::invalid_argument("run driver: rootTarget needs searchEmaLambda > 0");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
@@ -1648,7 +1650,8 @@ namespace sts::azbench {
         const bool emaOn = cfg.searchEmaLambda > 0;
         const bool hpOn = cfg.searchEmaHp;                    // floor HP distribution targets from the search
         const bool hpfOn = hpOn && usesAmberH(cfg.utility);   // ... and per-floor HP targets
-        const bool edgeSums = emaOn && cfg.rootTarget != 0;   // per-root-edge sums of the leaves (rootTarget)
+        // per-root-edge sums of the leaves (rootTarget), or with maxTargets the per-edge backed results
+        const bool edgeSums = emaOn && (cfg.rootTarget != 0 || cfg.maxTargets);
         auto hpClass = [](int hp) { return std::clamp(hp, 0, kHpClasses - 1); };
         // searchEmaHp: the HP entries of a run-ending node. Death (alive false): HP 0 on its floor and after; a
         // keyless victory: hp on its floor, 0 after; a Heart kill (win): hp on its floor and after (as endRun's
@@ -1777,6 +1780,63 @@ namespace sts::azbench {
                 }
             }
             ++g.spent;
+        };
+
+        // RunConfig::maxTargets: the edge of node with the max backed Q among edges with >= maxBackup visits (first
+        // on ties; -1: none), and the backed search result of a node / edge added with weight a into dist [57], hpd
+        // [256] (searchEmaHp), hpf [56] (per-floor HP) and *ehp (expected floor HP), each if non-null.
+        auto maxQEdge = [&](const Node &n) {
+            int b = -1;
+            for (int i = 0; i < static_cast<int>(n.edges.size()); ++i) {
+                const RunEdge &e = n.edges[i];
+                if (e.hasMq && e.n >= cfg.maxBackup && (b < 0 || e.mq > n.edges[b].mq)) b = i;
+            }
+            return b;
+        };
+        std::function<void(Run &, int, double, double *, double *, double *, double *)> addBackedNode;
+        auto addBackedEdge = [&](Run &g, const RunEdge &e, double a, double *dist, double *hpd, double *hpf, double *ehp) {
+            if (!e.chance) {
+                if (e.child >= 0 && g.pool[e.child].n > 0) addBackedNode(g, e.child, a, dist, hpd, hpf, ehp);
+                return;
+            }
+            double wt = 0;
+            for (std::size_t o = 0; o < e.outcomes.size(); ++o)
+                if (e.outcomeN[o] > 0 && g.pool[e.outcomes[o]].n > 0) wt += e.outcomeN[o];
+            if (wt <= 0) return;
+            for (std::size_t o = 0; o < e.outcomes.size(); ++o)
+                if (e.outcomeN[o] > 0 && g.pool[e.outcomes[o]].n > 0)
+                    addBackedNode(g, e.outcomes[o], a * e.outcomeN[o] / wt, dist, hpd, hpf, ehp);
+        };
+        addBackedNode = [&](Run &g, int ni, double a, double *dist, double *hpd, double *hpf, double *ehp) {
+            const Node &n = g.pool[ni];
+            const int b = maxQEdge(n);
+            if (b >= 0) { addBackedEdge(g, n.edges[b], a, dist, hpd, hpf, ehp); return; }
+            double sumN = 0;
+            for (const auto &e : n.edges) if (e.hasMq) sumN += e.n;
+            const double own = a / (1.0 + sumN);
+            if (n.dist.size() != static_cast<std::size_t>(kOutcomeClasses))
+                throw std::logic_error("run driver: maxTargets node without an outcome distribution");
+            for (int c = 0; c < kOutcomeClasses; ++c) dist[c] += own * n.dist[c];
+            if (hpd || ehp) {
+                if (n.hpHot >= 0) {
+                    if (hpd) hpd[n.hpHot] += own;
+                    if (ehp) *ehp += own * n.hpHot;
+                } else {
+                    if (n.hpd.size() != static_cast<std::size_t>(kHpClasses))
+                        throw std::logic_error("run driver: maxTargets node without a floor HP distribution");
+                    for (int c = 0; c < kHpClasses; ++c) {
+                        if (hpd) hpd[c] += own * n.hpd[c];
+                        if (ehp) *ehp += own * c * static_cast<double>(n.hpd[c]);
+                    }
+                }
+            }
+            if (hpf) {
+                if (n.hpfv.size() != static_cast<std::size_t>(kFloors))
+                    throw std::logic_error("run driver: maxTargets node without per-floor HP values");
+                for (int f = 0; f < kFloors; ++f) hpf[f] += own * n.hpfv[f];
+            }
+            for (const auto &e : n.edges)
+                if (e.hasMq && e.n > 0) addBackedEdge(g, e, a * e.n / (1.0 + sumN), dist, hpd, hpf, ehp);
         };
 
         // Labels of the current floor's samples once the floor is left (or the run ends).
@@ -2719,7 +2779,13 @@ namespace sts::azbench {
                 for (auto &x : rtPi) { x = std::exp(x - mx); z += x; }
                 for (auto &x : rtPi) x /= z;
                 double wR = 0;
-                rootTargetWeights(k, rtLogit.data(), g.probeCnt.data(), rtPi.data(), pick, mode, cfg.qRescale, rtW.data(), wR);
+                if (cfg.maxTargets && mode == 0) {   // tree under maxTargets: the root's max-Q edge
+                    const int b = maxQEdge(root);
+                    for (int i = 0; i < k; ++i) rtW[i] = i == b ? 1.0 : 0.0;
+                    if (b < 0) wR = 1.0;
+                } else {
+                    rootTargetWeights(k, rtLogit.data(), g.probeCnt.data(), rtPi.data(), pick, mode, cfg.qRescale, rtW.data(), wR);
+                }
                 if (root.dist.size() != static_cast<std::size_t>(kOutcomeClasses))
                     throw std::logic_error("run driver: root without an outcome distribution");
                 for (int c = 0; c < kOutcomeClasses; ++c) dist[c] = wR * root.dist[c];
@@ -2737,6 +2803,12 @@ namespace sts::azbench {
                 for (int i = 0; i < k; ++i) {
                     const int c = g.probeCnt[i];
                     if (c <= 0 || rtW[i] == 0) continue;
+                    if (cfg.maxTargets) {
+                        double eh = 0;
+                        addBackedEdge(g, root.edges[i], rtW[i], dist, hpd, hpf, hpOn ? &eh : nullptr);
+                        ehp += eh;
+                        continue;
+                    }
                     const double a = rtW[i] / c;
                     const std::size_t e = static_cast<std::size_t>(i);
                     for (int j = 0; j < kOutcomeClasses; ++j) dist[j] += a * g.probeDist[e * kOutcomeClasses + j];
@@ -2793,7 +2865,7 @@ namespace sts::azbench {
                 r.pick = pick;
                 r.pickBits = root.edges[pick].bits;
                 r.rootN = root.n;
-                r.searchValue = root.n ? root.w / root.n : root.value;
+                r.searchValue = cfg.maxTargets && root.hasMv ? root.mv : root.n ? root.w / root.n : root.value;
                 r.sigma = sigma;
                 const double inv = 1.0 / std::max(1, root.n);
                 r.searchDist.assign(moveResult.begin(), moveResult.end());
@@ -2866,7 +2938,7 @@ namespace sts::azbench {
                 if (h.floorAt[slot] < 0) {
                     h.floorAt[slot] = g.gc.floorNum;
                     h.netValue[slot] = root.value;
-                    h.searchValue[slot] = static_cast<float>(root.w / std::max(1, root.n));
+                    h.searchValue[slot] = static_cast<float>(cfg.maxTargets && root.hasMv ? root.mv : root.w / std::max(1, root.n));
                     if (root.dist.size() == static_cast<std::size_t>(kOutcomeClasses)) {
                         double ef = 0;
                         for (int k = 0; k < kOutcomeClasses; ++k) ef += (k == 0 ? 57.0 : k) * root.dist[k];
@@ -2957,7 +3029,7 @@ namespace sts::azbench {
                 } else {
                     s.policy.clear();
                 }
-                s.searchValue = static_cast<float>(root.n ? root.w / root.n : root.value);
+                s.searchValue = static_cast<float>(cfg.maxTargets && root.hasMv ? root.mv : root.n ? root.w / root.n : root.value);
                 if (emaOn) {
                     // A chain move's own index; a move outside the chain: the next chain move's (not recorded yet).
                     const int chainMoves = static_cast<int>(g.moveDist.size() / kOutcomeClasses);
