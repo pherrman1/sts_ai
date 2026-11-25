@@ -437,8 +437,13 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
                          int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights,
                          bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
-                         double captureRate, bool stallLog, bool consequences, bool deathLog) {
+                         double captureRate, bool stallLog, bool consequences, bool deathLog,
+                         double wideningC, double wideningAlpha) {
                  azbench::RunConfig c;
+                 if (!(wideningC > 0)) throw std::invalid_argument("widening_c: want > 0");
+                 if (!(wideningAlpha >= 0 && wideningAlpha <= 1)) throw std::invalid_argument("widening_alpha: want 0..1");
+                 c.wideningC = wideningC;
+                 c.wideningAlpha = wideningAlpha;
                  c.stallLog = stallLog;
                  c.deathLog = deathLog;
                  for (const auto &h : probeRoots) c.probeRoots.push_back(h.gc);
@@ -532,7 +537,8 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("aux_fights") = false, py::arg("enemy_tokens") = false,
              py::arg("probe_roots") = std::vector<GameStateHandle>{},
              py::arg("probe_noise") = false, py::arg("capture_rate") = 0.0, py::arg("stall_log") = false,
-             py::arg("consequences") = false, py::arg("death_log") = false)
+             py::arg("consequences") = false, py::arg("death_log") = false,
+             py::arg("widening_c") = 3.7028, py::arg("widening_alpha") = 0.52389)
         .def("take_probe_results",   // RunConfig::probeRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  const auto v = d.takeProbeResults();

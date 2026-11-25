@@ -364,6 +364,10 @@ namespace sts::azbench {
         // With it, mctx's value scale cScale = 0.1 is the paper setting (cScale 1 then makes the policy nearly argmax).
         bool fastNoise = true;
         bool qRescale = false;
+        // Chance-node double progressive widening (Silver's constants, az_driver.h): a chance edge with n visits (plus
+        // in-flight ones) samples a new outcome while it has fewer than ceil(wideningC * (n + 1)^wideningAlpha);
+        // otherwise it revisits outcome visits % size. With the defaults a chance edge keeps resampling until ~17
+        // visits. RunDriver(widening_c=, widening_alpha=) / selfplay.py --widening-c / --widening-alpha (2026-11-25).
         double wideningC = 3.7028, wideningAlpha = 0.52389;
         double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
         Utility utility = Utility::FLOOR_HP;   // H (see Utility); AMBER needs per-floor HP results in submit

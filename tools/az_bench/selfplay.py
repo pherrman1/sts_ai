@@ -1589,6 +1589,13 @@ def main(argv=None):
     ap.add_argument("--sim-help", action="store_true",
                     help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
                          "inside the search, buying Prismatic Shard banned")
+    ap.add_argument("--widening-c", type=float, default=None,
+                    help="search (2026-11-25, default unset = 3.7028, Silver's constant): chance-node progressive "
+                         "widening; a chance edge with n visits samples a new outcome while it has fewer than "
+                         "ceil(C * (n + 1)^alpha) (az_run_driver.h wideningC). With the default a chance edge "
+                         "resamples until ~17 visits, so 64-sim searches rarely go deeper than one draw / END_TURN")
+    ap.add_argument("--widening-alpha", type=float, default=None,
+                    help="search (2026-11-25, default unset = 0.52389): the exponent alpha of --widening-c")
     ap.add_argument("--stall-log", action="store_true",
                     help="diagnostic (2026-11-21, default off; play and training unchanged): append one JSON record per "
                          "run ended by a stall guard (a loss: fight past --max-fight-moves decisions, run past 50,000 "
@@ -2117,7 +2124,9 @@ def main(argv=None):
         **({"compact_samples": True} if args.compact_samples else {}),
         **({"heart_log_rate": args.heart_log} if args.heart_log > 0 else {}),
         **({"stall_log": True} if args.stall_log else {}),
-        **({"death_log": True} if args.death_log else {}))
+        **({"death_log": True} if args.death_log else {}),
+        **({"widening_c": args.widening_c} if args.widening_c is not None else {}),
+        **({"widening_alpha": args.widening_alpha} if args.widening_alpha is not None else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
