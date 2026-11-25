@@ -29654,3 +29654,18 @@ off: identical for the default config and for Amber rules (`chance_on_reveal`, `
 160200000-160200999, one checkpoint, both arms paired at 64 sims, otherwise the usual benchmark flags): adopt M = 1
 only if it gains >= +2.5 pp paired over the mean backup; otherwise keep the mean backup.
 **Knowledge impact:** this entry.
+
+## §866 — Max backup (`--max-backup 1`) vs mean backup on the fixed-seed benchmark at 64 sims → NEGATIVE, default kept (PC, 2026-11-25)
+
+**Question:** §865: does max backup at decision nodes (chance edges averaging) raise the A20 win rate at 64 sims?
+Pre-registered rule (before the run): adopt M = 1 only if it gains >= +2.5 pp paired; otherwise keep the mean backup.
+**Setup:** checkpoint `ckpt_bench_1678542` (amber_scratch, 21:00 CET benchmark pause), bench build at `6e67e596`,
+seeds 160200000-160200999 (same 1000 for both arms, paired), usual benchmark flags + `--death-log`, `--fast-sims 64`;
+arms {default, `--max-backup 1`}, run in parallel. Result dirs (PC) `stage1/bench_curve_20261123/mb0_s64_1678542`,
+`mb1_s64_1678542`.
+**Result (win %, 95 % CI):** mean 35.3 [32.4-38.3], mean floor 38.9; max 36.0 [33.1-39.0], mean floor 38.1. Paired
+McNemar: +0.7 pp (both 189, only max 171, only mean 164, p = 0.74). Losses with max shift toward bosses (288 vs 259),
+fewer in act 3 / elites. Extra training downtime ~9 min.
+**Decision:** rule not met -> keep the mean backup (flag stays, default off). **Inference:** at 64 sims max backup is
+neither clearly better nor clearly worse; resolution at 1000 paired seeds is ~±4 pp.
+**Knowledge impact:** this entry.
