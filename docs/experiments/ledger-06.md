@@ -29576,7 +29576,7 @@ explicit default constants identical to omitting them; C = 1 / alpha = 0.5 diffe
 >= +2.5 pp paired at 64 sims, or the 64 -> 128 step rises to >= +2.5 pp; otherwise keep.
 **Knowledge impact:** this entry.
 
-## §TBD — Chance widening C = 1.0 / alpha 0.5 vs Silver's 3.7028 / 0.52389 on the fixed-seed benchmark → NEGATIVE, defaults kept (PC, 2026-11-25)
+## §863 — Chance widening C = 1.0 / alpha 0.5 vs Silver's 3.7028 / 0.52389 on the fixed-seed benchmark → NEGATIVE, defaults kept (PC, 2026-11-25)
 
 **Question:** §862: does widening less at chance nodes (deeper search past draws / END_TURN) raise the A20 win rate
 at 64 sims, or make 128 sims pay off? Pre-registered rule (before the run): adopt C = 1.0 if it gains >= +2.5 pp
