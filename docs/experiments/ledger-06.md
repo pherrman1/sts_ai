@@ -29554,3 +29554,24 @@ random net, A20, seeds 540-543, `--min-replay 1e6`): same death floors and sampl
 `tests/test_selfplay.py::DeathLogTest` (records with flag, none without). `tools/agent/verify_changed.py`: see PR.
 **Not done:** no benchmark seeds played. The benchmark scheduler adds `--death-log <bench dir>/deaths.jsonl`.
 **Knowledge impact:** this entry.
+
+## §862 — `--widening-c` / `--widening-alpha`: chance-node progressive widening constants of the Amber self-play driver as flags → BUILT, default off (cloud, 2026-11-25)
+
+**Question (owner, 2026-11-25 15:39 CET, step 1 of the coordinator's plateau plan):** `RunConfig` (`az_run_driver.h`)
+uses Silver's widening constants C = 3.7028, alpha = 0.52389 (`az_driver.h`). A chance edge (END_TURN, draws, any
+combat RNG, out-of-combat resampling) samples a new outcome while it has fewer than ceil(C (n + 1)^alpha) outcomes, so it
+spawns a fresh resampled child on each of its first ~17 visits and a 64-sim search rarely goes past one chance step.
+Never measured on the Amber path (§776 / §777 were Silver at 16k sims). Amber Eye gives no constants. **Inference**
+(untested): this may be why 128 sims gave little over 64.
+**Tooling:** `RunDriver(widening_c=3.7028, widening_alpha=0.52389)` (refuses C <= 0 and alpha outside 0..1) and
+`selfplay.py --widening-c C --widening-alpha A` (unset = not passed = the old constants). Caps for n = 1, 4, 8, 16:
+6, 9, 12, 17 outcomes at the defaults; 2, 3, 3, 5 at C = 1, alpha = 0.5. Outcome choice at the cap is unchanged
+(`visits % outcomes.size()`, visits including in-flight ones under `--parallel-nodes`); left as is, not behind the flag.
+**Checks (cloud, Debug module, fake net = fixed function of each row's inputs, seeds 1994-1995):**
+`tests/test_selfplay.py::WideningTest`: two runs with defaults identical (policies, moves, evals, floors);
+explicit default constants identical to omitting them; C = 1 / alpha = 0.5 differs; invalid values raise.
+`tools/agent/verify_changed.py`: Debug build, `ctest -L 'core|smoke'` 252/252 pass.
+**Not done:** no benchmark seeds played. The fixed-seed benchmark (160200000-160200999, current checkpoint, C in
+{3.7028, 1.0 with alpha 0.5} at 64 and 128 sims, paired) runs on the PC. Pre-registered rule: adopt if C = 1.0 gains
+>= +2.5 pp paired at 64 sims, or the 64 -> 128 step rises to >= +2.5 pp; otherwise keep.
+**Knowledge impact:** this entry.
