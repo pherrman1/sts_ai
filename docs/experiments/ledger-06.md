@@ -29575,3 +29575,20 @@ explicit default constants identical to omitting them; C = 1 / alpha = 0.5 diffe
 {3.7028, 1.0 with alpha 0.5} at 64 and 128 sims, paired) runs on the PC. Pre-registered rule: adopt if C = 1.0 gains
 >= +2.5 pp paired at 64 sims, or the 64 -> 128 step rises to >= +2.5 pp; otherwise keep.
 **Knowledge impact:** this entry.
+
+## §863 — Chance widening C = 1.0 / alpha 0.5 vs Silver's 3.7028 / 0.52389 on the fixed-seed benchmark → NEGATIVE, defaults kept (PC, 2026-11-25)
+
+**Question:** §862: does widening less at chance nodes (deeper search past draws / END_TURN) raise the A20 win rate
+at 64 sims, or make 128 sims pay off? Pre-registered rule (before the run): adopt C = 1.0 if it gains >= +2.5 pp
+paired at 64 sims, or if the 64 -> 128 step with it is >= +2.5 pp; otherwise keep.
+**Setup:** checkpoint `ckpt_bench_1650176` (amber_scratch, training paused for the run), bench build at `b07d3dec`,
+seeds 160200000-160200999 (fresh, same 1000 for all arms, paired), usual benchmark flags + `--death-log`; arms
+{default, `--widening-c 1.0 --widening-alpha 0.5`} x {`--fast-sims 64`, `128`}, run in parallel. 0 errors.
+**Result (win %, 95 % CI):** default 64: 34.1 [31.2-37.1]; C1 64: 36.1 [33.2-39.1]; default 128: 38.4 [35.4-41.5];
+C1 128: 37.2 [34.3-40.2]. Paired McNemar: C1 vs default at 64 +2.0 pp (both 183, only C1 178, only default 158,
+p = 0.30); at 128 -1.2 pp (p = 0.57); C1 64 -> 128 +1.1 pp (p = 0.59); default 64 -> 128 +4.3 pp (both 194, only 128
+190, only 64 147, p = 0.022). Losses by room similar across arms. Training downtime 24.8 min.
+**Decision:** rule not met -> keep Silver's constants (flags stay, default unchanged). **Inference:** the
+"no progress past chance nodes" explanation of the 64 -> 128 plateau is not supported; on this checkpoint 128 sims
+with the default widening gave +4.3 pp (p = 0.022), so the earlier flat 64 -> 128 reading may not hold here.
+**Knowledge impact:** this entry.
