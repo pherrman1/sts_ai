@@ -3019,5 +3019,59 @@ class WideningTest(unittest.TestCase):
                 nat.RunDriver(workers=1, games=1, **bad)
 
 
+@unittest.skipUnless(MODULES, "az_bench_native not built")
+class MaxBackupTest(unittest.TestCase):
+    def test_max_backup_driver(self):
+        """RunDriver(max_backup=): 0 (explicit) plays exactly as omitting it, M = 1 changes the search, a negative M is
+        refused. The net is a fixed function of each row's own inputs, so two runs with the same settings are identical."""
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+
+        def play(**kw):
+            drv = nat.RunDriver(workers=1, games=2, seed_base=1994, max_runs=2, ascension=20, full_sims=16,
+                                fast_sims=8, full_candidates=4, fast_candidates=2, max_pending=0, **kw)
+            R, T, A = 8, 212, 96
+            views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                     "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                     "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                     "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                     "a_mask": np.zeros(R * A, np.bool_)}
+            pols = []
+            drv.start()
+            try:
+                while drv.stats()["runs_done"] < 2:
+                    got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                    if got is None:
+                        continue
+                    ticket, rows, _, _, Ap = got
+                    f = views["f"].astype(np.float32).reshape(R, -1)[:rows]
+                    af = views["a_f"].astype(np.float32).reshape(R, -1)[:rows, :Ap * 8].reshape(rows, Ap, 8)
+                    v = (0.5 + 0.4 * np.tanh(f.sum(1) / 50)).astype(np.float32)
+                    drv.submit(ticket, np.tanh(af.sum(2)).astype(np.float32), v, np.full(rows, 40, np.float32))
+                    c = drv.take_samples()
+                    if c is not None:
+                        pols.append(c["policy"])
+            finally:
+                drv.stop()
+            c = drv.take_samples()
+            if c is not None:
+                pols.append(c["policy"])
+            st = drv.stats()
+            return np.concatenate(pols), (st["moves"], st["evals"], st["floors_sum"])
+
+        base = play()
+        again = play()
+        np.testing.assert_array_equal(base[0], again[0])
+        self.assertEqual(base[1], again[1])
+        same = play(max_backup=0)
+        np.testing.assert_array_equal(base[0], same[0])
+        self.assertEqual(base[1], same[1])
+        mx = play(max_backup=1)
+        self.assertTrue(base[1] != mx[1] or base[0].shape != mx[0].shape or np.any(base[0] != mx[0]))
+        with self.assertRaises(ValueError):
+            nat.RunDriver(workers=1, games=1, max_backup=-1)
+
+
 if __name__ == "__main__":
     unittest.main()

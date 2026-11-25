@@ -1594,6 +1594,12 @@ def main(argv=None):
                          "widening; a chance edge with n visits samples a new outcome while it has fewer than "
                          "ceil(C * (n + 1)^alpha) (az_run_driver.h wideningC). With the default a chance edge "
                          "resamples until ~17 visits, so 64-sim searches rarely go deeper than one draw / END_TURN")
+    ap.add_argument("--max-backup", type=int, default=0, metavar="M",
+                    help="search (2026-11-25, default 0 = off, mean backup as in Amber Eye / mctx): max backup. An "
+                         "edge's Q is its child's backed value (chance edges: visit-weighted mean over outcomes) and a "
+                         "node's backed value is the max Q over its edges with >= M visits (none: the mean). Read by "
+                         "selection, the root's completed Q and the policy target; value targets stay means "
+                         "(az_run_driver.h RunConfig::maxBackup)")
     ap.add_argument("--widening-alpha", type=float, default=None,
                     help="search (2026-11-25, default unset = 0.52389): the exponent alpha of --widening-c")
     ap.add_argument("--stall-log", action="store_true",
@@ -2134,7 +2140,8 @@ def main(argv=None):
         **({"death_log": True} if args.death_log else {}),
         **({"widening_c": args.widening_c} if args.widening_c is not None else {}),
         **({"widening_alpha": args.widening_alpha} if args.widening_alpha is not None else {}),
-        **({"root_target": {"policy": 1, "pick": 2}[args.root_target]} if args.root_target != "tree" else {}))
+        **({"root_target": {"policy": 1, "pick": 2}[args.root_target]} if args.root_target != "tree" else {}),
+        **({"max_backup": args.max_backup} if args.max_backup else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item

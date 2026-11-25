@@ -554,7 +554,7 @@ namespace sts::azbench {
 
     // --- search state ---------------------------------------------------------------------------------------------
 
-    struct Edge {
+    struct RunEdge {
         std::uint32_t bits = 0;          // search::Action (combat node) or search::GameAction (out-of-combat node)
         float logit = 0;
         std::int32_t n = 0;
@@ -565,6 +565,8 @@ namespace sts::azbench {
         bool realOk = false;             // savescum combat node: realBits is a valid action of the real fight
         std::uint8_t vn = 0;             // parallelNodes: virtual losses (simulations in flight through this edge)
         std::uint64_t base = 0;          // chance: randomness base
+        double mq = 0;                   // RunConfig::maxBackup: the edge's backed Q (valid when hasMq)
+        bool hasMq = false;
         std::vector<int> outcomes;
         std::vector<std::int32_t> outcomeN;
     };
@@ -581,12 +583,14 @@ namespace sts::azbench {
         search::SilverSearchContext ctx;     // combat node: its fight
         std::unique_ptr<GameContext> gc;     // out-of-combat node (kept allocated across pool reuse)
         std::shared_ptr<const GameContext> outer;   // combat node, crossCombat: the game state at its fight's start
-        std::vector<Edge> edges;
+        std::vector<RunEdge> edges;
         bool evaluated = false, terminal = false, boundary = false;
         bool inFlight = false;               // its net evaluation is requested and not yet handled
         float value = 0;
         std::int32_t n = 0;
         double w = 0;
+        double mv = 0;                       // RunConfig::maxBackup: the node's backed value (valid when hasMv)
+        bool hasMv = false;
         std::vector<float> dist;             // searchEmaLambda > 0: outcome distribution of the node's value [57]
         // searchEmaHp (RunConfig): the node's floor and the HP with which its path left each floor from the search
         // root's on (passed[i] = floor rootFloor + i); what its value says about the HP at the end of the root's
@@ -730,7 +734,9 @@ namespace sts::azbench {
 
         // Mean value of an edge. parallelNodes: a simulation in flight through it (vn) is a virtual loss, a visit of
         // value 0 (the lowest utility) until its answer is backed up; vn is 0 whenever the root is read.
-        double q01(const Edge &e, double fallback) { return e.n + e.vn ? e.w / (e.n + e.vn) : fallback; }
+        // RunConfig::maxBackup: the edge's backed Q mq replaces its mean (hasMq is only ever set with it on).
+        double edgeW(const RunEdge &e) { return e.hasMq ? e.mq * e.n : e.w; }
+        double q01(const RunEdge &e, double fallback) { return e.n + e.vn ? edgeW(e) / (e.n + e.vn) : fallback; }
 
         // Completed Q of every edge of node into q (completedQValues in az_run_driver.h).
         void completedQ(const RunDriver::Node &node, const RunConfig &cfg, std::vector<double> &q) {
@@ -746,7 +752,7 @@ namespace sts::azbench {
             logit.resize(k);
             n.resize(k);
             w.resize(k);
-            for (int i = 0; i < k; ++i) { logit[i] = node.edges[i].logit; n[i] = node.edges[i].n + node.edges[i].vn; w[i] = node.edges[i].w; }
+            for (int i = 0; i < k; ++i) { logit[i] = node.edges[i].logit; n[i] = node.edges[i].n + node.edges[i].vn; w[i] = edgeW(node.edges[i]); }
             completedQValues(k, logit.data(), n.data(), w.data(), node.value, true, q.data());
         }
 
@@ -1334,8 +1340,8 @@ namespace sts::azbench {
         // vector. STS_AZ_EDGE_SHRINK=0 restores the old behaviour.
         const char *shrinkEnv = std::getenv("STS_AZ_EDGE_SHRINK");
         const bool edgeShrink = !(shrinkEnv && std::strcmp(shrinkEnv, "0") == 0);
-        auto sizeEdges = [edgeShrink](std::vector<Edge> &edges, std::size_t n) {
-            if (edgeShrink && edges.capacity() > 2 * n + 16) std::vector<Edge>(n).swap(edges);
+        auto sizeEdges = [edgeShrink](std::vector<RunEdge> &edges, std::size_t n) {
+            if (edgeShrink && edges.capacity() > 2 * n + 16) std::vector<RunEdge>(n).swap(edges);
             else edges.resize(n);
         };
         auto memGauges = [&] {
@@ -1462,6 +1468,7 @@ namespace sts::azbench {
             n.value = 0;
             n.n = 0;
             n.w = 0;
+            n.hasMv = false;
             n.dist.clear();
             n.hpHot = -1;
             n.passed.clear();
@@ -1538,7 +1545,7 @@ namespace sts::azbench {
                 const BattleContext &view = node.hasReal ? publicView(node) : *node.bc;
                 const auto &acts = combatActions(view, node.ctx);
                 sizeEdges(node.edges, acts.size());
-                for (std::size_t k = 0; k < acts.size(); ++k) node.edges[k] = Edge{acts[k].bits};
+                for (std::size_t k = 0; k < acts.size(); ++k) node.edges[k] = RunEdge{acts[k].bits};
                 if (node.hasReal) {   // the edges' actions in the real fight's indexing (translated as the real run)
                     for (std::size_t k = 0; k < acts.size(); ++k) {
                         const Action a = search::SilverSearcher::translateAction(acts[k], view, *node.real);
@@ -1558,7 +1565,7 @@ namespace sts::azbench {
             } else {
                 gacts = oocActions(*node.gc, g.forceKeys);
                 sizeEdges(node.edges, gacts.size());
-                for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
+                for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = RunEdge{gacts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, fl.tokens);
                 if (cfg.enemyTokens) search::amberAppendEncounterTokens(*node.gc, fl.tokens);
@@ -1734,11 +1741,39 @@ namespace sts::azbench {
                 n.n += 1;
                 n.w += v;
                 if (p.edge >= 0) {
-                    Edge &e = n.edges[p.edge];
+                    RunEdge &e = n.edges[p.edge];
                     e.n += 1;
                     e.w += v;
                     if (virt) --e.vn;
                     if (p.outcome >= 0) e.outcomeN[p.outcome] += 1;
+                }
+            }
+            if (cfg.maxBackup > 0) {   // backed values bottom-up along the path (RunConfig::maxBackup)
+                auto nodeQ = [&](const Node &c) { return c.hasMv ? c.mv : c.w / c.n; };
+                for (auto it = path.rbegin(); it != path.rend(); ++it) {
+                    Node &n = g.pool[it->node];
+                    if (it->edge >= 0) {
+                        RunEdge &e = n.edges[it->edge];
+                        if (e.chance) {   // expectation over the visited outcomes
+                            double s = 0, wt = 0;
+                            for (std::size_t o = 0; o < e.outcomes.size(); ++o) {
+                                const Node &c = g.pool[e.outcomes[o]];
+                                if (e.outcomeN[o] <= 0 || c.n <= 0) continue;
+                                s += e.outcomeN[o] * nodeQ(c);
+                                wt += e.outcomeN[o];
+                            }
+                            e.hasMq = wt > 0;
+                            if (e.hasMq) e.mq = s / wt;
+                        } else if (e.child >= 0 && g.pool[e.child].n > 0) {
+                            e.mq = nodeQ(g.pool[e.child]);
+                            e.hasMq = true;
+                        }
+                    }
+                    double best = -std::numeric_limits<double>::infinity();
+                    for (const auto &e : n.edges)
+                        if (e.hasMq && e.n >= cfg.maxBackup) best = std::max(best, e.mq);
+                    n.hasMv = best > -std::numeric_limits<double>::infinity();
+                    if (n.hasMv) n.mv = best;
                 }
             }
             ++g.spent;
@@ -2789,7 +2824,7 @@ namespace sts::azbench {
                 const double nan = std::numeric_limits<double>::quiet_NaN();
                 for (int i = 0; i < k; ++i) {
                     ProbeEdge &pe = r.edges[i];
-                    const Edge &x = root.edges[i];
+                    const RunEdge &x = root.edges[i];
                     pe.bits = x.bits;
                     pe.logit = x.logit;
                     pe.n = x.n;
@@ -2851,11 +2886,11 @@ namespace sts::azbench {
                 if (pt == search::ActionType::POTION && pa.getTargetIdx() <= 5 && hall) {
                     double best = -1e300;
                     for (int i = 0; i < static_cast<int>(root.edges.size()); ++i) {
-                        const Edge &x = root.edges[i];
+                        const RunEdge &x = root.edges[i];
                         if (i == pick || !x.n || Action(x.bits).getActionType() == search::ActionType::POTION) continue;
                         best = std::max(best, x.w / x.n);
                     }
-                    const Edge &pe = root.edges[pick];
+                    const RunEdge &pe = root.edges[pick];
                     if (best > -1e300 && pe.n) {
                         const double gap = pe.w / pe.n - best;
                         ++g.progress.hallDrinks;
@@ -2867,7 +2902,7 @@ namespace sts::azbench {
                     ++g.progress.endTurnsEnergy;
                     bool card = false;
                     double bestCard = -1e300;
-                    for (const Edge &x : root.edges) {
+                    for (const RunEdge &x : root.edges) {
                         const Action a(x.bits);
                         if (a.getActionType() != search::ActionType::CARD) continue;
                         const int src = a.getSourceIdx();
@@ -2879,7 +2914,7 @@ namespace sts::azbench {
                     }
                     if (card) {
                         ++g.progress.endTurnsEnergyCard;
-                        const Edge &pe = root.edges[pick];
+                        const RunEdge &pe = root.edges[pick];
                         if (pe.n && pe.w / pe.n >= bestCard) ++g.progress.endTurnsEnergyCardBestQ;
                     }
                 }
@@ -2889,7 +2924,7 @@ namespace sts::azbench {
                 int bestQ = -1, visited = 0;
                 double lo = 1e300, hi = -1e300;
                 for (int i = 0; i < static_cast<int>(root.edges.size()); ++i) {
-                    const Edge &x = root.edges[i];
+                    const RunEdge &x = root.edges[i];
                     if (!x.n) continue;
                     ++visited;
                     const double m = x.w / x.n;
@@ -2998,7 +3033,7 @@ namespace sts::azbench {
                 // The search chose against the public view, whose pile orders differ from the real fight's: map card
                 // indices by identity (as production does).
                 // savescum: root.real is g.bc, so the request's translation is the same.
-                const Edge &pe = root.edges[pick];
+                const RunEdge &pe = root.edges[pick];
                 const bool ok = root.hasReal ? pe.realOk : true;
                 if (root.hasReal) bits = pe.realBits;
                 else bits = search::SilverSearcher::translateAction(Action(bits), *root.bc, g.bc).bits;
@@ -3012,7 +3047,7 @@ namespace sts::azbench {
                 }
             }
             if (g.savescum) {   // the played edge's child, when it is a decision state, is the next real decision
-                const Edge &pe = root.edges[pick];
+                const RunEdge &pe = root.edges[pick];
                 g.expectValid = false;
                 if (pe.tried && !pe.chance && pe.child >= 0) {
                     const Node &c = g.pool[pe.child];
@@ -3029,7 +3064,7 @@ namespace sts::azbench {
         // Expands edge e of node cur (first visit or a new chance outcome); returns the child node.
         auto expand = [&](Run &g, int cur, int e, int &outcome) -> int {
             outcome = -1;
-            Edge &edge0 = g.pool[cur].edges[e];
+            RunEdge &edge0 = g.pool[cur].edges[e];
             const bool first = !edge0.tried;
             if (!first && !edge0.chance) return edge0.child;
             if (!first) {
@@ -3042,7 +3077,7 @@ namespace sts::azbench {
             }
             const int child = newNode(g);   // pool may not move (capacity reserved), references stay valid
             Node &parent = g.pool[cur];
-            Edge &edge = parent.edges[e];
+            RunEdge &edge = parent.edges[e];
             Node &cn = g.pool[child];
             if (parent.combat) {
                 BattleContext next = *parent.bc;
@@ -3314,13 +3349,14 @@ namespace sts::azbench {
             n.value = 0;
             n.n = 0;
             n.w = 0;
+            n.hasMv = false;
         };
 
         // expand() under Amber's rules. chanceOnReveal: the first visit steps with the real hidden state; if the step
         // revealed hidden information it is redone as a resampled outcome and the edge becomes a chance edge (DPW).
         auto expandAmber = [&](Run &g, int cur, int e, int &outcome) -> int {
             outcome = -1;
-            Edge &edge0 = g.pool[cur].edges[e];
+            RunEdge &edge0 = g.pool[cur].edges[e];
             const bool first = !edge0.tried;
             if (!first && !edge0.chance) return edge0.child;
             if (!first) {
@@ -3333,7 +3369,7 @@ namespace sts::azbench {
             }
             const int child = newNode(g);   // pool may not move (capacity reserved), references stay valid
             Node &parent = g.pool[cur];
-            Edge &edge = parent.edges[e];
+            RunEdge &edge = parent.edges[e];
             const int k = static_cast<int>(edge.outcomes.size());
             if (first) edge.base = !parent.combat ? wk.rng()
                                  : parent.hasReal ? parent.rbase : search::searchRandomnessBase(*parent.bc);

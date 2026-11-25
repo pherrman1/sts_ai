@@ -378,6 +378,14 @@ namespace sts::azbench {
         // otherwise it revisits outcome visits % size. With the defaults a chance edge keeps resampling until ~17
         // visits. RunDriver(widening_c=, widening_alpha=) / selfplay.py --widening-c / --widening-alpha (2026-11-25).
         double wideningC = 3.7028, wideningAlpha = 0.52389;
+        // Max backup (2026-11-25, Philipp's request; a deliberate deviation from Amber Eye / mctx, which average): 0 =
+        // off (mean backup, every edge's Q = w / n). M >= 1: an edge's Q is its child's backed value (a chance edge:
+        // the visit-weighted mean of its outcome children's backed values, an expectation) and a node's backed value
+        // is the max of its edges' Q over edges with >= M visits (none: the node's mean w / n). Selection, the root's
+        // completed Q and the policy target read these Q; the node means w / n (searchValue, value targets) and the
+        // leaf-distribution sums stay mean backups. Same rule as Silver's STS_SILVER_MAX_BACKUP (§762).
+        // RunDriver(max_backup=) / selfplay.py --max-backup M.
+        int maxBackup = 0;
         double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
         Utility utility = Utility::FLOOR_HP;   // H (see Utility); AMBER needs per-floor HP results in submit
         // FLOOR_HP only (2026-11-17, default off): a keyless act 3 victory (the run ends after the act 3 boss without
