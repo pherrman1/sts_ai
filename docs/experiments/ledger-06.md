@@ -29695,7 +29695,7 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
 
-## §TBD — EMA outcome-target half-life 10 vs 20 full moves, offline head probe ("Test B") → NEGATIVE, half-life 20 kept (PC, 2026-11-25)
+## §868 — EMA outcome-target half-life 10 vs 20 full moves, offline head probe ("Test B") → NEGATIVE, half-life 20 kept (PC, 2026-11-25)
 
 **Question:** the 2026-11-25 overfit check (ckpt 1594969, newest unseen hour vs uniform window: outcome loss +8 %,
 outcome_ema +5.3 %, policy/HP not worse) points at memorized run labels (~140 same-label full-move samples per run,
