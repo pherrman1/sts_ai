@@ -29694,3 +29694,28 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 **Not done:** no benchmark or live run. Going live needs the owner's decision (self-play would also play with
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
+
+## §TBD — EMA outcome-target half-life 10 vs 20 full moves, offline head probe ("Test B") → NEGATIVE, half-life 20 kept (PC, 2026-11-25)
+
+**Question:** the 2026-11-25 overfit check (ckpt 1594969, newest unseen hour vs uniform window: outcome loss +8 %,
+outcome_ema +5.3 %, policy/HP not worse) points at memorized run labels (~140 same-label full-move samples per run,
+replay ratio 2). Would a shorter value-EMA half-life (`--value-ema-halflife` 10 instead of the live 20; more bootstrap,
+live real-outcome weight ~0.36 -> ~0.20) generalize better to unseen runs?
+Pre-registered rule: h10 only if on UNSEEN runs the CE vs the final outcome improves >= 1 % relative, AUC is not worse,
+and the seen-unseen gap shrinks >= 25 %; otherwise keep h20.
+**Setup (PC CPU, read-only on saved replay windows, nice 19, max RSS 2.0 GB, 2026-11-25 21:45-22:12 CET while training
+was paused):** scripts `/mnt/project-files/halflife-b-20261125/` (`slice_runs.py`, `head_probe.py`). Checkpoint
+`ckpt_bench_1635474` (15:00 CET benchmark, 39.2 %). SEEN = 3,000 whole runs / 429,925 samples from its training window
+(s 541,984,913-551,710,201; 388,645 train, 41,280 held-out eval); UNSEEN = 1,500 whole runs / 217,300 samples of the
+window at step 1679639, all generated after the SEEN head. h10 targets = exact per-run remix of the stored h20 EMA
+chain (negative D mass mean 0.023, p99 0.246). Trunk frozen; fresh outcome heads (same init) trained 12 epochs on h20 vs
+h10 targets, and *_warm arms starting from the checkpoint's own head. Output (PC)
+`~/Documents/sts/halflife_b_20261125/out/head_probe.json`.
+**Result (epoch 12, UNSEEN; CE vs final outcome / AUC of P(win) / Brier / seen-unseen CE gap):**
+original head 1.7687 / 0.8362 / 0.1641 / 0.0340; h20 1.7948 / 0.8346 / 0.1647 / 0.0173; h10 1.7909 / 0.8350 / 0.1648 /
+0.0222; h20_warm 1.7736 / 0.8355 / 0.1644 / 0.0253; h10_warm 1.7749 / 0.8357 / 0.1651 / 0.0288.
+h10 vs h20: fresh CE -0.22 %, AUC +0.0003, gap +28 %; warm CE +0.08 %, AUC +0.0002, gap +14 %.
+**Decision:** rule not met -> keep `--value-ema-halflife 20` (no live change). **Inference:** a shorter half-life does
+not improve unseen-run outcome prediction or shrink memorization at the head level. **Open question:** a frozen-trunk
+head probe cannot show trunk-level effects of the label change; only a live A/B could.
+**Knowledge impact:** this entry.
