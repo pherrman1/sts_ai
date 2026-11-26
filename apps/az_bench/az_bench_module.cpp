@@ -442,7 +442,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
                          double captureRate, bool stallLog, bool consequences, bool deathLog,
                          double wideningC, double wideningAlpha, int rootTarget, int maxBackup, bool maxTargets,
-                         bool evalCacheGen) {
+                         bool evalCacheGen, bool lazyLeafState) {
                  azbench::RunConfig c;
                  if (!(wideningC > 0)) throw std::invalid_argument("widening_c: want > 0");
                  if (!(wideningAlpha >= 0 && wideningAlpha <= 1)) throw std::invalid_argument("widening_alpha: want 0..1");
@@ -492,6 +492,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                  c.evalCache = evalCache;
                  c.evalCacheCap = evalCacheCap;
                  c.evalCacheGen = evalCacheGen;
+                 c.lazyLeafState = lazyLeafState;
                  c.cVisit = cVisit;
                  c.cScale = cScale;
                  c.fastNoise = fastNoise;
@@ -549,7 +550,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("consequences") = false, py::arg("death_log") = false,
              py::arg("widening_c") = 3.7028, py::arg("widening_alpha") = 0.52389,
              py::arg("root_target") = 0, py::arg("max_backup") = 0, py::arg("max_targets") = false,
-             py::arg("eval_cache_gen") = false)
+             py::arg("eval_cache_gen") = false, py::arg("lazy_leaf_state") = false)
         .def("take_probe_results",   // RunConfig::probeRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  const auto v = d.takeProbeResults();

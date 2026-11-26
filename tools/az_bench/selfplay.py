@@ -1571,6 +1571,10 @@ def main(argv=None):
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
     ap.add_argument("--eval-cache-cap", type=int, default=1024, help="cache entries per run (emptied when full)")
+    ap.add_argument("--lazy-leaf-state", action="store_true",
+                    help="search RAM: release a tree node's game state once its evaluation is handled and rebuild it "
+                         "from its parent when the node is expanded (same games; needs the Amber search rules; "
+                         "RunConfig::lazyLeafState, 2026-11-26, default off)")
     ap.add_argument("--eval-cache-gen", action="store_true",
                     help="with --eval-cache: two generations of at most cap / 2 entries each; a full current "
                          "generation replaces the old one instead of emptying the cache, so the last tree's "
@@ -2137,6 +2141,7 @@ def main(argv=None):
         **({"ooc_canon": True} if args.ooc_canon else {}),
         **({"parallel_nodes": args.parallel_nodes} if args.parallel_nodes else {}),
         **({"eval_cache_gen": True} if args.eval_cache_gen else {}),
+        **({"lazy_leaf_state": True} if args.lazy_leaf_state else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),

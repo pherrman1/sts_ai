@@ -606,6 +606,12 @@ namespace sts::azbench {
         std::unique_ptr<search::CombatKnowledgeState> kn;
         std::uint64_t realStamp = 0;         // savescum: setReal call that wrote real + kn (public-view scratch key)
         std::uint64_t rbase = 0;             // savescum combat node: searchRandomnessBase of its public view
+        // RunConfig::lazyLeafState: how the node was made (stepAmber from node rbPar along rbBits with base rbBase,
+        // outcome rbK, resample rbResample; rbPar -1 = not rebuildable) and whether its state is released.
+        int rbPar = -1, rbK = 0;
+        std::uint32_t rbBits = 0;
+        std::uint64_t rbBase = 0;
+        bool rbResample = false, dropped = false;
     };
 
     struct PathStep { int node; int edge; int outcome; };
@@ -1270,6 +1276,7 @@ namespace sts::azbench {
             s.exploreAttempts += p.exploreAttempts; s.exploreCZero += p.exploreCZero; s.exploreCInf += p.exploreCInf;
             s.exploreNatural += p.exploreNatural; s.exploreNaturalUnplayed += p.exploreNaturalUnplayed;
             s.cacheHits += p.cacheHits;
+            s.lazyDrops += p.lazyDrops; s.lazyRebuilds += p.lazyRebuilds;
             s.auxFights += p.auxFights;
             s.waves += p.waves; s.waveFlights += p.waveFlights; s.simCollisions += p.simCollisions;
             for (int k = 0; k < 2; ++k) {
@@ -1477,25 +1484,40 @@ namespace sts::azbench {
             n.passed.clear();
             n.hasReal = false;
             n.inFlight = false;
+            n.rbPar = -1;
+            n.dropped = false;
             return g.poolUsed++;
         };
-        auto setGc = [](Node &n, GameContext &&gc) {
+        // RunConfig::lazyLeafState: released node states are kept for reuse (up to kSpareStates of each kind), so a
+        // released state does not cost an allocation per new node.
+        constexpr std::size_t kSpareStates = 64;
+        std::vector<std::unique_ptr<BattleContext>> spareBc;
+        std::vector<std::unique_ptr<GameContext>> spareGc;
+        auto setGc = [&spareGc](Node &n, GameContext &&gc) {
             n.combat = false;
             n.bc.reset();
             n.real.reset();
             n.kn.reset();
             n.hasReal = false;
+            if (!n.gc && !spareGc.empty()) { n.gc = std::move(spareGc.back()); spareGc.pop_back(); }
             if (n.gc) *n.gc = std::move(gc);
             else n.gc = std::make_unique<GameContext>(std::move(gc));
         };
         // A combat node's own fight (not savescum), allocated on first use; the slot's other states are released.
-        auto useBc = [](Node &n) -> BattleContext & {
+        auto useBc = [&spareBc](Node &n) -> BattleContext & {
             n.gc.reset();
             n.real.reset();
             n.kn.reset();
             n.hasReal = false;
+            if (!n.bc && !spareBc.empty()) { n.bc = std::move(spareBc.back()); spareBc.pop_back(); }
             if (!n.bc) n.bc = std::make_unique<BattleContext>();
             return *n.bc;
+        };
+        // RunConfig::lazyLeafState: releases an evaluated node's game state (rebuilt by rebuildState when expanded).
+        auto dropState = [&](Node &n) {
+            if (n.bc) { if (spareBc.size() < kSpareStates) spareBc.push_back(std::move(n.bc)); else n.bc.reset(); }
+            if (n.gc) { if (spareGc.size() < kSpareStates) spareGc.push_back(std::move(n.gc)); else n.gc.reset(); }
+            n.dropped = true;
         };
         // savescum: a combat node holds the real fight and its tracker; their public view (net input, action list) is
         // rebuilt when needed into pubScratch, which keeps the last one built (setReal is followed by the node's
@@ -3447,6 +3469,33 @@ namespace sts::azbench {
             n.hasMv = false;
         };
 
+        // RunConfig::lazyLeafState: the released state of node ni, rebuilt by redoing its step from its parent (which
+        // has its state: only evaluated, never expanded nodes are released) into a scratch slot above the tree; the
+        // step's counters are restored, so a rebuild changes no statistic.
+        const bool lazyOn = cfg.lazyLeafState && (cfg.chanceOnReveal || cfg.crossCombat || cfg.simHelp);
+        auto rebuildState = [&](Run &g, int ni) {
+            const int par = g.pool[ni].rbPar;
+            if (par < 0 || g.pool[par].dropped) throw std::logic_error("run driver: released node state without a parent state");
+            const auto unsupported = wk.st.unsupported, exits = wk.st.treeFightExits, starts = wk.st.treeFightStarts,
+                       kf = wk.st.knowledgeFailures;
+            const int tmp = newNode(g);
+            Node &n = g.pool[ni];
+            bool combatRng = false, revealed = false;
+            stepAmber(g, par, n.rbBits, n.rbBase, n.rbK, n.rbResample, tmp, combatRng, revealed, 0, false);
+            wk.st.unsupported = unsupported;
+            wk.st.treeFightExits = exits;
+            wk.st.treeFightStarts = starts;
+            wk.st.knowledgeFailures = kf;
+            Node &t = g.pool[tmp];
+            if (t.combat != n.combat || (n.combat ? !t.bc : !t.gc))
+                throw std::logic_error("run driver: rebuilt node state is not the released one");
+            if (n.combat) n.bc = std::move(t.bc);
+            else n.gc = std::move(t.gc);
+            n.dropped = false;
+            ++wk.st.lazyRebuilds;
+            --g.poolUsed;
+        };
+
         // expand() under Amber's rules. chanceOnReveal: the first visit steps with the real hidden state; if the step
         // revealed hidden information it is redone as a resampled outcome and the edge becomes a chance edge (DPW).
         auto expandAmber = [&](Run &g, int cur, int e, int &outcome) -> int {
@@ -3462,6 +3511,7 @@ namespace sts::azbench {
                     return edge0.outcomes[outcome];
                 }
             }
+            if (g.pool[cur].dropped) rebuildState(g, cur);   // RunConfig::lazyLeafState
             const int child = newNode(g);   // pool may not move (capacity reserved), references stay valid
             Node &parent = g.pool[cur];
             RunEdge &edge = parent.edges[e];
@@ -3484,6 +3534,14 @@ namespace sts::azbench {
             } else {
                 stepAmber(g, cur, edge.bits, edge.base, k, true, child, combatRng, revealed, edge.realBits, edge.realOk);
                 if (first) edge.chance = parent.combat ? combatRng : true;
+            }
+            if (lazyOn && !g.savescum) {   // how to rebuild the child's state (the step that made it)
+                Node &c = g.pool[child];
+                c.rbPar = cur;
+                c.rbBits = edge.bits;
+                c.rbBase = edge.base;
+                c.rbK = k;
+                c.rbResample = !(first && cfg.chanceOnReveal) || revealed;
             }
             if (edge.chance) {
                 edge.outcomes.push_back(child);
@@ -3622,6 +3680,7 @@ namespace sts::azbench {
                     for (std::size_t k = 0; k < n.edges.size() && k < fl.resLogits.size(); ++k) n.edges[k].logit = fl.resLogits[k];
                     if (emaOn) n.dist.assign(fl.resDist.begin(), fl.resDist.end());
                     if (hpOn) setHpEval(g, n, fl);
+                    if (lazyOn && fl.node != 0 && n.rbPar >= 0 && !g.savescum) { dropState(n); ++wk.st.lazyDrops; }
                     if (fl.hit) {
                         fl.hit = false;
                     } else {

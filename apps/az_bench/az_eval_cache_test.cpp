@@ -35,7 +35,10 @@
 // cache plays the same runs, its leaves add up, it has more hits than the one-generation cache of the same capacity
 // and none after a weights change.
 //
-// usage: az-eval-cache-test [--cache-cap N] [--cache-gen] [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact] [--root-target 1|2]
+// --lazy (RunConfig::lazyLeafState; needs --amber-search): the same runs with released leaf states, with and without
+// the cache; states were released and rebuilt; the search counters are unchanged.
+//
+// usage: az-eval-cache-test [--lazy] [--cache-cap N] [--cache-gen] [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact] [--root-target 1|2]
 #include <algorithm>
 #include <limits>
 #include <cmath>
@@ -257,6 +260,7 @@ int main(int argc, char **argv) {
     cfg.keepFast = 0.2;
     bool compact = false;
     bool cacheGen = false;
+    bool lazy = false;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         auto next = [&]() { if (i + 1 >= argc) { std::fprintf(stderr, "missing value for %s\n", a.c_str()); std::exit(2); } return std::string(argv[++i]); };
@@ -273,6 +277,7 @@ int main(int argc, char **argv) {
         else if (a == "--root-target") cfg.rootTarget = std::stoi(next());
         else if (a == "--cache-cap") cfg.evalCacheCap = std::stoi(next());
         else if (a == "--cache-gen") cacheGen = true;
+        else if (a == "--lazy") lazy = true;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -303,6 +308,30 @@ int main(int argc, char **argv) {
         fail = 1;
     }
     if (a.samples == 0 || a.stats.runsDone < cfg.maxRuns) { std::fprintf(stderr, "FAIL: no runs / samples\n"); fail = 1; }
+    if (lazy) {
+        // Leaf nodes without a stored state (RunConfig::lazyLeafState): the same games without and with the cache,
+        // states were released and rebuilt, and the cache's leaves still add up.
+        azbench::RunConfig lo = off, lc = on;
+        lo.lazyLeafState = lc.lazyLeafState = true;
+        const Result l = play(lo, false), lk = play(lc, false);
+        std::printf("{\"lazy_leaf_state\": {\"released\": %lld, \"rebuilt\": %lld, \"digest\": \"%016llx\", \"digest_cache\": \"%016llx\"}}\n",
+                    static_cast<long long>(l.stats.lazyDrops), static_cast<long long>(l.stats.lazyRebuilds),
+                    static_cast<unsigned long long>(l.digest), static_cast<unsigned long long>(lk.digest));
+        if (l.digest != a.digest || l.samples != a.samples || l.stats.moves != a.stats.moves || l.stats.evals != a.stats.evals ||
+                lk.digest != a.digest || lk.stats.evals + lk.stats.cacheHits != a.stats.evals) {
+            std::fprintf(stderr, "FAIL: runs differ with released leaf states\n");
+            fail = 1;
+        }
+        if (l.stats.lazyDrops == 0 || l.stats.lazyRebuilds == 0 || l.stats.lazyRebuilds >= l.stats.lazyDrops) {
+            std::fprintf(stderr, "FAIL: lazy leaf states: nothing released or rebuilt\n");
+            fail = 1;
+        }
+        if (l.stats.unsupported != a.stats.unsupported || l.stats.treeFightStarts != a.stats.treeFightStarts ||
+                l.stats.treeFightExits != a.stats.treeFightExits) {
+            std::fprintf(stderr, "FAIL: lazy leaf states: rebuilds changed the search counters\n");
+            fail = 1;
+        }
+    }
     if (cacheGen) {
         // Two-generation cache (RunConfig::evalCacheGen): the same games as without a cache, leaves add up, more
         // hits than the one-generation cache of the same total capacity, and nothing after a weights change.
