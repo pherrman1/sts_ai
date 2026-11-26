@@ -374,6 +374,9 @@ set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smok
 add_test(NAME az_eval_cache_compact COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 6 --seed-base 1 --fast
     --utility amber --amber-search --ema 0.9 --compact)
 set_tests_properties(az_eval_cache_compact PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_gen COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+         --amber-search --cache-cap 16 --cache-gen)
+set_tests_properties(az_eval_cache_gen PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_compact COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
     --test-hp 900 --utility amber --chance-on-reveal --cross-combat --sim-help --max-pending 0 --compact-samples)
 set_tests_properties(az_run_driver_compact PROPERTIES LABELS "core;smoke")

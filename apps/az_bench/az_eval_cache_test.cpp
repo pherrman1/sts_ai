@@ -31,7 +31,11 @@
 // Sample::expandToken), that every compact sample refers to a dictionary and that the dictionaries hold fewer tokens
 // than the samples do (the point of it).
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact] [--root-target 1|2]
+// --cache-gen (RunConfig::evalCacheGen; use with a small --cache-cap so the cache overflows): the two-generation
+// cache plays the same runs, its leaves add up, it has more hits than the one-generation cache of the same capacity
+// and none after a weights change.
+//
+// usage: az-eval-cache-test [--cache-cap N] [--cache-gen] [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--ema-hp] [--amber-search] [--compact] [--root-target 1|2]
 #include <algorithm>
 #include <limits>
 #include <cmath>
@@ -252,6 +256,7 @@ int main(int argc, char **argv) {
     cfg.seedBase = 1;
     cfg.keepFast = 0.2;
     bool compact = false;
+    bool cacheGen = false;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         auto next = [&]() { if (i + 1 >= argc) { std::fprintf(stderr, "missing value for %s\n", a.c_str()); std::exit(2); } return std::string(argv[++i]); };
@@ -266,6 +271,8 @@ int main(int argc, char **argv) {
         else if (a == "--hp-nan-every") hpNanEvery = std::stoi(next());
         else if (a == "--parallel-nodes") cfg.parallelNodes = std::stoi(next());
         else if (a == "--root-target") cfg.rootTarget = std::stoi(next());
+        else if (a == "--cache-cap") cfg.evalCacheCap = std::stoi(next());
+        else if (a == "--cache-gen") cacheGen = true;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -296,6 +303,32 @@ int main(int argc, char **argv) {
         fail = 1;
     }
     if (a.samples == 0 || a.stats.runsDone < cfg.maxRuns) { std::fprintf(stderr, "FAIL: no runs / samples\n"); fail = 1; }
+    if (cacheGen) {
+        // Two-generation cache (RunConfig::evalCacheGen): the same games as without a cache, leaves add up, more
+        // hits than the one-generation cache of the same total capacity, and nothing after a weights change.
+        azbench::RunConfig gen = on;
+        gen.evalCacheGen = true;
+        const Result g = play(gen, false), gv = play(gen, true);
+        std::printf("{\"cache_gen\": {\"cap\": %d, \"evals\": %lld, \"hits\": %lld, \"one_gen_hits\": %lld, \"digest\": \"%016llx\"}}\n",
+                    cfg.evalCacheCap, static_cast<long long>(g.stats.evals), static_cast<long long>(g.stats.cacheHits),
+                    static_cast<long long>(b.stats.cacheHits), static_cast<unsigned long long>(g.digest));
+        if (g.digest != a.digest || g.samples != a.samples || g.stats.moves != a.stats.moves) {
+            std::fprintf(stderr, "FAIL: runs differ with the two-generation cache\n");
+            fail = 1;
+        }
+        if (a.stats.evals != g.stats.evals + g.stats.cacheHits) {
+            std::fprintf(stderr, "FAIL: two-generation cache: leaves do not add up\n");
+            fail = 1;
+        }
+        if (g.stats.cacheHits <= b.stats.cacheHits) {
+            std::fprintf(stderr, "FAIL: two-generation cache: no more hits than one generation of the same capacity\n");
+            fail = 1;
+        }
+        if (gv.stats.cacheHits != 0) {
+            std::fprintf(stderr, "FAIL: two-generation cache: a cached result was used after the weights version changed\n");
+            fail = 1;
+        }
+    }
     if (compact) {
         azbench::RunConfig cc = cfg;
         cc.compactSamples = true;

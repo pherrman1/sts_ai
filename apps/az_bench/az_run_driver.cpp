@@ -689,6 +689,7 @@ namespace sts::azbench {
         // at the start of each run, on a weights change and when full.
         struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf, dist, hpd; };   // hpf: utility AMBER; dist: searchEmaLambda > 0; hpd: searchEmaHp
         std::unordered_map<std::uint64_t, CacheEntry> cache;
+        std::unordered_map<std::uint64_t, CacheEntry> cacheOld;   // RunConfig::evalCacheGen: the previous generation
         std::uint32_t cacheVersion = 0;
         std::vector<double> rootDist;          // searchEmaLambda > 0: sum of the backed-up distributions at the root
         std::vector<std::uint16_t> moveDist;   // ... search result of each chain move of the run [M][57], float16
@@ -1361,7 +1362,7 @@ namespace sts::azbench {
                 }
                 st.memPendingCap += static_cast<std::int64_t>(g.pending.capacity());
                 st.memMoveDistCap += static_cast<std::int64_t>(g.moveDist.capacity());
-                st.memCacheEntries += static_cast<std::int64_t>(g.cache.size());
+                st.memCacheEntries += static_cast<std::int64_t>(g.cache.size() + g.cacheOld.size());
                 st.memFlights += static_cast<std::int64_t>(g.fl.size());
             }
         };
@@ -1526,6 +1527,20 @@ namespace sts::azbench {
             return ok;
         };
 
+        // Room for one new evaluation cache entry: a full cache is emptied, or (RunConfig::evalCacheGen) a full
+        // current generation (evalCacheCap / 2 entries) becomes the old one, which drops the previous old one.
+        const int cacheGenCap = std::max(1, cfg.evalCacheCap / 2);
+        auto cacheRoom = [&](Run &g) {
+            if (!cfg.evalCacheGen) {
+                if (static_cast<int>(g.cache.size()) >= cfg.evalCacheCap) g.cache.clear();
+                return;
+            }
+            if (static_cast<int>(g.cache.size()) >= cacheGenCap) {
+                g.cacheOld.swap(g.cache);
+                g.cache.clear();
+            }
+        };
+
         // The run's next free flight slot (allocated on first use).
         auto newFlight = [&](Run &g) -> Flight & {
             if (g.nFlights >= kMaxFlights) throw std::logic_error("run driver: too many evaluations in flight");
@@ -1626,9 +1641,17 @@ namespace sts::azbench {
             fl.hit = false;
             if (cfg.evalCache) {
                 const std::uint32_t v = weightsVersion_.load(std::memory_order_acquire);
-                if (g.cacheVersion != v) { g.cache.clear(); g.cacheVersion = v; }
+                if (g.cacheVersion != v) { g.cache.clear(); g.cacheOld.clear(); g.cacheVersion = v; }
                 fl.hash = inputHash(fl.tokens);
-                const auto it = g.cache.find(fl.hash);
+                auto it = g.cache.find(fl.hash);
+                if (it == g.cache.end() && cfg.evalCacheGen) {   // the old generation: a hit moves to the current one
+                    const auto old = g.cacheOld.find(fl.hash);
+                    if (old != g.cacheOld.end() && old->second.nAct == fl.tokens.nAct) {
+                        auto moved = g.cacheOld.extract(old);
+                        cacheRoom(g);
+                        it = g.cache.insert(std::move(moved)).position;
+                    }
+                }
                 if (it != g.cache.end() && it->second.nAct == fl.tokens.nAct) {
                     // Answered as a result would be, in the worker loop's next round (no recursion into advance).
                     fl.resLogits = it->second.logits;
@@ -2035,6 +2058,7 @@ namespace sts::azbench {
             if (probe < 0) for (const RelicId r : cfg.testRelics) g.gc.obtainRelic(r);
             g.inBattle = false;
             g.cache.clear();
+            g.cacheOld.clear();
             g.moves = g.fightMoves = 0;
             g.trailN = 0;
             g.dlog = DeathLog{};
@@ -3605,7 +3629,7 @@ namespace sts::azbench {
                         // Only results of the cache's weights version go in (a batch evaluated before the last
                         // weights change carries the old version).
                         if (cfg.evalCache && fl.resVersion == g.cacheVersion) {
-                            if (static_cast<int>(g.cache.size()) >= cfg.evalCacheCap) g.cache.clear();
+                            if (!cfg.evalCacheGen || !g.cache.count(fl.hash)) cacheRoom(g);   // flag off: as before
                             auto &e = g.cache[fl.hash];
                             e.F = fl.resF;
                             e.ehp = fl.resEhp;

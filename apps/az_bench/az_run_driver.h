@@ -456,6 +456,13 @@ namespace sts::azbench {
         // At most evalCacheCap entries per run (the cache is emptied when full).
         bool evalCache = false;
         int evalCacheCap = 1024;
+        // Two-generation evaluation cache (2026-11-26, default off; needs evalCache): instead of emptying the full
+        // cache, the current generation (at most evalCacheCap / 2 entries) becomes the old one and the previous old
+        // one is dropped; a hit in the old generation moves the entry to the current one. Together at most
+        // evalCacheCap entries, as without it, but the last tree's evaluations survive an overflow. Exact like the
+        // cache itself (a hit is the result a new evaluation with the same weights returns), so games are the same
+        // for a net whose output depends only on its input; only the hit count changes.
+        bool evalCacheGen = false;
         // Compact sample storage (2026-11-18, default off; Amber Eye: "we can still store the data efficiently by
         // keeping a common dictionary of tokens which are referenced by index in replay buffer states. Most tokens,
         // especially cards and relics, are shared between many different states"): a kept sample does not copy its
