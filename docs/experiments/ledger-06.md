@@ -29694,3 +29694,30 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 **Not done:** no benchmark or live run. Going live needs the owner's decision (self-play would also play with
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
+
+## §869 — Gradient accumulation × LR offline probe (Carbon proposal #3) on the Test B replay slices → NEGATIVE, nothing changed (PC, 2026-11-26)
+
+**Question:** Carbon proposal #3: compute-neutral gradient accumulation (larger effective batch) with a higher LR
+trains the 1.22M net better per sample. Motivation: live batch 1024 is far below the measured gradient noise scale
+(B_simple ~18.5k, `gradnoise_20261125`); live LR 3e-5 (3e-4 × anneal final 0.1); live grad norm ~3 at clip 1.0 (always
+clipped). Owner approved an offline test on existing replay data (2026-11-26); no new gameplay seeds.
+**Setup (pre-registered, `evidence/gradaccum_probe_20261126/PREREG.md`):** frozen `ckpt_bench_1635474` (net + AdamW
+state, live loss weights from its args), Test B slices (§868): 200 batches × 1024 rows drawn uniformly without
+replacement from the 3,000 seen runs (430k rows), identical batch sequence for all arms; eval = live weighted total
+loss on 300 fixed unseen runs (42,536 rows, later window, ckpt 1679639 era), paired bootstrap over runs. Arms at equal
+rows: A 1024 @ 3e-5 (live), B accum 4 @ 6e-5 (sqrt), C accum 4 @ 1.2e-4 (linear), D 1024 @ 6e-5 (LR only). Loss =
+`selfplay.losses` with batch-level denominators (chunked computation checked equal to `selfplay.losses`, 16.445271 vs
+16.445270). Rule: accumulation helps iff the better of B/C beats A by δ = max(25 % of |A's progress|, 0.05 % of the
+start loss) = 0.0079, beats D by δ/2, and CI(A − X) > 0; else no change.
+**Result (unseen total loss, start 15.78484):** A 15.78582, B 15.78576, C 15.78807, D 15.78865. B − A = −0.00007
+[CI of A − B: −0.0006, +0.0007]; C −0.0023 and D −0.0028 worse than A (CIs exclude 0). No arm improved on the start
+checkpoint (A −0.0010, CI spans 0). Final-outcome CE: A 1.8686, B 1.8681, C 1.8677, D 1.8687 (differences ≤ 0.05 %).
+Grad norm (pre-clip): 1024-row steps ~2.8-2.9, 4096-row steps ~1.6 (as the noise scale predicts; still clipped).
+**Decision:** rule not met → no live change; proposal #3 closed. **Inference:** at this checkpoint the per-sample
+efficiency of 4096 @ sqrt-LR equals 1024 (as expected below the critical batch with clipped Adam updates), and a higher
+effective LR only adds noise. Limits: 204,800 rows ≈ 2 min of live training, fine-tune on rows the checkpoint had
+already trained on, fp32 (live bf16), one data order; small effects in longer training are not excluded.
+**Ops note:** a first CPU attempt wrote a padded memmap of the slices; the page cache pushed the live run into swap and
+its RAM guard restarted it cleanly at 07:20 CET (ckpt_1751314, no errors). The final run used the GPU while training
+was paused at the owner's request (07:52-08:07 CET).
+**Knowledge impact:** this entry; evidence in `evidence/gradaccum_probe_20261126/`.
