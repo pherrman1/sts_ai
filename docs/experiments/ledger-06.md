@@ -29717,6 +29717,17 @@ Grad norm (pre-clip): 1024-row steps ~2.8-2.9, 4096-row steps ~1.6 (as the noise
 efficiency of 4096 @ sqrt-LR equals 1024 (as expected below the critical batch with clipped Adam updates), and a higher
 effective LR only adds noise. Limits: 204,800 rows ≈ 2 min of live training, fine-tune on rows the checkpoint had
 already trained on, fp32 (live bf16), one data order; small effects in longer training are not excluded.
+**Large rerun (owner, 2026-11-26 08:34 CET: "more data"):** same arms, rule, checkpoint and eval set;
+3,600 batches × 1024 = 3.69M rows per arm (18× the first run, ≈35 min of live training, 8.6 passes over the 430k seen
+rows, fresh permutation per pass, identical sequence for all arms), GPU with bf16 autocast as live, training paused
+08:35-09:14 CET (`ga_probe_big.py`, sized to the pause by a timing pass). Unseen total loss vs start 15.78484 after
+1/4, 2/4, 3/4, 4/4: A +0.0050 / +0.0112 / +0.0140 / +0.0185; B +0.0038 / +0.0103 / +0.0130 / +0.0177; C +0.0095 /
++0.0169 / +0.0260 / +0.0325; D +0.0130 / +0.0193 / +0.0275 / +0.0359, while the training loss falls (A 16.00 → 15.90,
+D → 15.87): the net memorises the 3,000 seen runs, and a higher effective LR memorises faster. A − B = +0.00075 [CI
++0.00006, +0.0014] (B marginally better, 10× below δ = 0.0079); C −0.0140 and D −0.0174 vs A (CIs exclude 0).
+Final-outcome CE A 1.8692, B 1.8690, C 1.8695, D 1.8702. **Decision unchanged:** rule not met, no live change, the
+higher LR is ruled out. Multi-pass replay over a small fixed slice exaggerates memorisation compared with the live
+window (10M rows, refreshed), so this measures the overfitting direction more than live dynamics.
 **Ops note:** a first CPU attempt wrote a padded memmap of the slices; the page cache pushed the live run into swap and
 its RAM guard restarted it cleanly at 07:20 CET (ckpt_1751314, no errors). The final run used the GPU while training
 was paused at the owner's request (07:52-08:07 CET).
