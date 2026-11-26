@@ -29722,4 +29722,10 @@ real 10k bench sims10k_1803647 ran with C from 21:46 CET. P16 changes the search
   peak RSS 1.90 -> 1.06 GB, same evaluations/s, 21 % of released states rebuilt.
 **Checks:** CTest `az_eval_cache_gen`, `az_lazy_leaf_state`, `az_lazy_leaf_state_parallel` (digests equal to the
 no-cache run; leaves add up; more hits than one generation; nothing after a weights change; search counters unchanged).
-**Not done:** PC timing of the two flags; live use. **Knowledge impact:** this entry.
+**PC timing of the flags (main a4d14b9, same 10k config as C, 100 games, 0.15 h each, means of 3 rows from minute
+3, 2026-11-26 ~23:00 CET):** C2 (C rebuilt) 25.67 moves/s, 125.4k pos/s, SM 86 %, peak RSS 19.0 GB; D (+ `--eval-cache-gen`)
+25.92 (+1 %), cache entries 0.72-0.88M -> 1.18-1.23M, hit rate about the same; E (D + `--lazy-leaf-state`) 24.83 moves/s
+(-3 % vs C2), peak RSS 12.2 GB (-6.8 GB), pool_bc 0.76-0.82M -> 221-256k. `pool_nodes` 1,000,100 = one node per
+simulation plus the root per run (no truncation). **Inference:** the generation cache gains little with the real net,
+and live every weights sync empties it; lazy leaf states are a RAM lever (live use needs the owner's decision and the
+live check). **Not done:** live use. **Knowledge impact:** this entry.
