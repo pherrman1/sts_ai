@@ -29694,3 +29694,32 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 **Not done:** no benchmark or live run. Going live needs the owner's decision (self-play would also play with
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
+
+## §870 — 10k-sim bench speed: eval-cache cap and parallel nodes (PC A/B/C), plus `--eval-cache-gen` and `--lazy-leaf-state` → BUILT, default off (PC + cloud, 2026-11-26)
+
+**Question (owner, 2026-11-26 20:52 CET):** are the search trees optimized, can large trees reuse earlier simulations;
+measure and propose, before the 100-game 10k-sim bench (owner 21:03 CET: optimizations first, so that run is shorter).
+**Amber Eye page** (read 2026-11-26): nothing on tree reuse between moves; "Efficient search" = many games in flight,
+up to 4 nodes per candidate's subtree in self-play and 2048 per candidate for single-game evaluation, FP16 net in L2.
+Tree reuse would be a deviation (not built; owner decision). Repo: §785 (Silver Gumbel 16k) reuse vs none no difference.
+**Cloud measurements** (`az-run-driver`, fake net, 4 workers x 3 games, A20, `--test-hp 3000`, Amber rules, 10,000 sims,
+8 candidates, 150 s each, seeds 160300000+): eval-cache cap 1,024 -> 65,536 hit rate 17.5 -> 36.9 %, net evaluations per
+move 8,275 -> 6,317; `--parallel-nodes` 4 -> 32 round trips per move 990 -> 140. 79 % of a 10k tree's nodes are never
+expanded. A node holds a BattleContext (8,648 B) or GameContext (2,704 B); a flight's AmberTokens is 34,636 B.
+Tree-reuse probe (counters only): the played edge's deterministic child holds ~18 % of the next move's 10k budget.
+**PC timing (10k bench config, 100 concurrent games, ckpt 1803647, seeds 160200000-099, training paused, rows from
+minute 3):** A (cap 1,024, P4) 13.0 moves/s, 76.8k pos/s, GPU SM 86 %, peak RSS 17.2 GB; B (cap 16,384, P4) 13.9 (+7 %),
+peak 18.6 GB; C (B + `--parallel-nodes 16`) 25.8 moves/s (+86 % vs B), 124.4k pos/s, SM 85 %, peak 18.9 GB. C still
+round-trip bound (~245 batches/s of ~470 rows). By the owner's rule (C if >= +15 % over B, decision card 21:26 CET) the
+real 10k bench sims10k_1803647 ran with C from 21:46 CET. P16 changes the search (virtual loss), as Amber's evaluation does.
+**Tooling (default off, same games for a net whose output depends only on its input):**
+- `RunConfig::evalCacheGen` / `selfplay.py --eval-cache-gen`: two cache generations of cap / 2 entries; a full current
+  generation replaces the old one instead of emptying the cache; an old hit moves to the current one. Cloud 10k, P16,
+  cap 16,384: hit rate 33.7 -> 46.8 %, net evaluations per move 6,644 -> 5,332 (-20 %); cap 8,192 with it 40.1 %.
+- `RunConfig::lazyLeafState` / `selfplay.py --lazy-leaf-state` (Amber rules, not savescum): an evaluated non-root node
+  releases its game state; expanding it rebuilds the state by redoing its step from its parent (same action, base,
+  outcome index; the step's counters restored). Cloud 10k, P16, cap 16,384 gen: BattleContexts held 118,977 -> 21,444,
+  peak RSS 1.90 -> 1.06 GB, same evaluations/s, 21 % of released states rebuilt.
+**Checks:** CTest `az_eval_cache_gen`, `az_lazy_leaf_state`, `az_lazy_leaf_state_parallel` (digests equal to the
+no-cache run; leaves add up; more hits than one generation; nothing after a weights change; search counters unchanged).
+**Not done:** PC timing of the two flags; live use. **Knowledge impact:** this entry.
