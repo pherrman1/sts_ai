@@ -29695,7 +29695,7 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
 
-## §TBD — 10k-sim bench speed: eval-cache cap and parallel nodes (PC A/B/C), plus `--eval-cache-gen` and `--lazy-leaf-state` → BUILT, default off (PC + cloud, 2026-11-26)
+## §870 — 10k-sim bench speed: eval-cache cap and parallel nodes (PC A/B/C), plus `--eval-cache-gen` and `--lazy-leaf-state` → BUILT, default off (PC + cloud, 2026-11-26)
 
 **Question (owner, 2026-11-26 20:52 CET):** are the search trees optimized, can large trees reuse earlier simulations;
 measure and propose, before the 100-game 10k-sim bench (owner 21:03 CET: optimizations first, so that run is shorter).
