@@ -137,6 +137,10 @@ int main(int argc, char **argv) {
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
+        else if (a == "--eval-cache") cfg.evalCache = true;
+        else if (a == "--eval-cache-cap") cfg.evalCacheCap = std::stoi(next());
+        else if (a == "--eval-cache-gen") cfg.evalCacheGen = true;
+        else if (a == "--lazy-leaf-state") cfg.lazyLeafState = true;
         else if (a == "--parallel-nodes") cfg.parallelNodes = std::stoi(next());
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--candidates") { cfg.fullCandidates = std::stoi(next()); cfg.fastCandidates = std::max(1, cfg.fullCandidates / 2); }
@@ -277,6 +281,12 @@ int main(int argc, char **argv) {
                 samples.size(), withPolicy, combat, bad, static_cast<long long>(s.stalls),
                 static_cast<long long>(s.unsupported), static_cast<long long>(s.knowledgeFailures), static_cast<long long>(s.invalidActions), static_cast<long long>(s.encodeCut), static_cast<long long>(s.encodeCutOoc),
                 static_cast<long long>(s.terminalLeaves), secs);
+    if (cfg.evalCache)
+        std::printf("eval_cache: hits %lld evals %lld hit_rate %.1f %%\n", static_cast<long long>(s.cacheHits),
+                    static_cast<long long>(s.evals), 100.0 * s.cacheHits / std::max<std::int64_t>(1, s.cacheHits + s.evals));
+    if (cfg.lazyLeafState)
+        std::printf("lazy_leaf_state: released %lld rebuilt %lld\n", static_cast<long long>(s.lazyDrops),
+                    static_cast<long long>(s.lazyRebuilds));
     std::printf("stalls by type: fight_moves %lld run_moves %lld no_legal %lld; fights ended at start %lld\n",
                 static_cast<long long>(s.stallsByType[0]), static_cast<long long>(s.stallsByType[1]),
                 static_cast<long long>(s.stallsByType[2]), static_cast<long long>(s.fightsEndedAtStart));
