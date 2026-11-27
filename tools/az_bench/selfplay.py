@@ -933,7 +933,9 @@ def kickstart_targets(b, t_out, lam):
     (policy logits, outcome logits, HP logits, per-floor HP) on b. Returns a new batch dict: "policy" (rows with a
     policy target), "soft_outcome" (the EMA target or the final outcome), "hp_soft" (HP classes) and "hp_floor_t"
     (per-floor HP / 255, masked as the labels) mixed; the original labels stay under their keys for the logged
-    losses ("policy_label", "hp_end", "outcome", "hp_floor")."""
+    losses ("policy_label", "hp_end", "outcome", "hp_floor"). With --hp-ema-search the base of "hp_soft" is the
+    search EMA target "hp_target" and that of "hp_floor_t" is "hp_floor_target" (the targets training would use
+    without kickstart), not the real-HP labels."""
     tl, to, th, thf = (x.float() for x in t_out[:4])
     has = b["has_policy"].bool()[:, None]
     tp = torch.softmax(tl.masked_fill(~b["a_mask"], -1e4), -1) * b["a_mask"]
@@ -945,9 +947,13 @@ def kickstart_targets(b, t_out, lam):
         b["outcome"].long().clamp(0, C - 1), C).float()
     out["soft_outcome"] = (1 - lam) * base + lam * torch.softmax(to, -1)
     H = th.shape[-1]
-    out["hp_soft"] = ((1 - lam) * F.one_hot(b["hp_end"].long().clamp(0, H - 1), H).float()
-                      + lam * torch.softmax(th, -1))
-    if "hp_floor" in b:
+    hbase = b["hp_target"].float() if "hp_target" in b else F.one_hot(b["hp_end"].long().clamp(0, H - 1), H).float()
+    out["hp_soft"] = (1 - lam) * hbase + lam * torch.softmax(th, -1)
+    if "hp_floor_target" in b:   # --hp-ema-search: the search EMA targets (HP / 255, -1 = masked) are the base
+        ft = b["hp_floor_target"].float()
+        out["hp_floor_t"] = torch.where(ft >= 0, (1 - lam) * ft.clamp(0, 1) + lam * thf.clamp(0, 1),
+                                        torch.full_like(thf, -1.0))
+    elif "hp_floor" in b:
         lab = b["hp_floor"]
         out["hp_floor_t"] = torch.where(lab >= 0, (1 - lam) * lab.float().clamp(0, 255) / 255.0
                                         + lam * thf.clamp(0, 1), torch.full_like(thf, -1.0))
@@ -1042,8 +1048,6 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0,
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
     parts = {"policy": l_pol_label.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
-    if "hp_soft" in b:
-        l_hp = -(b["hp_soft"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
     if "soft_outcome" in b:   # --value-ema-halflife: train on the EMA target; "outcome" stays the final-outcome CE
         l_ema = -(b["soft_outcome"] * torch.log_softmax(outcome.float(), -1)).sum(-1).mean()
         parts["outcome_ema"] = l_ema.detach()
@@ -1051,6 +1055,8 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0,
     if "hp_target" in b:   # --hp-ema-search: train on the search EMA target; "hp" stays the real-HP CE
         l_hp = -(b["hp_target"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
         parts["hp_ema"] = l_hp.detach()
+    if "hp_soft" in b:   # kickstart: train on the mixed HP target (its base is hp_target when present)
+        l_hp = -(b["hp_soft"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
     if l_soft is not None:
         total = total + w_soft_policy * l_soft
