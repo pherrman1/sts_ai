@@ -29762,3 +29762,24 @@ no-cache run; leaves add up; more hits than one generation; nothing after a weig
 simulation plus the root per run (no truncation). **Inference:** the generation cache gains little with the real net,
 and live every weights sync empties it; lazy leaf states are a RAM lever (live use needs the owner's decision and the
 live check). **Not done:** live use. **Knowledge impact:** this entry.
+
+## §872 — Kickstart with `--hp-ema-search`: the teacher now mixes into the search EMA HP targets (floor HP 256 and per-floor HP) → FIX, changes training only with `--kickstart-mix` > 0 and `--hp-ema-search` (cloud, 2026-11-27)
+
+**Defect** (found in the 2026-11-27 Carbon discussion, P9; verified on main `e49394e`): with both flags on, as in the
+live 0.44M student run since 2026-11-27 10:29 CET, (a) `losses()` overwrote the kickstart floor-HP loss on
+`hp_soft` with the `hp_target` loss, so the 256-class floor HP head got no teacher share at all, and (b)
+`kickstart_targets()` mixed the teacher's per-floor HP into the raw real-HP labels `hp_floor` instead of the
+`hp_floor_target` the head trains on without kickstart (the mixed target replaces `hp_floor_target` in training).
+Both heads still learned sensible targets (search EMA resp. (1 − λ) real HP + λ teacher).
+**Fix** (`tools/az_bench/selfplay.py`): the base of `hp_soft` is `hp_target` when the batch has it (else the one-hot
+`hp_end`), the base of `hp_floor_t` is `hp_floor_target` when present (else `hp_floor`), and `losses()` applies the
+`hp_soft` loss after the `hp_target` one. Logged parts unchanged: `hp` / `hp_floor` against the real labels,
+`hp_ema` / `hp_floor_ema` against the unmixed search targets. Without kickstart, or kickstart without
+`--hp-ema-search`, targets and losses are identical to before. `capacity_probe.py --teacher-mix` uses the same function.
+**Test:** `KickstartTest.test_targets_hp_ema_search`: λ 0 gives exactly the search targets (masks kept), λ 1 the
+teacher, `losses()` trains on the mixed targets and still logs against the search targets; without kickstart
+`hp_target` still trains the head. Fails on the old code (hp_soft at λ 0 ≠ hp_target), passes on the fix.
+**Not done:** no run. The live student picks the fix up only at its next restart (owner's call), after the
+independent review. **Inference:** effect on the student's learning not measured; the outcome and policy heads,
+which carry most of the shared gradient (§871), were not affected.
+**Knowledge impact:** this entry.
