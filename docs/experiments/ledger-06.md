@@ -29784,7 +29784,7 @@ independent review. **Inference:** effect on the student's learning not measured
 which carry most of the shared gradient (§871), were not affected.
 **Knowledge impact:** this entry.
 
-## §TBD — Root probe on 500 out-of-combat roots: 64 / 256 / 1024 sims × 2 search seeds with the 1.2M net → 64 sims within 2 pp of 256 against 1024 (data argument for 64/16 stands); two-seed agreement 85 % at 256 closes the Q-range floor (#6a) by the fixed rule, but near-tie roots flip half the time with confident targets (cloud CPU, 2026-11-27)
+## §873 — Root probe on 500 out-of-combat roots: 64 / 256 / 1024 sims × 2 search seeds with the 1.2M net → 64 sims within 2 pp of 256 against 1024 (data argument for 64/16 stands); two-seed agreement 85 % at 256 closes the Q-range floor (#6a) by the fixed rule, but near-tie roots flip half the time with confident targets (cloud CPU, 2026-11-27)
 
 **Question (work plan W6 of the Claude × Carbon agreement, owner's go 2026-11-27 12:01 CET):** how stable is the
 out-of-combat policy target π' across search seeds at 64, 256 and 1024 sims, and how close are the 64- and 256-sim
