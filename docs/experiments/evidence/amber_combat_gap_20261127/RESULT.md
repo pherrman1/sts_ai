@@ -40,7 +40,10 @@ Champ +17.5, Awakened One +17.1). Deaths per fight equal to production in every 
 **1024 sims, copies 0-1, 1,596 fights** (`results/amber1024_c01_matched.json`; the run was stopped by its RAM
 watchdog at 3,200 of 3,754 copies when the student bench started; 278 fights missing): expert 8.62, production
 11.64, Amber 128 20.76, **Amber 1024 20.50**; Amber 1024 − production +8.86 [+7.71, +10.07]; deaths 0.055 / 0.055 /
-0.044 (production / 128 / 1024), lower mainly at act-1 and act-2 bosses.
+0.044 (production / 128 / 1024), lower mainly at act-1 and act-2 bosses. Paired 1024 − 128 on the same 3,197
+copies (run-clustered bootstrap, 10,000 resamples, 95%): HP lost −0.20 [−0.75, +0.35] (raw, floor-51 heal not
+inverted); fight deaths 0.0557 → 0.0441, **−0.0116 [−0.0187, −0.0048]**; discordant copies 77 (died only at 128)
+vs 40 (died only at 1024).
 
 **Side bench (the net's own runs, `results/bench1000_701.json`, §701's cells):** 1000 fixed seeds at A20, 38.5 %
 wins (the distill thread's bench of the same checkpoint: 34.9 %). Net HP per won fight vs Baalorlord's §701
@@ -51,8 +54,9 @@ expert 0.08 and §701's old bot 0.41.
 ## Interpretation (Inference)
 
 On identical states the 1.2M net loses about twice production Silver's HP per elite and boss fight, with the
-same death rate, and 8× its search budget does not change the HP loss (−0.3) while it trims deaths by about a
-fifth. Its combat weakness is in the net's in-fight evaluation and prior, not the bench's 128-simulation budget.
+same death rate. 8× its search budget leaves the HP loss unchanged (−0.2 [−0.7, +0.3]) but cuts fight deaths by
+about a fifth (−1.2 pp [−1.9, −0.5] per fight); over ~10 elite/boss fights per run that is of the order of the
+whole-run gain more simulations buy. The HP gap to Silver is in the net's in-fight evaluation and prior.
 Because the same net wins 38.5 % of its own A20 runs with this combat, its out-of-combat play carries the run;
 combat is the part to improve. Not tested: whether the HP loss is a deliberate trade (the utility values the run's
 P(win), not HP), larger budgets, or the 0.44M student.
