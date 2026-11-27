@@ -1571,6 +1571,14 @@ def main(argv=None):
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
     ap.add_argument("--eval-cache-cap", type=int, default=1024, help="cache entries per run (emptied when full)")
+    ap.add_argument("--lazy-leaf-state", action="store_true",
+                    help="search RAM: release a tree node's game state once its evaluation is handled and rebuild it "
+                         "from its parent when the node is expanded (same games; needs the Amber search rules; "
+                         "RunConfig::lazyLeafState, 2026-11-26, default off)")
+    ap.add_argument("--eval-cache-gen", action="store_true",
+                    help="with --eval-cache: two generations of at most cap / 2 entries each; a full current "
+                         "generation replaces the old one instead of emptying the cache, so the last tree's "
+                         "evaluations survive (exact, same games; RunConfig::evalCacheGen, 2026-11-26, default off)")
     ap.add_argument("--c-visit", type=float, default=50.0, help="Gumbel sigma: (c_visit + max N) * c_scale")
     ap.add_argument("--c-scale", type=float, default=1.0, help="Gumbel sigma scale (mctx uses 0.1 with --q-rescale)")
     ap.add_argument("--no-fast-noise", action="store_true", help="no Gumbel noise on fast moves (Amber Eye)")
@@ -2132,6 +2140,8 @@ def main(argv=None):
         **({"rng_fix": True} if args.rng_fix else {}),
         **({"ooc_canon": True} if args.ooc_canon else {}),
         **({"parallel_nodes": args.parallel_nodes} if args.parallel_nodes else {}),
+        **({"eval_cache_gen": True} if args.eval_cache_gen else {}),
+        **({"lazy_leaf_state": True} if args.lazy_leaf_state else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),

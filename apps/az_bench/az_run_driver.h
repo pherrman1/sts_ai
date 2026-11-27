@@ -456,6 +456,21 @@ namespace sts::azbench {
         // At most evalCacheCap entries per run (the cache is emptied when full).
         bool evalCache = false;
         int evalCacheCap = 1024;
+        // Two-generation evaluation cache (2026-11-26, default off; needs evalCache): instead of emptying the full
+        // cache, the current generation (at most evalCacheCap / 2 entries) becomes the old one and the previous old
+        // one is dropped; a hit in the old generation moves the entry to the current one. Together at most
+        // evalCacheCap entries, as without it, but the last tree's evaluations survive an overflow. Exact like the
+        // cache itself (a hit is the result a new evaluation with the same weights returns), so games are the same
+        // for a net whose output depends only on its input; only the hit count changes.
+        bool evalCacheGen = false;
+        // Leaf nodes without a stored state (2026-11-26, default off; RAM): once a search node's net evaluation is
+        // handled, its game state (BattleContext / GameContext, ~9 KB / ~3 KB) is released; when the search later
+        // expands that node, the state is rebuilt by redoing the step from its parent (same action, randomness base
+        // and outcome index, so the same state). Most nodes of a large tree are never expanded (79 % at 10k
+        // simulations), so the tree keeps only its interior states. Same games; costs one extra step per expanded
+        // node. Applies under Amber's search rules (chanceOnReveal / crossCombat / simHelp) and not under savescum;
+        // the root keeps its state.
+        bool lazyLeafState = false;
         // Compact sample storage (2026-11-18, default off; Amber Eye: "we can still store the data efficiently by
         // keeping a common dictionary of tokens which are referenced by index in replay buffer states. Most tokens,
         // especially cards and relics, are shared between many different states"): a kept sample does not copy its
@@ -809,6 +824,7 @@ namespace sts::azbench {
         // c = infinity; items logged with m = 0 at a run's end, and of those not played in that run (must stay 0).
         std::int64_t exploreAttempts = 0, exploreCZero = 0, exploreCInf = 0, exploreNatural = 0, exploreNaturalUnplayed = 0;
         std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
+        std::int64_t lazyDrops = 0, lazyRebuilds = 0;   // RunConfig::lazyLeafState: node states released / rebuilt
         std::int64_t auxFights = 0;           // RunConfig::auxFights: fight starts stored with samples
         // parallelNodes: waves started and the evaluations in them (waveFlights / waves = evaluations in flight per
         // run and wave), and simulations that had to wait for a node whose evaluation was in flight.
