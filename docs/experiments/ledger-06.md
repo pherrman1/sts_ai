@@ -29732,3 +29732,197 @@ window (10M rows, refreshed), so this measures the overfitting direction more th
 its RAM guard restarted it cleanly at 07:20 CET (ckpt_1751314, no errors). The final run used the GPU while training
 was paused at the owner's request (07:52-08:07 CET).
 **Knowledge impact:** this entry; evidence in `evidence/gradaccum_probe_20261126/`.
+## §868 — EMA outcome-target half-life 10 vs 20 full moves, offline head probe ("Test B") → NEGATIVE, half-life 20 kept (PC, 2026-11-25)
+
+**Question:** the 2026-11-25 overfit check (ckpt 1594969, newest unseen hour vs uniform window: outcome loss +8 %,
+outcome_ema +5.3 %, policy/HP not worse) points at memorized run labels (~140 same-label full-move samples per run,
+replay ratio 2). Would a shorter value-EMA half-life (`--value-ema-halflife` 10 instead of the live 20; more bootstrap,
+live real-outcome weight ~0.36 -> ~0.20) generalize better to unseen runs?
+Pre-registered rule: h10 only if on UNSEEN runs the CE vs the final outcome improves >= 1 % relative, AUC is not worse,
+and the seen-unseen gap shrinks >= 25 %; otherwise keep h20.
+**Setup (PC CPU, read-only on saved replay windows, nice 19, max RSS 2.0 GB, 2026-11-25 21:45-22:12 CET while training
+was paused):** scripts `/mnt/project-files/halflife-b-20261125/` (`slice_runs.py`, `head_probe.py`). Checkpoint
+`ckpt_bench_1635474` (15:00 CET benchmark, 39.2 %). SEEN = 3,000 whole runs / 429,925 samples from its training window
+(s 541,984,913-551,710,201; 388,645 train, 41,280 held-out eval); UNSEEN = 1,500 whole runs / 217,300 samples of the
+window at step 1679639, all generated after the SEEN head. h10 targets = exact per-run remix of the stored h20 EMA
+chain (negative D mass mean 0.023, p99 0.246). Trunk frozen; fresh outcome heads (same init) trained 12 epochs on h20 vs
+h10 targets, and *_warm arms starting from the checkpoint's own head. Output (PC)
+`~/Documents/sts/halflife_b_20261125/out/head_probe.json`.
+**Result (epoch 12, UNSEEN; CE vs final outcome / AUC of P(win) / Brier / seen-unseen CE gap):**
+original head 1.7687 / 0.8362 / 0.1641 / 0.0340; h20 1.7948 / 0.8346 / 0.1647 / 0.0173; h10 1.7909 / 0.8350 / 0.1648 /
+0.0222; h20_warm 1.7736 / 0.8355 / 0.1644 / 0.0253; h10_warm 1.7749 / 0.8357 / 0.1651 / 0.0288.
+h10 vs h20: fresh CE -0.22 %, AUC +0.0003, gap +28 %; warm CE +0.08 %, AUC +0.0002, gap +14 %.
+**Decision:** rule not met -> keep `--value-ema-halflife 20` (no live change). **Inference:** a shorter half-life does
+not improve unseen-run outcome prediction or shrink memorization at the head level. **Open question:** a frozen-trunk
+head probe cannot show trunk-level effects of the label change; only a live A/B could.
+## §871 — Heads audit of the live stage-1 net: encounter tokens carry out-of-combat policy information (gates 0: policy CE +5.3 %, prior pick changes in 5.9 % of decisions); soft-policy weight 8 vs 2 vs 0 indistinguishable in a 200-step fine-tune; `--aux-fights` off costs nothing in speed or 40-min losses → no change (PC + cloud CPU, 2026-11-27)
+
+**Question (owner, 2026-11-26 21:17 / 21:27 CET):** which heads of the live AmberNet 128x4 are useful? Three tests from
+the inventory (`/mnt/project-files/heads-20261126/REPORT.md`): (1) `--aux-fights` off live, (2) what the encounter
+tokens carry, (3) what the soft-policy head at weight 8 does. Inventory: policy, outcome (57), per-floor HP (56) feed
+the search (`amber2-root`: P(win) / F + H); floor HP (256), soft policy and the aux-fights head are training-only.
+**Setup:** checkpoint `ckpt_1805354` (2026-11-27 00:01 CET, 30 min after a resume on an empty window: trained on
+~0.87M new samples), SEEN 501 runs / 65,580 samples (ended before the checkpoint), UNSEEN 455 runs / 65,595 samples
+(started after it); `evidence/heads_20261127/`. Tests 2-3 cloud CPU, no seeds. Pre-registered rules in the scripts'
+docstrings, written before the data.
+**(1) Live without `--aux-fights`** (stage-1 thread, 00:46-01:27 CET, minutes 25-40 vs the last 6 rows before):
+moves/s 2,588 → 2,600, positions/s 164.1k → 165.0k, GPU ms/s unchanged (infer 951, train 159), trainer fwd_bwd −13 %,
+opt −46 %, trainer idle 750 → 814 ms/s; all losses within row noise. At 256/32 sims the trainer is mostly idle, so
+the head's cost (§835: ~9 % moves/s at 64/16, not isolated) no longer reaches self-play. Flag back on 01:27 CET.
+**(2) Encounter tokens** (`gate0_probe.py`, 455 UNSEEN runs): gates [0.061, 0.013, 0.034, 0 (raw −0.26), 0.271]. On
+the 10,803 out-of-combat rows with encounter tokens, gates 0 (= tokens removed, identical numbers) vs as trained:
+policy CE 0.4235 → 0.4459 (+5.3 %), prior argmax agrees in 94.1 %, mean |ΔP(win)| 0.032, AUC of P(win) 0.828 → 0.820,
+outcome CE +0.13 %. Combat rows unchanged (exactly). Rule (switch-off candidate only if outcome and policy CE < +0.5 %
+and argmax agreement ≥ 98 %) → CARRIES_INFO. The policy reads the tokens despite near-closed attention gates
+(through the summary gate 0.27). Not shown: that the run plays better than one trained without them.
+**(3) Soft policy** (`softpol_probe.py`). (a) Gradients on the shared parameters (16 steps × ~1,024 SEEN samples):
+share of the squared norm of the mean gradient outcome 57 %, floor HP 29 %, soft policy 13 %, policy 1.4 %, aux
+0.4 %, per-floor HP 0.001 %; the soft-policy gradient points along the policy gradient (cos 0.81 of the means, 0.74
+per batch) at ~3× its norm, i.e. it acts as an amplified policy signal; aux aligns with outcome (cos 0.53).
+(b) 200 steps from the checkpoint (its Adam state, LR 3e-5, clip 1), arms w 8 / 2 / 0, same batches; UNSEEN at
+step 200 vs w 8: policy CE −0.014 % / −0.002 %, outcome CE +0.015 % / −0.022 %, hp +0.07 % / +0.08 % → all three
+"not worse" and none "better" (rule ±0.2 % / 0.5 %). All arms drift up on UNSEEN outcome CE (1.771 → 1.812) as they
+refit 501 runs, so the fine-tune mostly shows memorization, not the weight's effect.
+**Decision:** no change. Encounter tokens stay; `--aux-fights` stays on (free at the current budget, useless signal
+size: owner's call to drop it); soft-policy weight stays 8 (an offline fine-tune cannot resolve it; only a live A/B
+could, an Amber-fidelity question for the owner). **Open question:** the per-floor HP head, which sets H in the
+search, gets almost no shared gradient (as in the 2026-11-24 pipeline audit; weights 30 / 100 did nothing offline).
+**Knowledge impact:** this entry.
+## §870 — 10k-sim bench speed: eval-cache cap and parallel nodes (PC A/B/C), plus `--eval-cache-gen` and `--lazy-leaf-state` → BUILT, default off (PC + cloud, 2026-11-26)
+
+**Question (owner, 2026-11-26 20:52 CET):** are the search trees optimized, can large trees reuse earlier simulations;
+measure and propose, before the 100-game 10k-sim bench (owner 21:03 CET: optimizations first, so that run is shorter).
+**Amber Eye page** (read 2026-11-26): nothing on tree reuse between moves; "Efficient search" = many games in flight,
+up to 4 nodes per candidate's subtree in self-play and 2048 per candidate for single-game evaluation, FP16 net in L2.
+Tree reuse would be a deviation (not built; owner decision). Repo: §785 (Silver Gumbel 16k) reuse vs none no difference.
+**Cloud measurements** (`az-run-driver`, fake net, 4 workers x 3 games, A20, `--test-hp 3000`, Amber rules, 10,000 sims,
+8 candidates, 150 s each, seeds 160300000+): eval-cache cap 1,024 -> 65,536 hit rate 17.5 -> 36.9 %, net evaluations per
+move 8,275 -> 6,317; `--parallel-nodes` 4 -> 32 round trips per move 990 -> 140. 79 % of a 10k tree's nodes are never
+expanded. A node holds a BattleContext (8,648 B) or GameContext (2,704 B); a flight's AmberTokens is 34,636 B.
+Tree-reuse probe (counters only): the played edge's deterministic child holds ~18 % of the next move's 10k budget.
+**PC timing (10k bench config, 100 concurrent games, ckpt 1803647, seeds 160200000-099, training paused, rows from
+minute 3):** A (cap 1,024, P4) 13.0 moves/s, 76.8k pos/s, GPU SM 86 %, peak RSS 17.2 GB; B (cap 16,384, P4) 13.9 (+7 %),
+peak 18.6 GB; C (B + `--parallel-nodes 16`) 25.8 moves/s (+86 % vs B), 124.4k pos/s, SM 85 %, peak 18.9 GB. C still
+round-trip bound (~245 batches/s of ~470 rows). By the owner's rule (C if >= +15 % over B, decision card 21:26 CET) the
+real 10k bench sims10k_1803647 ran with C from 21:46 CET. P16 changes the search (virtual loss), as Amber's evaluation does.
+**Tooling (default off, same games for a net whose output depends only on its input):**
+- `RunConfig::evalCacheGen` / `selfplay.py --eval-cache-gen`: two cache generations of cap / 2 entries; a full current
+  generation replaces the old one instead of emptying the cache; an old hit moves to the current one. Cloud 10k, P16,
+  cap 16,384: hit rate 33.7 -> 46.8 %, net evaluations per move 6,644 -> 5,332 (-20 %); cap 8,192 with it 40.1 %.
+- `RunConfig::lazyLeafState` / `selfplay.py --lazy-leaf-state` (Amber rules, not savescum): an evaluated non-root node
+  releases its game state; expanding it rebuilds the state by redoing its step from its parent (same action, base,
+  outcome index; the step's counters restored). Cloud 10k, P16, cap 16,384 gen: BattleContexts held 118,977 -> 21,444,
+  peak RSS 1.90 -> 1.06 GB, same evaluations/s, 21 % of released states rebuilt.
+**Checks:** CTest `az_eval_cache_gen`, `az_lazy_leaf_state`, `az_lazy_leaf_state_parallel` (digests equal to the
+no-cache run; leaves add up; more hits than one generation; nothing after a weights change; search counters unchanged).
+**PC timing of the flags (main a4d14b9, same 10k config as C, 100 games, 0.15 h each, means of 3 rows from minute
+3, 2026-11-26 ~23:00 CET):** C2 (C rebuilt) 25.67 moves/s, 125.4k pos/s, SM 86 %, peak RSS 19.0 GB; D (+ `--eval-cache-gen`)
+25.92 (+1 %), cache entries 0.72-0.88M -> 1.18-1.23M, hit rate about the same; E (D + `--lazy-leaf-state`) 24.83 moves/s
+(-3 % vs C2), peak RSS 12.2 GB (-6.8 GB), pool_bc 0.76-0.82M -> 221-256k. `pool_nodes` 1,000,100 = one node per
+simulation plus the root per run (no truncation). **Inference:** the generation cache gains little with the real net,
+and live every weights sync empties it; lazy leaf states are a RAM lever (live use needs the owner's decision and the
+live check). **Not done:** live use. **Knowledge impact:** this entry.
+
+## §872 — Kickstart with `--hp-ema-search`: the teacher now mixes into the search EMA HP targets (floor HP 256 and per-floor HP) → FIX, changes training only with `--kickstart-mix` > 0 and `--hp-ema-search` (cloud, 2026-11-27)
+
+**Defect** (found in the 2026-11-27 Carbon discussion, P9; verified on main `e49394e`): with both flags on, as in the
+live 0.44M student run since 2026-11-27 10:29 CET, (a) `losses()` overwrote the kickstart floor-HP loss on
+`hp_soft` with the `hp_target` loss, so the 256-class floor HP head got no teacher share at all, and (b)
+`kickstart_targets()` mixed the teacher's per-floor HP into the raw real-HP labels `hp_floor` instead of the
+`hp_floor_target` the head trains on without kickstart (the mixed target replaces `hp_floor_target` in training).
+Both heads still learned sensible targets (search EMA resp. (1 − λ) real HP + λ teacher).
+**Fix** (`tools/az_bench/selfplay.py`): the base of `hp_soft` is `hp_target` when the batch has it (else the one-hot
+`hp_end`), the base of `hp_floor_t` is `hp_floor_target` when present (else `hp_floor`), and `losses()` applies the
+`hp_soft` loss after the `hp_target` one. Logged parts unchanged: `hp` / `hp_floor` against the real labels,
+`hp_ema` / `hp_floor_ema` against the unmixed search targets. Without kickstart, or kickstart without
+`--hp-ema-search`, targets and losses are identical to before. `capacity_probe.py --teacher-mix` uses the same function.
+**Test:** `KickstartTest.test_targets_hp_ema_search`: λ 0 gives exactly the search targets (masks kept), λ 1 the
+teacher, `losses()` trains on the mixed targets and still logs against the search targets; without kickstart
+`hp_target` still trains the head. Fails on the old code (hp_soft at λ 0 ≠ hp_target), passes on the fix.
+**Not done:** no run. The live student picks the fix up only at its next restart (owner's call), after the
+independent review. **Inference:** effect on the student's learning not measured; the outcome and policy heads,
+which carry most of the shared gradient (§871), were not affected.
+**Knowledge impact:** this entry.
+
+## §873 — Root probe on 500 out-of-combat roots: 64 / 256 / 1024 sims × 2 search seeds with the 1.2M net → 64 sims within 2 pp of 256 against 1024 (data argument for 64/16 stands); two-seed agreement 85 % at 256 closes the Q-range floor (#6a) by the fixed rule, but near-tie roots flip half the time with confident targets (cloud CPU, 2026-11-27)
+
+**Question (work plan W6 of the Claude × Carbon agreement, owner's go 2026-11-27 12:01 CET):** how stable is the
+out-of-combat policy target π' across search seeds at 64, 256 and 1024 sims, and how close are the 64- and 256-sim
+targets to the 1024-sim one? Settles Carbon's "Q-range floor" idea (#6a, an Amber deviation: report only) and the
+target-quality side of 64/16 vs 256/32 (#4).
+**Pre-registered rules (WORKPLAN W6, fixed before the run):** two-seed agreement of argmax π' ≥ 80 % at 256 sims
+closes #6a; < 60 % with max π' > 0.95 keeps it as an option for the owner. 64 within 5 pp of 256 in top1 agreement
+with 1024 = the data argument for 64/16 stands outright; more than 15 pp behind = a target-quality case for 256/32.
+**Setup:** `tools/az_bench/root_budget_probe.py` (new, diagnostic) at 3263c1c; native module Release from main
+0da14b3 (sha256 d5e44880…9637). Net `ckpt_bench_1635474.pt` (1.2M, 128x4, sha256 ef41e509…bb6e, 39.2 % bench; the
+teacher 1828683 is only on the PC). §864's roots were not kept (GameState has no serialization), so they were
+re-captured the same way: capture runs from seed 160260000 (A20, frozen net, 32/8 sims, nothing trained), 500
+roots, all searched. Each root searched noise-free with `amber_probe.LIVE_SEARCH` + the checkpoint's input flags
+(q_rescale, c_scale 0.1, 8 candidates) at 64, 256 and 1024 sims with search seeds 0 and 1 (noise-free, the
+search seed moves the chance draws in the tree and the worker assignment). 4 workers, 4 torch threads; probe
+time 53 / 47, 197 / 193, 676 / 578 s. Q range = max − min of the visited root edges' mean Q (seed 0's search at
+that budget). Results: `/mnt/project-files/root-budget-20261127/root_budget_500.json` (per-root π' for all six
+searches), manifest and log beside it.
+**Result, two-seed agreement of argmax π' (95 % Wilson CI; mean max π'):**
+
+| sims | all | Q range < 0.005 | 0.005-0.02 | > 0.02 | share max π' > 0.95 |
+|---|---|---|---|---|---|
+| 64 | 83.8 % [80-87]; 0.938 | 51 % (n 77); 0.891 | 84 % (n 177) | 94 % (n 246) | 77 % |
+| 256 | 85.4 % [82-88]; 0.962 | 53 % (n 79); 0.958 | 85 % (n 164) | 96 % (n 257) | 85 % |
+| 1024 | 83.0 % [79-86]; 0.980 | 53 % (n 87); 0.983 | 84 % (n 167) | 93 % (n 246) | 93 % |
+
+**Against 1024 sims (all seed pairs):** top1 64 → 81.0 % [79.2-82.7], 256 → 82.9 % [81.2-84.5]; the 1024-vs-1024
+noise ceiling across seeds is 83.0 %. KL(π'_1024 ‖ π'_b) median ≈ 0 for all, mean 1.01 (64), 1.83 (256), 2.34
+(1024 vs 1024): the mean is driven by the flipped roots, where both targets are near one-hot on different moves.
+**Disagreements:** 81 / 73 / 85 roots at 64 / 256 / 1024; about half sit in the Q range < 0.005 bucket (38 / 37 /
+41), and the share where both seeds' targets have max π' > 0.95 grows with budget (24 / 34 / 51). By decision
+(256): map 27 of 108, event 16 / 48, card reward 14 / 156, campfire 0 / 50, shop 0 / 33, boss relic 0 / 10.
+**Decision (by the fixed rules):** #4: 64 sims is 1.9 pp behind 256 in agreement with 1024 (< 5 pp) and 256 is
+itself at the 1024 noise ceiling → the data argument for 64/16 stands. #6a: 85.4 % ≥ 80 % at 256 → closed; no change.
+**Inference:** more search does not make the out-of-combat target more reproducible (agreement flat at ~84 %
+from 64 to 1024); it makes it sharper, so the ~16 % of roots whose argmax depends on the search seed get more
+confident one-hot targets with budget. These are mostly near-ties (Q range < 0.005, where the min-max rescale
+of `q_rescale` blows small Q differences up to the full range) and map / event choices. For a near-tie that costs
+little play strength, but it is label noise in the policy target. Whether that noise matters for training is
+**Open question**; a Q-range floor would be the Amber deviation the rule just closed, so it is not proposed.
+**Not covered:** combat roots (probe roots are out-of-combat only); one net; no training.
+**Knowledge impact:** this entry.
+
+## §874 — Held-out learning curve of the 1.2M stage-1 checkpoints 11-25 .. 11-27 (work plan W5) → value heads STALLED after ckpt 1678542 (11-25 21:00 CET); the later policy gain is generator-proximity bias, not learning (PC CPU, 2026-11-27)
+
+**Question (work plan W5 of the Claude × Carbon agreement, owner's go 2026-11-27 12:01 CET):** did the 1.2M
+(AmberNet 128x4, 1,367,698 params) still improve on unseen data between 11-25 and 11-27?
+**Pre-registered rules (WORKPLAN W5, fixed before the run):** dKL < 0.01 nats and dtop1 < 0.3 pp over the span =
+stalled. dKL ≥ 0.03 nats or dtop1 ≥ 1.0 pp = learning ONLY if outcome CE / AUC on the same slice also improve or the
+early checkpoints also improve on the Test B slice (the policy target contains the generating net's logits).
+Per-floor HP MSE improving < 1 % while floor-HP CE improves ≥ 3 % = gradient starvation flag.
+**Setup:** PC CPU only (nice 19, 2 threads, RAM-gated beside the live run), 13:06-15:22 CET, no seeds. 11 checkpoints
+(1594969, 1635474, 1678542, 1679639, 1717027, 1755240, 1782264, 1803647, 1805354, 1816571, teacher 1828683), all
+loaded via `selfplay.net_like_ckpt` + `amber_net.input_options_from_ckpt` with missing = unexpected = [].
+Slices (whole runs, all rows): heads-audit UNSEEN (§871; 455 runs / 65,595 samples; clean for ckpts ≤ 1805354,
+primary) and Test B UNSEEN (§868; 1,500 runs / 217,300 samples; clean ≤ 1679639). Metrics per ckpt × slice ×
+(all / combat / out of combat): KL(search target ‖ prior), top1 vs target argmax, outcome CE, AUC of P(win),
+per-floor HP MSE, HP-class CE; 95 % run-bootstrap CIs (B = 1000), paired across checkpoints. Scripts, tables and
+verdicts: `docs/experiments/evidence/w5_heldout_20261127/`.
+**Result (heads UNSEEN, all decisions; improvement > 0 = better, paired 95 % CI):**
+
+| span | dKL | dtop1 | outcome CE | AUC | per-floor HP MSE | HP CE |
+|---|---|---|---|---|---|---|
+| 1594969 → 1678542 | −0.010 | −0.06 pp | +0.0123 [+0.004, +0.021] | +0.0002 [−0.001, +0.002] | +2.1 % (sig) | +0.37 % (sig) |
+| 1678542 → 1803647 | +0.063 [+0.060, +0.066] | +2.39 pp [+2.12, +2.65] | −0.0002 [−0.009, +0.008] | −0.0002 [−0.002, +0.001] | +1.0 % [−0.0, +2.0] | +0.34 % (sig) |
+| 1803647 → 1805354 | +0.003 | +0.21 pp | −0.026 (worse, sig) | +0.0008 | −6.1 % (worse, sig) | −0.07 % |
+
+AUC stays at 0.859 (heads) / 0.837 (Test B) for every checkpoint. On Test B UNSEEN, KL and top1 are best at
+1678542-1679639 (KL 0.312, top1 76.4 %) and get worse again for later checkpoints that trained on those very runs
+(1805354: 0.365 / 73.3 %); on heads UNSEEN they improve only from 1782264 on, towards the slice's generator (~1808k).
+1805354, the first checkpoint after the 11-26 23:31 CET empty-replay refill, is an outlier on all value heads.
+**Verdict (fixed rules):** heads all / combat / ooc = `policy_moves_unconfirmed` (policy moves, outcome CE and AUC
+do not improve); Test B 1594969 → 1679639 all / combat = `policy_moves_unconfirmed` (outcome CE improves, AUC flat),
+ooc between thresholds. Starvation flag: none.
+**Inference:** the 1.2M's value heads stopped improving on unseen runs at about 11-25 21:00 CET (ckpt 1678542);
+the policy "gain" after it tracks the current self-play generator (the target carries its logits) and does not
+generalise to older unseen runs. Matches the flat 128-sim benchmark (35-39 % since 11-25) and the overfit check of
+§868. Teacher 1828683 shows no outcome / AUC gain over 1803647 either.
+**Not covered:** play strength (offline only); 0.44M student; data from the 11-26 17:22-23:31 CET 2M-window
+fallback phase is inside the heads slice's generator window.
+**Knowledge impact:** this entry.

@@ -745,6 +745,51 @@ class KickstartTest(unittest.TestCase):
         self.assertTrue(torch.allclose(k1["hp_floor_t"][2], t[3][2]))
         self.assertTrue(torch.allclose(k1["policy_label"], b["policy"]))
 
+    def test_targets_hp_ema_search(self):
+        """With --hp-ema-search targets in the batch, kickstart mixes the teacher into them (lam 0 = the search EMA
+        targets, not the real-HP labels; lam 1 = the teacher), and losses() trains the floor HP head on the mixed
+        target instead of letting hp_target override it."""
+        sp = load()
+        g = torch.Generator().manual_seed(1)
+        B, A = 3, 4
+        ht = torch.softmax(torch.randn(B, 256, generator=g), -1)
+        hft = torch.rand(B, 56, generator=g)
+        hft[0, :2] = -1
+        hft[1] = -1
+        b = {"policy": torch.tensor([[0.5, 0.5, 0, 0], [1.0, 0, 0, 0], [0, 0, 0, 0]]),
+             "a_mask": torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 1, 1]], dtype=torch.bool),
+             "has_policy": torch.tensor([1, 1, 0]), "outcome": torch.tensor([0, 5, 30]),
+             "hp_end": torch.tensor([10, 0, 255]),
+             "hp_floor": torch.tensor([[-1] * 2 + [20] * 54, [-1] * 56, [100] * 56]),
+             "hp_target": ht, "hp_floor_target": hft}
+        t = (torch.randn(B, A, generator=g), torch.randn(B, 57, generator=g), torch.randn(B, 256, generator=g),
+             torch.rand(B, 56, generator=g))
+        k0 = sp.kickstart_targets(b, t, 0.0)
+        self.assertTrue(torch.allclose(k0["hp_soft"], ht))
+        self.assertTrue(torch.allclose(k0["hp_floor_t"], hft))
+        k1 = sp.kickstart_targets(b, t, 1.0)
+        self.assertTrue(torch.allclose(k1["hp_soft"], torch.softmax(t[2], -1)))
+        self.assertTrue(torch.allclose(k1["hp_floor_t"][2], t[3][2]))
+        self.assertTrue(torch.allclose(k1["hp_floor_t"][0, 2:], t[3][0, 2:]))
+        self.assertTrue((k1["hp_floor_t"][1] == -1).all() and (k1["hp_floor_t"][0, :2] == -1).all())
+        hp_logits, hpf_pred = torch.randn(B, 256, generator=g), torch.rand(B, 56, generator=g)
+
+        def net(_):
+            return torch.zeros(B, A), torch.zeros(B, 57), hp_logits, hpf_pred
+
+        lsm = torch.log_softmax(hp_logits, -1)
+        km = sp.kickstart_targets(b, t, 0.5)
+        tot, parts = sp.losses(net, km, 0.0, 0.0, 1.0)
+        self.assertAlmostEqual(float(tot), float(-(km["hp_soft"] * lsm).sum(-1).mean()), places=5)
+        self.assertAlmostEqual(float(parts["hp_ema"]), float(-(ht * lsm).sum(-1).mean()), places=5)
+        tot, parts = sp.losses(net, km, 0.0, 0.0, 0.0, 1.0)
+        m = (km["hp_floor_t"] >= 0).float()
+        want = (((hpf_pred - km["hp_floor_t"].clamp(min=0)) ** 2) * m).sum() / m.sum()
+        self.assertAlmostEqual(float(tot), float(want), places=5)
+        self.assertAlmostEqual(float(parts["hp_floor_ema"]), float(sp.hp_floor_target_loss(hpf_pred, hft)), places=5)
+        tot, _ = sp.losses(net, b, 0.0, 0.0, 1.0)   # no kickstart: hp_target still trains the head
+        self.assertAlmostEqual(float(tot), float(-(ht * lsm).sum(-1).mean()), places=5)
+
 
 class AmberUtilityTest(unittest.TestCase):
     def test_amber_h(self):

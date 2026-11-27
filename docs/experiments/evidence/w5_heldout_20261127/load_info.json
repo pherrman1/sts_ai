@@ -1,0 +1,90 @@
+{
+ "1594969": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1594969.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1594969
+ },
+ "1635474": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1635474.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1635474
+ },
+ "1678542": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1678542.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1678542
+ },
+ "1679639": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1679639.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1679639
+ },
+ "1717027": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1717027.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1717027
+ },
+ "1755240": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1755240.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1755240
+ },
+ "1782264": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/amber_scratch/ckpt_1782264.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1782264
+ },
+ "1803647": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/amber_scratch/ckpt_1803647.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1803647
+ },
+ "1805354": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1805354.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1805354
+ },
+ "1816571": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1816571.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1816571
+ },
+ "1828683": {
+  "path": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/ckpts/ckpt_1828683.pt",
+  "net": "128x4",
+  "params": 1367698,
+  "missing": [],
+  "unexpected": [],
+  "counter_step": 1828683
+ }
+}

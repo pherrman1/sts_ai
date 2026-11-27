@@ -101,9 +101,14 @@ def split_by_run(rv, n_samples, holdout, rng):
     return cat(pick[~held]), cat(pick[held]), int(take), int(held.sum())
 
 
-def make_net(spec, dev, soft_policy):
+def make_net(spec, dev, soft_policy, ck_args=None):
+    """ck_args (a checkpoint's saved selfplay.py args, --arch-ckpt / the teacher's own): the net with that run's
+    optional parts and input options (selfplay.net_like_ckpt); None: the plain net."""
     d, layers = amber_net.SIZES.get(spec) or tuple(int(x) for x in spec.split("x")[:2])
-    net = amber_net.AmberNet(d=d, layers=layers, hp_floors=56, soft_policy=soft_policy).to(dev)
+    if ck_args is None:
+        net = amber_net.AmberNet(d=d, layers=layers, hp_floors=56, soft_policy=soft_policy).to(dev)
+    else:
+        net = sp.net_like_ckpt(d, layers, 56, soft_policy, ck_args).to(dev)
     net.sdpa = True
     return net, (d, layers, max(1, d // 32))
 
@@ -118,7 +123,7 @@ def evaluate(net, batches, args, dev):
             bt = sp.to_torch(b, dev)
             with amp_ctx(dev):
                 _, parts = sp.losses(net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor,
-                                     args.w_soft_policy)
+                                     args.w_soft_policy, args.w_aux)
                 logits = net(bt)[0]
             B = len(b["outcome"])
             for k, v in parts.items():
@@ -140,9 +145,19 @@ def amp_ctx(dev):
 
 
 def train_one(name, net, rv, train_pos, held_batches, args, dev, log, teacher=None):
-    opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    if args.arch_ckpt or args.teacher_arch:   # the live run's optimizer groups (selfplay.py main)
+        named = list(net.named_parameters())
+        groups = [{"params": [p_ for n_, p_ in named if not sp.extra_param(n_)]}]
+        aux_p = [p_ for n_, p_ in named if n_.startswith("aux_fight.")]
+        enemy_p = [p_ for n_, p_ in named if n_ in ("enemy_bias", "enemy_gate")]
+        groups += [{"params": aux_p}] if aux_p else []
+        groups += [{"params": enemy_p, "lr_scale": args.enemy_lr_scale, "weight_decay": 0.0}] if enemy_p else []
+        groups += [{"params": [p_]} for n_, p_ in named if n_ in amber_net.INPUT_FIX_PARAMS]
+        opt = torch.optim.AdamW(groups, lr=args.lr, weight_decay=args.weight_decay)
+    else:
+        opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     steps = max(1, args.budget // args.batch)
-    rng = np.random.default_rng(args.seed + 1)   # the same batch sequence for every net
+    rng = np.random.default_rng(args.seed + 1 if args.batch_seed < 0 else args.batch_seed)   # same sequence for every net
     curve = [{"step": 0, "samples": 0, **evaluate(net, held_batches, args, dev)}]
     log(name, curve[-1])
     t0, t_data, skipped = time.time(), 0.0, 0
@@ -152,14 +167,14 @@ def train_one(name, net, rv, train_pos, held_batches, args, dev, log, teacher=No
         bt = sp.to_torch(b, dev)
         t_data += time.time() - ta
         for g in opt.param_groups:
-            g["lr"] = args.lr * min(1.0, (step + 1) / max(1, args.warmup_steps))
+            g["lr"] = args.lr * g.get("lr_scale", 1.0) * min(1.0, (step + 1) / max(1, args.warmup_steps))
         if teacher is not None and args.teacher_mix > 0:   # distillation pretraining: selfplay.py kickstart targets
             with torch.no_grad(), amp_ctx(dev):
                 bt = sp.kickstart_targets(bt, teacher(bt), args.teacher_mix)
         net.train()
         with torch.enable_grad(), amp_ctx(dev):
             loss, _ = sp.losses(net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor,
-                                args.w_soft_policy)
+                                args.w_soft_policy, args.w_aux)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         gn = torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
@@ -229,12 +244,22 @@ def main(argv=None):
     ap.add_argument("--threads", type=int, default=0, help="torch CPU threads (0 = torch default)")
     ap.add_argument("--device", default="cpu", help="cpu (default, safe next to a live run) or cuda")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--batch-seed", type=int, default=-1, help="seed of the batch sequence (default --seed + 1); "
+                    "a chained --init-student continuation keeps --seed (same split) and changes this")
     ap.add_argument("--out", default="capacity_probe.json")
     ap.add_argument("--teacher-ckpt", default="", help="pretraining with the teacher's prediction mixed into the "
                     "labels (selfplay.py --kickstart-mix targets) with weight --teacher-mix")
     ap.add_argument("--teacher-net", default="0.44M")
     ap.add_argument("--init-student", default="", help="start the --nets net from this saved net instead of scratch")
     ap.add_argument("--teacher-mix", type=float, default=0.5)
+    ap.add_argument("--arch-ckpt", default="", help="build the --nets nets with this checkpoint's optional parts and "
+                    "input options (enemy tokens, aux head, intent emb, ...; selfplay.net_like_ckpt) and the live "
+                    "optimizer groups, so a saved net can continue in that run (--init-net)")
+    ap.add_argument("--teacher-arch", action="store_true", help="build the --nets nets like the teacher "
+                    "(--arch-ckpt = --teacher-ckpt)")
+    ap.add_argument("--w-aux", type=float, default=1.0, help="--aux-fights head loss weight (as selfplay.py; only "
+                    "for nets with the aux head)")
+    ap.add_argument("--enemy-lr-scale", type=float, default=0.1, help="as selfplay.py (--arch-ckpt nets only)")
     ap.add_argument("--save-nets", action="store_true",
                     help="save each trained net as <out stem>.<net>.pt ({'net': state_dict, ...}; --init-net loadable)")
     args = ap.parse_args(argv)
@@ -276,19 +301,29 @@ def main(argv=None):
     soft = args.w_soft_policy > 0
     teacher = None
     if args.teacher_ckpt:
-        teacher, _ = make_net(args.teacher_net, dev, soft)
         t_ck = torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)
+        teacher, _ = make_net(args.teacher_net, dev, soft, t_ck.get("args") or {})   # its own optional parts
         teacher.load_state_dict(t_ck["net"])
         amber_net.input_options_from_ckpt(teacher, t_ck)   # e.g. --run-log-loopcount
         teacher.eval()
         for p_ in teacher.parameters():
             p_.requires_grad_(False)
         print(f"# teacher {args.teacher_ckpt} ({args.teacher_net}), mix {args.teacher_mix}", flush=True)
+    if args.teacher_arch and not args.arch_ckpt:
+        args.arch_ckpt = args.teacher_ckpt
+    arch_args = None
+    if args.arch_ckpt:
+        arch_args = torch.load(args.arch_ckpt, map_location="cpu", weights_only=False).get("args") or {}
+        if not isinstance(arch_args, dict):
+            arch_args = vars(arch_args)
+        print(f"# arch-ckpt {args.arch_ckpt}: " + ", ".join(k for k in ("aux_fights", "enemy_tokens", "enemy_map_bias",
+              "enemy_gate_key", "intent_emb", "select_many_bits", "run_log_loopcount", "consequences")
+              if arch_args.get(k)) + f", map_tokens {arch_args.get('map_tokens')}", flush=True)
     results = []
     specs = [s for s in args.nets.split(",") if s]
     for spec in specs:
         torch.manual_seed(args.seed)
-        net, shape = make_net(spec, dev, soft)
+        net, shape = make_net(spec, dev, soft, arch_args)
         if args.init_student:   # continue a saved net (--save-nets file) of this shape
             s_ck = torch.load(args.init_student, map_location=dev, weights_only=False)
             net.load_state_dict(s_ck["net"])
@@ -302,7 +337,7 @@ def main(argv=None):
              "final": curve[-1]}
         if args.save_nets:
             r["saved"] = os.path.splitext(args.out)[0] + f".{spec}.pt"
-            torch.save({"net": net.state_dict(), "probe": {"net": spec, "d": shape[0], "layers": shape[1],
+            torch.save({"net": net.state_dict(), "args": arch_args, "probe": {"net": spec, "d": shape[0], "layers": shape[1],
                                                           "final": curve[-1]}}, r["saved"])
         if args.infer_bench:
             inf_rows = held_eval[:args.infer_rows]

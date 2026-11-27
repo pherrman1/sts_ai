@@ -933,7 +933,9 @@ def kickstart_targets(b, t_out, lam):
     (policy logits, outcome logits, HP logits, per-floor HP) on b. Returns a new batch dict: "policy" (rows with a
     policy target), "soft_outcome" (the EMA target or the final outcome), "hp_soft" (HP classes) and "hp_floor_t"
     (per-floor HP / 255, masked as the labels) mixed; the original labels stay under their keys for the logged
-    losses ("policy_label", "hp_end", "outcome", "hp_floor")."""
+    losses ("policy_label", "hp_end", "outcome", "hp_floor"). With --hp-ema-search the base of "hp_soft" is the
+    search EMA target "hp_target" and that of "hp_floor_t" is "hp_floor_target" (the targets training would use
+    without kickstart), not the real-HP labels."""
     tl, to, th, thf = (x.float() for x in t_out[:4])
     has = b["has_policy"].bool()[:, None]
     tp = torch.softmax(tl.masked_fill(~b["a_mask"], -1e4), -1) * b["a_mask"]
@@ -945,9 +947,13 @@ def kickstart_targets(b, t_out, lam):
         b["outcome"].long().clamp(0, C - 1), C).float()
     out["soft_outcome"] = (1 - lam) * base + lam * torch.softmax(to, -1)
     H = th.shape[-1]
-    out["hp_soft"] = ((1 - lam) * F.one_hot(b["hp_end"].long().clamp(0, H - 1), H).float()
-                      + lam * torch.softmax(th, -1))
-    if "hp_floor" in b:
+    hbase = b["hp_target"].float() if "hp_target" in b else F.one_hot(b["hp_end"].long().clamp(0, H - 1), H).float()
+    out["hp_soft"] = (1 - lam) * hbase + lam * torch.softmax(th, -1)
+    if "hp_floor_target" in b:   # --hp-ema-search: the search EMA targets (HP / 255, -1 = masked) are the base
+        ft = b["hp_floor_target"].float()
+        out["hp_floor_t"] = torch.where(ft >= 0, (1 - lam) * ft.clamp(0, 1) + lam * thf.clamp(0, 1),
+                                        torch.full_like(thf, -1.0))
+    elif "hp_floor" in b:
         lab = b["hp_floor"]
         out["hp_floor_t"] = torch.where(lab >= 0, (1 - lam) * lab.float().clamp(0, 255) / 255.0
                                         + lam * thf.clamp(0, 1), torch.full_like(thf, -1.0))
@@ -1042,8 +1048,6 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0,
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
     parts = {"policy": l_pol_label.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
-    if "hp_soft" in b:
-        l_hp = -(b["hp_soft"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
     if "soft_outcome" in b:   # --value-ema-halflife: train on the EMA target; "outcome" stays the final-outcome CE
         l_ema = -(b["soft_outcome"] * torch.log_softmax(outcome.float(), -1)).sum(-1).mean()
         parts["outcome_ema"] = l_ema.detach()
@@ -1051,6 +1055,8 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0,
     if "hp_target" in b:   # --hp-ema-search: train on the search EMA target; "hp" stays the real-HP CE
         l_hp = -(b["hp_target"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
         parts["hp_ema"] = l_hp.detach()
+    if "hp_soft" in b:   # kickstart: train on the mixed HP target (its base is hp_target when present)
+        l_hp = -(b["hp_soft"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
     if l_soft is not None:
         total = total + w_soft_policy * l_soft
@@ -1402,6 +1408,24 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     return res
 
 
+def net_like_ckpt(d, layers, hp_floors, soft_policy, ck_args):
+    """An AmberNet of shape d x layers with the optional parts and input options a checkpoint's run was trained with
+    (ck_args = its saved selfplay.py args): --aux-fights, --enemy-map-bias, --enemy-tokens, --enemy-gate-key,
+    --intent-emb, --select-many-bits, --run-log-loopcount, --map-tokens; the same construction as the training net in
+    main(). A checkpoint without those args gives the plain net. Used for the --teacher-ckpt teacher and by
+    capacity_probe.py --arch-ckpt, so a teacher/student computes what the live net computes."""
+    a = ck_args or {}
+    if not isinstance(a, dict):
+        a = vars(a)
+    net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=soft_policy,
+                             aux_slots=AUX_SLOTS if a.get("aux_fights") else 0,
+                             enemy_bias=bool(a.get("enemy_map_bias")), enemy_gate=bool(a.get("enemy_tokens")),
+                             intent_emb=bool(a.get("intent_emb")), mask_bits=bool(a.get("select_many_bits")))
+    net.gate_key = bool(a.get("enemy_gate_key"))
+    amber_net.input_options_from_ckpt(net, {"args": a})
+    return net
+
+
 def extra_param(name):
     """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table, --enemy-tokens gates,
     --intent-emb table, --select-many-bits weights): optimizer groups after the main one."""
@@ -1571,6 +1595,14 @@ def main(argv=None):
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
     ap.add_argument("--eval-cache-cap", type=int, default=1024, help="cache entries per run (emptied when full)")
+    ap.add_argument("--lazy-leaf-state", action="store_true",
+                    help="search RAM: release a tree node's game state once its evaluation is handled and rebuild it "
+                         "from its parent when the node is expanded (same games; needs the Amber search rules; "
+                         "RunConfig::lazyLeafState, 2026-11-26, default off)")
+    ap.add_argument("--eval-cache-gen", action="store_true",
+                    help="with --eval-cache: two generations of at most cap / 2 entries each; a full current "
+                         "generation replaces the old one instead of emptying the cache, so the last tree's "
+                         "evaluations survive (exact, same games; RunConfig::evalCacheGen, 2026-11-26, default off)")
     ap.add_argument("--c-visit", type=float, default=50.0, help="Gumbel sigma: (c_visit + max N) * c_scale")
     ap.add_argument("--c-scale", type=float, default=1.0, help="Gumbel sigma scale (mctx uses 0.1 with --q-rescale)")
     ap.add_argument("--no-fast-noise", action="store_true", help="no Gumbel noise on fast moves (Amber Eye)")
@@ -2039,8 +2071,9 @@ def main(argv=None):
     kick = {"lam": args.kickstart_mix}
     if args.teacher_ckpt:
         td, tl = amber_net.SIZES.get(args.teacher_net) or tuple(int(x) for x in args.teacher_net.split("x")[:2])
-        teacher = amber_net.AmberNet(d=td, layers=tl, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0).to(dev)
         t_ck = torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)
+        # the teacher's own optional parts (enemy gate/bias, aux head, ...), so it computes what its run's net did
+        teacher = net_like_ckpt(td, tl, hp_floors, args.w_soft_policy > 0, t_ck.get("args")).to(dev)
         teacher.load_state_dict(t_ck["net"])
         amber_net.input_options_from_ckpt(teacher, t_ck)   # --run-log-loopcount: the teacher's own training setting
         if args.consequences and not (t_ck.get("args") or {}).get("consequences"):
@@ -2132,6 +2165,8 @@ def main(argv=None):
         **({"rng_fix": True} if args.rng_fix else {}),
         **({"ooc_canon": True} if args.ooc_canon else {}),
         **({"parallel_nodes": args.parallel_nodes} if args.parallel_nodes else {}),
+        **({"eval_cache_gen": True} if args.eval_cache_gen else {}),
+        **({"lazy_leaf_state": True} if args.lazy_leaf_state else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),

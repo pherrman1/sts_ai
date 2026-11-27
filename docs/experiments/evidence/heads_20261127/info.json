@@ -1,0 +1,23 @@
+{
+ "window": "/home/philippherrmann/Documents/sts/stage1/amber_scratch/replay",
+ "tail": 0,
+ "head": 2373986,
+ "H1": 873885,
+ "extra": {
+  "step": 1808284,
+  "checkpoint": "/home/philippherrmann/Documents/sts/stage1/amber_scratch/ckpt_1808284.pt",
+  "trained_since_window": 4748288
+ },
+ "seed": 20261126,
+ "target_samples": 65536,
+ "seen": {
+  "runs": 501,
+  "samples": 65580,
+  "pool_runs": 6640
+ },
+ "unseen": {
+  "runs": 455,
+  "samples": 65595,
+  "pool_runs": 10436
+ }
+}
