@@ -1402,6 +1402,24 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     return res
 
 
+def net_like_ckpt(d, layers, hp_floors, soft_policy, ck_args):
+    """An AmberNet of shape d x layers with the optional parts and input options a checkpoint's run was trained with
+    (ck_args = its saved selfplay.py args): --aux-fights, --enemy-map-bias, --enemy-tokens, --enemy-gate-key,
+    --intent-emb, --select-many-bits, --run-log-loopcount, --map-tokens; the same construction as the training net in
+    main(). A checkpoint without those args gives the plain net. Used for the --teacher-ckpt teacher and by
+    capacity_probe.py --arch-ckpt, so a teacher/student computes what the live net computes."""
+    a = ck_args or {}
+    if not isinstance(a, dict):
+        a = vars(a)
+    net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=soft_policy,
+                             aux_slots=AUX_SLOTS if a.get("aux_fights") else 0,
+                             enemy_bias=bool(a.get("enemy_map_bias")), enemy_gate=bool(a.get("enemy_tokens")),
+                             intent_emb=bool(a.get("intent_emb")), mask_bits=bool(a.get("select_many_bits")))
+    net.gate_key = bool(a.get("enemy_gate_key"))
+    amber_net.input_options_from_ckpt(net, {"args": a})
+    return net
+
+
 def extra_param(name):
     """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table, --enemy-tokens gates,
     --intent-emb table, --select-many-bits weights): optimizer groups after the main one."""
@@ -2047,8 +2065,9 @@ def main(argv=None):
     kick = {"lam": args.kickstart_mix}
     if args.teacher_ckpt:
         td, tl = amber_net.SIZES.get(args.teacher_net) or tuple(int(x) for x in args.teacher_net.split("x")[:2])
-        teacher = amber_net.AmberNet(d=td, layers=tl, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0).to(dev)
         t_ck = torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)
+        # the teacher's own optional parts (enemy gate/bias, aux head, ...), so it computes what its run's net did
+        teacher = net_like_ckpt(td, tl, hp_floors, args.w_soft_policy > 0, t_ck.get("args")).to(dev)
         teacher.load_state_dict(t_ck["net"])
         amber_net.input_options_from_ckpt(teacher, t_ck)   # --run-log-loopcount: the teacher's own training setting
         if args.consequences and not (t_ck.get("args") or {}).get("consequences"):
