@@ -29890,7 +29890,7 @@ generalise to older unseen runs. Matches the flat 128-sim benchmark (35-39 % sin
 fallback phase is inside the heads slice's generator window.
 **Knowledge impact:** this entry.
 
-## §TBD — 0.44M student run (reverse distillation from the 1.2M) restarted at 64/16 with the §872 kickstart fix: frozen provenance and pre-registered gates (a)-(e) → RUNNING, first bench 12.8 % at 2.5 h (PC, 2026-11-27)
+## §875 — 0.44M student run (reverse distillation from the 1.2M) restarted at 64/16 with the §872 kickstart fix: frozen provenance and pre-registered gates (a)-(e) → RUNNING, first bench 12.8 % at 2.5 h (PC, 2026-11-27)
 
 **Decision trail:** Philipp 2026-11-27 06:44 CET asked to distill the live 1.2M net (128×4) into the 0.44M (64×6) and train it
 on until the Amber page's 0.44M self-play win rate (~55 %); going large to small is an `[AMBER-DEVIATION]` he chose (the page
