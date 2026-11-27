@@ -1,0 +1,90 @@
+{
+ "ckpt": "ckpt_1805354.pt",
+ "step": null,
+ "runs": 455,
+ "gates": [
+  0.0614,
+  0.0133,
+  0.0342,
+  -0.2626,
+  0.2714
+ ],
+ "groups": {
+  "enc": {
+   "full": {
+    "rows": 10803,
+    "policy_rows": 10803,
+    "outcome_ce": 2.038923740386963,
+    "outcome_ema_ce": 2.189595937728882,
+    "auc_pwin": 0.8274614957304345,
+    "brier": 0.1684989333152771,
+    "policy_ce": 0.4234991669654846,
+    "argmax_agree": 1.0,
+    "mean_abs_dpwin": 0.0
+   },
+   "gate0": {
+    "rows": 10803,
+    "policy_rows": 10803,
+    "outcome_ce": 2.0416109561920166,
+    "outcome_ema_ce": 2.192087411880493,
+    "auc_pwin": 0.819663598900754,
+    "brier": 0.16903071105480194,
+    "policy_ce": 0.445890873670578,
+    "argmax_agree": 0.9411274790763855,
+    "mean_abs_dpwin": 0.03160446137189865
+   },
+   "strip": {
+    "rows": 10803,
+    "policy_rows": 10803,
+    "outcome_ce": 2.0416109561920166,
+    "outcome_ema_ce": 2.192087411880493,
+    "auc_pwin": 0.8196637423492634,
+    "brier": 0.16903071105480194,
+    "policy_ce": 0.4458908140659332,
+    "argmax_agree": 0.9411274790763855,
+    "mean_abs_dpwin": 0.03160446882247925
+   }
+  },
+  "other": {
+   "full": {
+    "rows": 54792,
+    "policy_rows": 54792,
+    "outcome_ce": 1.7175246477127075,
+    "outcome_ema_ce": 1.8360308408737183,
+    "auc_pwin": 0.8654946449603921,
+    "brier": 0.15210379660129547,
+    "policy_ce": 0.9118940830230713,
+    "argmax_agree": 1.0,
+    "mean_abs_dpwin": 0.0
+   },
+   "gate0": {
+    "rows": 54792,
+    "policy_rows": 54792,
+    "outcome_ce": 1.7175246477127075,
+    "outcome_ema_ce": 1.8360308408737183,
+    "auc_pwin": 0.8654946449603921,
+    "brier": 0.15210379660129547,
+    "policy_ce": 0.9118940830230713,
+    "argmax_agree": 1.0,
+    "mean_abs_dpwin": 0.0
+   },
+   "strip": {
+    "rows": 54792,
+    "policy_rows": 54792,
+    "outcome_ce": 1.7175246477127075,
+    "outcome_ema_ce": 1.8360308408737183,
+    "auc_pwin": 0.8654946449603921,
+    "brier": 0.15210379660129547,
+    "policy_ce": 0.9118940830230713,
+    "argmax_agree": 1.0,
+    "mean_abs_dpwin": 1.7677316208053462e-11
+   }
+  }
+ },
+ "rule": {
+  "outcome_rel": 0.001317957975487455,
+  "policy_rel": 0.052873083235411227,
+  "argmax_agree": 0.9411274790763855,
+  "verdict": "CARRIES_INFO"
+ }
+}

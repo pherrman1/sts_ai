@@ -29695,6 +29695,39 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
 
+## §871 — Heads audit of the live stage-1 net: encounter tokens carry out-of-combat policy information (gates 0: policy CE +5.3 %, prior pick changes in 5.9 % of decisions); soft-policy weight 8 vs 2 vs 0 indistinguishable in a 200-step fine-tune; `--aux-fights` off costs nothing in speed or 40-min losses → no change (PC + cloud CPU, 2026-11-27)
+
+**Question (owner, 2026-11-26 21:17 / 21:27 CET):** which heads of the live AmberNet 128x4 are useful? Three tests from
+the inventory (`/mnt/project-files/heads-20261126/REPORT.md`): (1) `--aux-fights` off live, (2) what the encounter
+tokens carry, (3) what the soft-policy head at weight 8 does. Inventory: policy, outcome (57), per-floor HP (56) feed
+the search (`amber2-root`: P(win) / F + H); floor HP (256), soft policy and the aux-fights head are training-only.
+**Setup:** checkpoint `ckpt_1805354` (2026-11-27 00:01 CET, 30 min after a resume on an empty window: trained on
+~0.87M new samples), SEEN 501 runs / 65,580 samples (ended before the checkpoint), UNSEEN 455 runs / 65,595 samples
+(started after it); `evidence/heads_20261127/`. Tests 2-3 cloud CPU, no seeds. Pre-registered rules in the scripts'
+docstrings, written before the data.
+**(1) Live without `--aux-fights`** (stage-1 thread, 00:46-01:27 CET, minutes 25-40 vs the last 6 rows before):
+moves/s 2,588 → 2,600, positions/s 164.1k → 165.0k, GPU ms/s unchanged (infer 951, train 159), trainer fwd_bwd −13 %,
+opt −46 %, trainer idle 750 → 814 ms/s; all losses within row noise. At 256/32 sims the trainer is mostly idle, so
+the head's cost (§835: ~9 % moves/s at 64/16, not isolated) no longer reaches self-play. Flag back on 01:27 CET.
+**(2) Encounter tokens** (`gate0_probe.py`, 455 UNSEEN runs): gates [0.061, 0.013, 0.034, 0 (raw −0.26), 0.271]. On
+the 10,803 out-of-combat rows with encounter tokens, gates 0 (= tokens removed, identical numbers) vs as trained:
+policy CE 0.4235 → 0.4459 (+5.3 %), prior argmax agrees in 94.1 %, mean |ΔP(win)| 0.032, AUC of P(win) 0.828 → 0.820,
+outcome CE +0.13 %. Combat rows unchanged (exactly). Rule (switch-off candidate only if outcome and policy CE < +0.5 %
+and argmax agreement ≥ 98 %) → CARRIES_INFO. The policy reads the tokens despite near-closed attention gates
+(through the summary gate 0.27). Not shown: that the run plays better than one trained without them.
+**(3) Soft policy** (`softpol_probe.py`). (a) Gradients on the shared parameters (16 steps × ~1,024 SEEN samples):
+share of the squared norm of the mean gradient outcome 57 %, floor HP 29 %, soft policy 13 %, policy 1.4 %, aux
+0.4 %, per-floor HP 0.001 %; the soft-policy gradient points along the policy gradient (cos 0.81 of the means, 0.74
+per batch) at ~3× its norm, i.e. it acts as an amplified policy signal; aux aligns with outcome (cos 0.53).
+(b) 200 steps from the checkpoint (its Adam state, LR 3e-5, clip 1), arms w 8 / 2 / 0, same batches; UNSEEN at
+step 200 vs w 8: policy CE −0.014 % / −0.002 %, outcome CE +0.015 % / −0.022 %, hp +0.07 % / +0.08 % → all three
+"not worse" and none "better" (rule ±0.2 % / 0.5 %). All arms drift up on UNSEEN outcome CE (1.771 → 1.812) as they
+refit 501 runs, so the fine-tune mostly shows memorization, not the weight's effect.
+**Decision:** no change. Encounter tokens stay; `--aux-fights` stays on (free at the current budget, useless signal
+size: owner's call to drop it); soft-policy weight stays 8 (an offline fine-tune cannot resolve it; only a live A/B
+could, an Amber-fidelity question for the owner). **Open question:** the per-floor HP head, which sets H in the
+search, gets almost no shared gradient (as in the 2026-11-24 pipeline audit; weights 30 / 100 did nothing offline).
+**Knowledge impact:** this entry.
 ## §870 — 10k-sim bench speed: eval-cache cap and parallel nodes (PC A/B/C), plus `--eval-cache-gen` and `--lazy-leaf-state` → BUILT, default off (PC + cloud, 2026-11-26)
 
 **Question (owner, 2026-11-26 20:52 CET):** are the search trees optimized, can large trees reuse earlier simulations;
