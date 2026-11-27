@@ -29695,7 +29695,7 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
 
-## §TBD — Heads audit of the live stage-1 net: encounter tokens carry out-of-combat policy information (gates 0: policy CE +5.3 %, prior pick changes in 5.9 % of decisions); soft-policy weight 8 vs 2 vs 0 indistinguishable in a 200-step fine-tune; `--aux-fights` off costs nothing in speed or 40-min losses → no change (PC + cloud CPU, 2026-11-27)
+## §871 — Heads audit of the live stage-1 net: encounter tokens carry out-of-combat policy information (gates 0: policy CE +5.3 %, prior pick changes in 5.9 % of decisions); soft-policy weight 8 vs 2 vs 0 indistinguishable in a 200-step fine-tune; `--aux-fights` off costs nothing in speed or 40-min losses → no change (PC + cloud CPU, 2026-11-27)
 
 **Question (owner, 2026-11-26 21:17 / 21:27 CET):** which heads of the live AmberNet 128x4 are useful? Three tests from
 the inventory (`/mnt/project-files/heads-20261126/REPORT.md`): (1) `--aux-fights` off live, (2) what the encounter
