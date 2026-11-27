@@ -29990,3 +29990,29 @@ Live check (12:36-12:46, against 12:05-12:25 at 256/32): 8,470 vs 2,750 moves/s,
 **Not covered:** play strength beyond the benches; self-play win rate (2 % at the restart); whether 64/16 or the §872 fix
 drives the gain (both changed at once by design).
 **Knowledge impact:** this entry (gate log also in `stage1/distill_20261127/GATES.md` on the PC).
+## §TBD — Amber 1.2M net on Baalorlord's A20 elite and boss states (§770's benchmark, exact states): 20.46 HP lost per fight vs production Silver 11.60 and Baalorlord 8.76, +8.86 [+7.89, +9.86], deaths equal; 1024 instead of 128 simulations changes HP loss by −0.3 → combat is the 1.2M net's weak part, not its budget (PC, 2026-11-27)
+
+**Question (Philipp, 2026-11-27):** on the benchmark §770 used for the Silver combat stack, is the frozen 1.2M Amber
+net (amber_scratch `ckpt_1828683.pt`) weak in combat or out of combat?
+**Data:** [RESULT](evidence/amber_combat_gap_20261127/RESULT.md), `results/`, `dump_unit.sh`, `analyze_matched.py`,
+`analyze.py`. New research paths, default off: `include/game/GameContextBinary.h` (same-build GameContext
+snapshots), one_combat expertfights `STS_EXPERT_FIGHTS_DUMP=1` (writes every production copy start of the arm-room
+fights; arm rooms then need no arms), az_bench `RunDriver(fight_roots=…)` / `GameState.load_snapshots` and
+`selfplay.py --fight-roots / --fight-log` (each state's fight played once by the Amber search), and the death log's
+per-fight `fight_list`. Code 9bc1d3eb. States: §770's 329 runs with §770's production environment (no arms, arm
+rooms 1E,1B,2E,2B,3E,3B, 4 copies); the production side reproduces §770 (11.60 HP, expert 8.76, 1,874 fights).
+Amber: the fixed-seed bench's search (all moves 128 simulations, 8 candidates); arm 1024 simulations on copies
+0-1 only, stopped by its RAM watchdog at 3,200 of 3,754 copies (1,596 fights compared).
+**Result:** 128: Amber 20.46 HP lost per fight, production 11.60, Baalorlord 8.76; Amber − production +8.86
+[+7.89, +9.86]; 1E +6.3, 1B +9.0, 2E +7.1, 2B +14.7, 3E +9.8, 3B +20.7; worse on every encounter with n ≥ 20 (Time
+Eater +24.5, Donu and Deca +20.1). Deaths 0.057 = production's; potions 0.82 vs 0.55 per fight. 1024 (copies 0-1):
+Amber 20.50 vs 128 20.76, production 11.64; deaths 0.044 vs 0.055. Side bench (own runs, 1000 fixed seeds,
+`results/bench1000_701.json`): 38.5 % A20 wins; net HP per won fight vs §701's Baalorlord cells act-1 elites 16.5
+vs 9.5, act-1 boss 24.7 vs 11.3.
+**Interpretation (Inference):** on identical states the net loses about twice production's HP per elite and boss
+fight at the same death rate, and 8× search does not reduce it: the gap is the net's in-fight evaluation / prior.
+With this combat it still wins 38.5 % of its own A20 runs, so its out-of-combat play carries the run.
+Not tested: whether the HP loss is a deliberate P(win) trade, larger budgets, the 0.44M student.
+**Decision:** none (diagnostic). Combat strength of the Amber net is the open lever.
+Seeds: none new (§694's external expert seeds replayed; side bench on the fixed benchmark 160200000-160200999).
+**Knowledge impact:** this entry; the research tools above.
