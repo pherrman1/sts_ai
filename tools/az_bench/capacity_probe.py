@@ -157,7 +157,7 @@ def train_one(name, net, rv, train_pos, held_batches, args, dev, log, teacher=No
     else:
         opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     steps = max(1, args.budget // args.batch)
-    rng = np.random.default_rng(args.seed + 1)   # the same batch sequence for every net
+    rng = np.random.default_rng(args.seed + 1 if args.batch_seed < 0 else args.batch_seed)   # same sequence for every net
     curve = [{"step": 0, "samples": 0, **evaluate(net, held_batches, args, dev)}]
     log(name, curve[-1])
     t0, t_data, skipped = time.time(), 0.0, 0
@@ -244,6 +244,8 @@ def main(argv=None):
     ap.add_argument("--threads", type=int, default=0, help="torch CPU threads (0 = torch default)")
     ap.add_argument("--device", default="cpu", help="cpu (default, safe next to a live run) or cuda")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--batch-seed", type=int, default=-1, help="seed of the batch sequence (default --seed + 1); "
+                    "a chained --init-student continuation keeps --seed (same split) and changes this")
     ap.add_argument("--out", default="capacity_probe.json")
     ap.add_argument("--teacher-ckpt", default="", help="pretraining with the teacher's prediction mixed into the "
                     "labels (selfplay.py --kickstart-mix targets) with weight --teacher-mix")
