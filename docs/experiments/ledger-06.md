@@ -29889,3 +29889,67 @@ generalise to older unseen runs. Matches the flat 128-sim benchmark (35-39 % sin
 **Not covered:** play strength (offline only); 0.44M student; data from the 11-26 17:22-23:31 CET 2M-window
 fallback phase is inside the heads slice's generator window.
 **Knowledge impact:** this entry.
+
+## §875 — 0.44M student run (reverse distillation from the 1.2M) restarted at 64/16 with the §872 kickstart fix: frozen provenance and pre-registered gates (a)-(e) → RUNNING, first bench 12.8 % at 2.5 h (PC, 2026-11-27)
+
+**Decision trail:** Philipp 2026-11-27 06:44 CET asked to distill the live 1.2M net (128×4) into the 0.44M (64×6) and train it
+on until the Amber page's 0.44M self-play win rate (~55 %); going large to small is an `[AMBER-DEVIATION]` he chose (the page
+only goes small to large). Recipe mirrored from the page ("pretrain the larger network on the smaller network's generated
+games and training labels", then kickstarting "until the student's strength exceeded the teacher's"). The 12:31 restart and
+the gates below are AGREED.md (Claude × Carbon, branch `claude/project-thread-3xo47j`, `discussion/carbon-20261127/`), approved
+by Philipp 12:01 CET ("Mach alles so wie ihr empfiehlt").
+
+**Before the restart:**
+- Stage 1 (06:50-09:53): `capacity_probe.py --arch-ckpt` (#1197), 0.44M from scratch on the frozen 10M replay window of
+  teacher `ckpt_1828683.pt` (sha256 `1b2c02e8cdabf584cfb673927db535ef363766b2707b20664476b973ed47ecd0`), labels only,
+  5 chained chunks × 20M = 100M samples, batch 2048, LR 3e-4, 5 % of runs held out. Held-out at the end: policy CE 1.037,
+  top1 62.3 %, still falling slowly, no overfit. Teacher on the same held-out rows (seen in its training): 0.822 / 73.0 %.
+- Stage 2 (10:13-10:28): same 1000 bench seeds, 128 sims, A20: student 2.9 % (29/1000), floor 24.5; frozen teacher
+  34.9 % (349/1000). Load clean (`init-net … fresh []`, no input-shift warnings).
+- P3 (AGREED.md B), heads-audit UNSEEN slice (135 runs / 20,023 rows, after ckpt 1805354): student top1 61.9 %, policy CE
+  1.050, HP CE 2.584; teacher 1805354 71.8 % / 0.839 / 2.051; 1828683 71.9 % / 0.834 / 2.041. 9.9 pp below the teacher
+  although the student had trained on these rows → no harness mismatch, undertrained (between the 5 pp / 15 pp marks).
+- Stage 3 at 256/32 from 10:29 (init-net stage-1 student, init-counters `ckpt_1828683`, λ 0.5), 2 h until the restart.
+
+**Frozen provenance of the run judged by the gates (restart 2026-11-27 12:31 CET):**
+- Code: `ds_repo` at main `0da14b3` (#1198, §872 fix); native module built from `a4d14b9` (no native change since).
+- Resume from `ckpt_1837324.pt` (its first 12:27 resume was stopped after 2 min by the watchdog health check, mean floor
+  14.9 < 15 over the first post-resume windows, where only short runs have ended; mem_watchdog6 re-armed with a warm-up).
+- Net 0.44M (64×6, 542,544 params with aux head / enemy gate+bias / intent emb / mask bits; benches 537,734 without aux).
+- Teacher `ckpt_teacher_1828683.pt` (copy of 1828683, same sha256), `--teacher-net 1.2M`, λ 0.5 in `KICKSTART_LAMBDA`.
+- LR 3e-4 constant (`--lr-anneal-start 2000000000 --lr-anneal-steps 1 --lr-anneal-final 1.0` overrides the 1.2M's anneal
+  carried in the counters).
+- Seeds: training block 140M continues (seed-base 140,000,000 + seeds_used 8,773,239 at the restart); `seed_switch.sh`
+  moves to the block 200,000,000-209,999,999 (Philipp 10:59) at ~149.95M and stops + HOLD at ~209.95M.
+- `--root-target policy` (live since 11-25 17:54 CET) is kept in the student run. Carbon (2026-11-27) flagged it as a possible third cause of
+  the §874 value-head stall of the 1.2M, besides the LR floor and 256/32, so a gate-(e) plan has to decide on it explicitly.
+- Flags (`wd_current.env` FLAGS_CUR):
+
+```
+--out-dir /home/philippherrmann/Documents/sts/stage1/amber_scratch --seed-base 140000000 --ascension 0 --curriculum --utility amber2-root --merge-cards --no-fast-noise --rng-fix --parallel-nodes 4 --hp-ema-search --replay-hp-bytes 96 --q-rescale --c-scale 0.1 --value-ema-halflife 20 --value-ema-search --value-ema-moves full --w-soft-policy 8 --explore-amber --explore-clean-keys --explore-resume --pick-target 0.01 --chance-on-reveal --cross-combat --sim-help --eval-cache --packed-h2d --train-packed --gpu-timing --hours 168 --compile --fused-layer --report 30 --force-keys on --full-candidates 8 --fast-candidates 8 --malloc-trim --window 10000000 --max-pending 0 --curriculum-winrate 1.01 --games 180 --full-sims 64 --fast-sims 16 --compact-samples --replay-dict-tokens 3 --replay-actions-per-sample 8 --compress-targets --heart-log 0.1 --force-rewards --attn-row-bounds --packed-heads --force-potions --ooc-canon --early-finish --replay-save /home/philippherrmann/Documents/sts/stage1/amber_scratch/replay --replay-load /home/philippherrmann/Documents/sts/stage1/amber_scratch/replay --net 0.44M --teacher-ckpt /home/philippherrmann/Documents/sts/stage1/amber_scratch/ckpt_teacher_1828683.pt --teacher-net 1.2M --kickstart-mix 0.5 --aux-fights --stall-log --enemy-tokens --enemy-map-bias --enemy-gate-key --enemy-lr-scale 0.1 --enemy-train-kernel --lr 3e-4 --lr-anneal-start 2000000000 --lr-anneal-steps 1 --lr-anneal-final 1.0 --consequences --run-log-loopcount --map-tokens 48 --intent-emb --select-many-bits --root-target policy --lazy-leaf-state
+```
+
+Live check (12:36-12:46, against 12:05-12:25 at 256/32): 8,470 vs 2,750 moves/s, 12.9k vs 4.2k trainer steps/h,
+~80k runs/h, RSS 19.3-20.0 GB, no NaN, losses falling.
+
+**Gates (pre-registered; benches 128 sims, seeds 160,200,000-160,200,999, A20, against the frozen teacher's 34.9 %):**
+- **(a)** first bench at least 24 h after 12:31 (Sat 11-28 12:31 CET or later): student ≥ 20 %.
+- **(b)** 72 h: student ≥ teacher − 3 pp on two pooled benches, paired per seed, the 95 % interval of (student − teacher)
+  reaching 0 (standard error over the 1,000 per-seed means, not 2,000 trials).
+- **(c)** λ → 0 only once the student is at or above the teacher on such a two-bench paired check.
+- **(d)** plateau (three consecutive pooled bench pairs without +2 pp): kickstart the 1.2M from the student (small to large).
+- **(e)** (a) or (b) fails: recommend resuming the 1.2M teacher checkpoint at LR 1e-4 and 64/16; withdrawn if the student
+  at LR 3e-4 shows unseen outcome loss blowing up as §869's higher-LR arms did.
+- No other live changes during the gates; afterwards one variable per change, ≥ 2 benches (12 h) between changes.
+- Stop target: 55 % rolling A20 self-play (our measure; the page does not state its conditions).
+
+**Benches so far:**
+
+| bench (CET) | ckpt | h after 12:31 | win % | floor | gate |
+|---|---|---|---|---|---|
+| 11-27 10:20 | stage-1 student | — | 2.9 | 24.5 | — |
+| 11-27 15:00 | 1868634 | 2.5 | 12.8 | 32.2 | none due |
+
+**Not covered:** play strength beyond the benches; self-play win rate (2 % at the restart); whether 64/16 or the §872 fix
+drives the gain (both changed at once by design).
+**Knowledge impact:** this entry (gate log also in `stage1/distill_20261127/GATES.md` on the PC).
