@@ -352,6 +352,16 @@ namespace sts::azbench {
         std::vector<std::pair<int, int>> deck;   // (CardId, upgraded) at the end
         std::vector<int> relics, potions;        // RelicId, Potion (non-empty slots) at the end
         std::int64_t elites = 0, rest = 0, smith = 0;
+        // Every fight of the run in order (2026-11-27, for per-fight HP-loss comparisons such as §701): where, the
+        // state entering it, and how it ended. exitHp: GameContext HP after the battle's exit (end-of-combat relics
+        // applied), 0 if lost or unfinished; floorEndHp: HP at the end of the fight's floor (after its rewards, as
+        // the expert logs' current_hp_per_floor), -1 if the floor never closed.
+        struct Fight {
+            int act = 0, floor = 0, room = 0, encounter = 0;
+            int entryHp = 0, entryMaxHp = 0, entryPotions = 0, deckSize = 0, upgraded = 0;
+            int won = 0, exitHp = 0, floorEndHp = -1, turns = 0, potionsUsed = 0;
+        };
+        std::vector<Fight> fightList;
     };
     std::string deathLogJson(const DeathLog &r);   // one JSON object (no newline), names spelled out
 

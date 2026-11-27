@@ -430,7 +430,19 @@ namespace sts::azbench {
         os << "], \"potions\": [";
         for (std::size_t k = 0; k < r.potions.size(); ++k)
             os << (k ? ", " : "") << q(getPotionName(static_cast<Potion>(r.potions[k])));
-        os << "], \"elites\": " << r.elites << ", \"rest\": " << r.rest << ", \"smith\": " << r.smith << "}";
+        os << "], \"elites\": " << r.elites << ", \"rest\": " << r.rest << ", \"smith\": " << r.smith
+           << ", \"fight_list\": [";
+        for (std::size_t k = 0; k < r.fightList.size(); ++k) {
+            const auto &f = r.fightList[k];
+            os << (k ? ", " : "") << "{\"act\": " << f.act << ", \"floor\": " << f.floor << ", \"room\": "
+               << q(roomStrings[f.room]) << ", \"encounter\": " << q(monsterEncounterStrings[f.encounter])
+               << ", \"entry_hp\": " << f.entryHp << ", \"entry_max_hp\": " << f.entryMaxHp
+               << ", \"entry_potions\": " << f.entryPotions << ", \"deck_size\": " << f.deckSize
+               << ", \"upgraded\": " << f.upgraded << ", \"won\": " << f.won << ", \"exit_hp\": " << f.exitHp
+               << ", \"floor_end_hp\": " << f.floorEndHp << ", \"turns\": " << f.turns
+               << ", \"potions_used\": " << f.potionsUsed << "}";
+        }
+        os << "]}";
         return os.str();
     }
 
@@ -673,6 +685,7 @@ namespace sts::azbench {
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
         bool fightPotion = false;            // RunProgress::act1HallPotionFights: a potion was drunk in this fight
+        int fightPotions = 0;                // RunConfig::deathLog: potions drunk in this fight (DeathLog::Fight)
         // RunConfig::stallLog: the last StallLog::kTrail real decisions (ring; trailN written so far).
         std::array<std::string, StallLog::kTrail> trail;
         int trailN = 0;
@@ -1986,6 +1999,16 @@ namespace sts::azbench {
             }
         };
 
+        // RunConfig::deathLog: the run's current fight (the last DeathLog::Fight) after the battle's exit.
+        auto fightEnded = [&](Run &g) {
+            if (!cfg.deathLog || g.dlog.fightList.empty()) return;
+            DeathLog::Fight &f = g.dlog.fightList.back();
+            f.won = g.bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+            f.exitHp = f.won ? g.gc.curHp : 0;
+            f.turns = g.bc.turn;
+            f.potionsUsed = g.fightPotions;
+        };
+
         auto enterBattle = [&](Run &g) {
             initObservedBattle(g.gc, g.bc, *g.knowledge);
             g.ctx = combatContext(g.gc, g.forceKeys);
@@ -2006,6 +2029,18 @@ namespace sts::azbench {
                 d.entryPotions.clear();
                 for (int i = 0; i < std::min(g.gc.potionCapacity, 5); ++i)
                     if (g.gc.potions[i] != Potion::EMPTY_POTION_SLOT) d.entryPotions.push_back(static_cast<int>(g.gc.potions[i]));
+                DeathLog::Fight f;
+                f.act = d.fightAct;
+                f.floor = d.fightFloor;
+                f.room = d.fightRoom;
+                f.encounter = d.encounter;
+                f.entryHp = d.entryHp;
+                f.entryMaxHp = d.entryMaxHp;
+                f.entryPotions = static_cast<int>(d.entryPotions.size());
+                f.deckSize = g.gc.deck.size();
+                for (int i = 0; i < g.gc.deck.size(); ++i) f.upgraded += g.gc.deck.cards[i].isUpgraded() ? 1 : 0;
+                d.fightList.push_back(f);
+                g.fightPotions = 0;
             }
             if (g.gc.act == 1 && g.gc.curRoom == Room::BOSS) {
                 ++g.progress.act1BossFights;
@@ -2233,6 +2268,16 @@ namespace sts::azbench {
                 d.elites = g.progress.elites;
                 d.rest = g.progress.rest;
                 d.smith = g.progress.smith;
+                for (auto &f : d.fightList) {   // the run's last floor closes after this record
+                    if (f.floor >= 1 && f.floor <= kFloors && g.floorHp[f.floor] >= 0) f.floorEndHp = g.floorHp[f.floor];
+                    else if (f.floor == g.gc.floorNum) f.floorEndHp = alive ? g.gc.curHp : 0;
+                    if (f.floor == g.gc.floorNum && !f.won && d.inFight == 0 && g.bc.outcome == Outcome::PLAYER_VICTORY) {
+                        f.won = 1;   // the run ended right at the fight's end (e.g. the Heart kill)
+                        f.exitHp = g.gc.curHp;
+                        f.turns = g.bc.turn;
+                        f.potionsUsed = g.fightPotions;
+                    }
+                }
                 std::lock_guard<std::mutex> l(deathLogM_);
                 deathLogs_.push_back(std::move(d));
             }
@@ -2453,7 +2498,10 @@ namespace sts::azbench {
             if (g.inBattle) {
                 {
                     const Action a(bits);
-                    if (a.getActionType() == search::ActionType::POTION && a.getTargetIdx() <= 5) g.fightPotion = true;
+                    if (a.getActionType() == search::ActionType::POTION && a.getTargetIdx() <= 5) {
+                        g.fightPotion = true;
+                        ++g.fightPotions;
+                    }
                     if (a.getActionType() == search::ActionType::END_TURN) ++g.progress.endTurnsAll;
                 }
                 executeObserved(g.bc, bits, *g.knowledge);
@@ -2467,6 +2515,7 @@ namespace sts::azbench {
                     }
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
+                    fightEnded(g);
                 }
             } else {
                 if (g.gc.screenState == ScreenState::REST_ROOM && !g.gc.restRoomResolved) {
@@ -2584,6 +2633,7 @@ namespace sts::azbench {
                     ++wk.st.fightsEndedAtStart;
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
+                    fightEnded(g);
                     continue;
                 }
                 std::size_t legal;
