@@ -29763,7 +29763,7 @@ simulation plus the root per run (no truncation). **Inference:** the generation 
 and live every weights sync empties it; lazy leaf states are a RAM lever (live use needs the owner's decision and the
 live check). **Not done:** live use. **Knowledge impact:** this entry.
 
-## §TBD — Kickstart with `--hp-ema-search`: the teacher now mixes into the search EMA HP targets (floor HP 256 and per-floor HP) → FIX, changes training only with `--kickstart-mix` > 0 and `--hp-ema-search` (cloud, 2026-11-27)
+## §872 — Kickstart with `--hp-ema-search`: the teacher now mixes into the search EMA HP targets (floor HP 256 and per-floor HP) → FIX, changes training only with `--kickstart-mix` > 0 and `--hp-ema-search` (cloud, 2026-11-27)
 
 **Defect** (found in the 2026-11-27 Carbon discussion, P9; verified on main `e49394e`): with both flags on, as in the
 live 0.44M student run since 2026-11-27 10:29 CET, (a) `losses()` overwrote the kickstart floor-HP loss on
