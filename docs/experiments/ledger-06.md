@@ -29921,8 +29921,8 @@ by Philipp 12:01 CET ("Mach alles so wie ihr empfiehlt").
   carried in the counters).
 - Seeds: training block 140M continues (seed-base 140,000,000 + seeds_used 8,773,239 at the restart); `seed_switch.sh`
   moves to the block 200,000,000-209,999,999 (Philipp 10:59) at ~149.95M and stops + HOLD at ~209.95M.
-- `--root-target policy` (live since 11-25 17:54 CET) is kept in the student run. §874 names it a possible third cause of
-  the 1.2M value-head stall besides the LR floor and 256/32, so a gate-(e) plan has to decide on it explicitly.
+- `--root-target policy` (live since 11-25 17:54 CET) is kept in the student run. Carbon (2026-11-27) flagged it as a possible third cause of
+  the §874 value-head stall of the 1.2M, besides the LR floor and 256/32, so a gate-(e) plan has to decide on it explicitly.
 - Flags (`wd_current.env` FLAGS_CUR):
 
 ```
