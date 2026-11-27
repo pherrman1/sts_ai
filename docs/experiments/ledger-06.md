@@ -29762,3 +29762,33 @@ no-cache run; leaves add up; more hits than one generation; nothing after a weig
 simulation plus the root per run (no truncation). **Inference:** the generation cache gains little with the real net,
 and live every weights sync empties it; lazy leaf states are a RAM lever (live use needs the owner's decision and the
 live check). **Not done:** live use. **Knowledge impact:** this entry.
+
+## §TBD — EMA outcome-target halflife 10 vs live 20, offline head probe on whole runs: no difference on unseen runs (CE ≤ 0.004, AUC equal) → INCONCLUSIVE, live halflife stays 20 (PC, 2026-11-25)
+
+**Question (Philipp, 2026-11-25 15:53 CET, "Teste mal B"; method chosen by decision card 16:23 CET):** does a shorter
+EMA halflife (10 instead of 20 full moves) reduce the outcome head's memorization of run outcomes (overfit check
+2026-11-25 09:00: unseen-hour outcome loss +8 %, policy −1.8 %)? The Amber page leaves the halflife open and reports
+"significant memorization is still observed at p = 0.25".
+**Data:** [evidence](evidence/halflife_b_20261125/README.md). Seen: 3,000 whole runs (429,925 samples) drawn
+(seed 20261125) from the replay window saved with step 1635474 (s 541,984,913-551,710,201); unseen: the first 1,500
+whole runs (217,300 samples) added after that window (from the 21:00 CET window, step 1679639). Checkpoint
+ckpt_bench_1635474. Live run: `--value-ema-halflife 20`, `--window 10000000` (full: 9.97M samples), dictionary 3 tokens
+per sample, `--compress-targets`, `--max-pending 0` (every full move is kept, so each run's EMA chain is complete).
+**Method:** h10 targets from the stored h20 targets per run: D_m = (T_m − l T_{m+1}) / (1 − l), T'_m = (1 − l') D_m +
+l' T'_{m+1}, T_M = one-hot(final outcome) (exact on a synthetic chain, error 3e-8); negative D mass from the 8-bit
+target quantization: mean 0.023, p99 0.25 (T' clipped and renormalized). Frozen trunk; four outcome heads on the seen
+runs (300 runs held out for eval), 12 epochs, batch 1,024: fresh h20 / h10 (AdamW 1e-3) and warm-started from the
+checkpoint head h20 / h10 (3e-4). Decision rule (set before the run): h10 better if unseen CE vs the final outcome
+drops ≥ 1 % relative, AUC of P(win) not worse and the seen-unseen gap shrinks ≥ 25 %.
+**Result (unseen CE vs final outcome / AUC):** checkpoint head 1.7687 / 0.8362 (seen-held-out 1.7347, gap 0.034).
+After 12 epochs: fresh h20 1.7948 / 0.8346, fresh h10 1.7909 / 0.8350; warm h20 1.7736 / 0.8355, warm h10 1.7749 /
+0.8357. h10 − h20 at every epoch within ±0.004 CE and ±0.0005 AUC; gaps h10 0.022 vs h20 0.017 (fresh), 0.029 vs
+0.025 (warm). No arm beats the checkpoint head on unseen runs; more head training makes warm heads slightly worse.
+PC cost: pull 1 min (RSS 3.6 GB), probe 23 min (RSS 2.0 GB); the first pull (16:01 CET, 5.7 GB RSS) raised swap
+3.4 → 7.6 GB during live training, later pulls were chunked and gated.
+**Conclusion:** INCONCLUSIVE with no visible effect: the rule's criteria are not met. **Inference:** a head on frozen
+features does not memorize much (fresh heads' gaps are below the checkpoint head's), so the memorization the overfit
+check sees lives mainly in the trunk; head-only regularization (outcome-head dropout / weight decay) is therefore
+not expected to help. **Limits:** frozen trunk only (a trunk trained on h10 targets was not tested), one checkpoint,
+reconstruction noise from quantized targets. **Decision:** live halflife stays 20; outcome-head dropout/WD (a deviation from Amber) recommended not to build, the owner's call.
+**Knowledge impact:** this entry.
