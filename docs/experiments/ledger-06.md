@@ -29695,6 +29695,29 @@ Observation (random fake net, not evidence about the real net): mean F of the ta
 `--max-backup`, which §866 did not adopt) and the 15-min live check.
 **Knowledge impact:** this entry.
 
+## §868 — EMA outcome-target half-life 10 vs 20 full moves, offline head probe ("Test B") → NEGATIVE, half-life 20 kept (PC, 2026-11-25)
+
+**Question:** the 2026-11-25 overfit check (ckpt 1594969, newest unseen hour vs uniform window: outcome loss +8 %,
+outcome_ema +5.3 %, policy/HP not worse) points at memorized run labels (~140 same-label full-move samples per run,
+replay ratio 2). Would a shorter value-EMA half-life (`--value-ema-halflife` 10 instead of the live 20; more bootstrap,
+live real-outcome weight ~0.36 -> ~0.20) generalize better to unseen runs?
+Pre-registered rule: h10 only if on UNSEEN runs the CE vs the final outcome improves >= 1 % relative, AUC is not worse,
+and the seen-unseen gap shrinks >= 25 %; otherwise keep h20.
+**Setup (PC CPU, read-only on saved replay windows, nice 19, max RSS 2.0 GB, 2026-11-25 21:45-22:12 CET while training
+was paused):** scripts `/mnt/project-files/halflife-b-20261125/` (`slice_runs.py`, `head_probe.py`). Checkpoint
+`ckpt_bench_1635474` (15:00 CET benchmark, 39.2 %). SEEN = 3,000 whole runs / 429,925 samples from its training window
+(s 541,984,913-551,710,201; 388,645 train, 41,280 held-out eval); UNSEEN = 1,500 whole runs / 217,300 samples of the
+window at step 1679639, all generated after the SEEN head. h10 targets = exact per-run remix of the stored h20 EMA
+chain (negative D mass mean 0.023, p99 0.246). Trunk frozen; fresh outcome heads (same init) trained 12 epochs on h20 vs
+h10 targets, and *_warm arms starting from the checkpoint's own head. Output (PC)
+`~/Documents/sts/halflife_b_20261125/out/head_probe.json`.
+**Result (epoch 12, UNSEEN; CE vs final outcome / AUC of P(win) / Brier / seen-unseen CE gap):**
+original head 1.7687 / 0.8362 / 0.1641 / 0.0340; h20 1.7948 / 0.8346 / 0.1647 / 0.0173; h10 1.7909 / 0.8350 / 0.1648 /
+0.0222; h20_warm 1.7736 / 0.8355 / 0.1644 / 0.0253; h10_warm 1.7749 / 0.8357 / 0.1651 / 0.0288.
+h10 vs h20: fresh CE -0.22 %, AUC +0.0003, gap +28 %; warm CE +0.08 %, AUC +0.0002, gap +14 %.
+**Decision:** rule not met -> keep `--value-ema-halflife 20` (no live change). **Inference:** a shorter half-life does
+not improve unseen-run outcome prediction or shrink memorization at the head level. **Open question:** a frozen-trunk
+head probe cannot show trunk-level effects of the label change; only a live A/B could.
 ## §871 — Heads audit of the live stage-1 net: encounter tokens carry out-of-combat policy information (gates 0: policy CE +5.3 %, prior pick changes in 5.9 % of decisions); soft-policy weight 8 vs 2 vs 0 indistinguishable in a 200-step fine-tune; `--aux-fights` off costs nothing in speed or 40-min losses → no change (PC + cloud CPU, 2026-11-27)
 
 **Question (owner, 2026-11-26 21:17 / 21:27 CET):** which heads of the live AmberNet 128x4 are useful? Three tests from
@@ -29826,4 +29849,43 @@ of `q_rescale` blows small Q differences up to the full range) and map / event c
 little play strength, but it is label noise in the policy target. Whether that noise matters for training is
 **Open question**; a Q-range floor would be the Amber deviation the rule just closed, so it is not proposed.
 **Not covered:** combat roots (probe roots are out-of-combat only); one net; no training.
+**Knowledge impact:** this entry.
+
+## §874 — Held-out learning curve of the 1.2M stage-1 checkpoints 11-25 .. 11-27 (work plan W5) → value heads STALLED after ckpt 1678542 (11-25 21:00 CET); the later policy gain is generator-proximity bias, not learning (PC CPU, 2026-11-27)
+
+**Question (work plan W5 of the Claude × Carbon agreement, owner's go 2026-11-27 12:01 CET):** did the 1.2M
+(AmberNet 128x4, 1,367,698 params) still improve on unseen data between 11-25 and 11-27?
+**Pre-registered rules (WORKPLAN W5, fixed before the run):** dKL < 0.01 nats and dtop1 < 0.3 pp over the span =
+stalled. dKL ≥ 0.03 nats or dtop1 ≥ 1.0 pp = learning ONLY if outcome CE / AUC on the same slice also improve or the
+early checkpoints also improve on the Test B slice (the policy target contains the generating net's logits).
+Per-floor HP MSE improving < 1 % while floor-HP CE improves ≥ 3 % = gradient starvation flag.
+**Setup:** PC CPU only (nice 19, 2 threads, RAM-gated beside the live run), 13:06-15:22 CET, no seeds. 11 checkpoints
+(1594969, 1635474, 1678542, 1679639, 1717027, 1755240, 1782264, 1803647, 1805354, 1816571, teacher 1828683), all
+loaded via `selfplay.net_like_ckpt` + `amber_net.input_options_from_ckpt` with missing = unexpected = [].
+Slices (whole runs, all rows): heads-audit UNSEEN (§871; 455 runs / 65,595 samples; clean for ckpts ≤ 1805354,
+primary) and Test B UNSEEN (§868; 1,500 runs / 217,300 samples; clean ≤ 1679639). Metrics per ckpt × slice ×
+(all / combat / out of combat): KL(search target ‖ prior), top1 vs target argmax, outcome CE, AUC of P(win),
+per-floor HP MSE, HP-class CE; 95 % run-bootstrap CIs (B = 1000), paired across checkpoints. Scripts, tables and
+verdicts: `docs/experiments/evidence/w5_heldout_20261127/`.
+**Result (heads UNSEEN, all decisions; improvement > 0 = better, paired 95 % CI):**
+
+| span | dKL | dtop1 | outcome CE | AUC | per-floor HP MSE | HP CE |
+|---|---|---|---|---|---|---|
+| 1594969 → 1678542 | −0.010 | −0.06 pp | +0.0123 [+0.004, +0.021] | +0.0002 [−0.001, +0.002] | +2.1 % (sig) | +0.37 % (sig) |
+| 1678542 → 1803647 | +0.063 [+0.060, +0.066] | +2.39 pp [+2.12, +2.65] | −0.0002 [−0.009, +0.008] | −0.0002 [−0.002, +0.001] | +1.0 % [−0.0, +2.0] | +0.34 % (sig) |
+| 1803647 → 1805354 | +0.003 | +0.21 pp | −0.026 (worse, sig) | +0.0008 | −6.1 % (worse, sig) | −0.07 % |
+
+AUC stays at 0.859 (heads) / 0.837 (Test B) for every checkpoint. On Test B UNSEEN, KL and top1 are best at
+1678542-1679639 (KL 0.312, top1 76.4 %) and get worse again for later checkpoints that trained on those very runs
+(1805354: 0.365 / 73.3 %); on heads UNSEEN they improve only from 1782264 on, towards the slice's generator (~1808k).
+1805354, the first checkpoint after the 11-26 23:31 CET empty-replay refill, is an outlier on all value heads.
+**Verdict (fixed rules):** heads all / combat / ooc = `policy_moves_unconfirmed` (policy moves, outcome CE and AUC
+do not improve); Test B 1594969 → 1679639 all / combat = `policy_moves_unconfirmed` (outcome CE improves, AUC flat),
+ooc between thresholds. Starvation flag: none.
+**Inference:** the 1.2M's value heads stopped improving on unseen runs at about 11-25 21:00 CET (ckpt 1678542);
+the policy "gain" after it tracks the current self-play generator (the target carries its logits) and does not
+generalise to older unseen runs. Matches the flat 128-sim benchmark (35-39 % since 11-25) and the overfit check of
+§868. Teacher 1828683 shows no outcome / AUC gain over 1803647 either.
+**Not covered:** play strength (offline only); 0.44M student; data from the 11-26 17:22-23:31 CET 2M-window
+fallback phase is inside the heads slice's generator window.
 **Knowledge impact:** this entry.
