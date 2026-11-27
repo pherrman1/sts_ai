@@ -29783,3 +29783,47 @@ teacher, `losses()` trains on the mixed targets and still logs against the searc
 independent review. **Inference:** effect on the student's learning not measured; the outcome and policy heads,
 which carry most of the shared gradient (§871), were not affected.
 **Knowledge impact:** this entry.
+
+## §TBD — Root probe on 500 out-of-combat roots: 64 / 256 / 1024 sims × 2 search seeds with the 1.2M net → 64 sims within 2 pp of 256 against 1024 (data argument for 64/16 stands); two-seed agreement 85 % at 256 closes the Q-range floor (#6a) by the fixed rule, but near-tie roots flip half the time with confident targets (cloud CPU, 2026-11-27)
+
+**Question (work plan W6 of the Claude × Carbon agreement, owner's go 2026-11-27 12:01 CET):** how stable is the
+out-of-combat policy target π' across search seeds at 64, 256 and 1024 sims, and how close are the 64- and 256-sim
+targets to the 1024-sim one? Settles Carbon's "Q-range floor" idea (#6a, an Amber deviation: report only) and the
+target-quality side of 64/16 vs 256/32 (#4).
+**Pre-registered rules (WORKPLAN W6, fixed before the run):** two-seed agreement of argmax π' ≥ 80 % at 256 sims
+closes #6a; < 60 % with max π' > 0.95 keeps it as an option for the owner. 64 within 5 pp of 256 in top1 agreement
+with 1024 = the data argument for 64/16 stands outright; more than 15 pp behind = a target-quality case for 256/32.
+**Setup:** `tools/az_bench/root_budget_probe.py` (new, diagnostic) at 3263c1c; native module Release from main
+0da14b3 (sha256 d5e44880…9637). Net `ckpt_bench_1635474.pt` (1.2M, 128x4, sha256 ef41e509…bb6e, 39.2 % bench; the
+teacher 1828683 is only on the PC). §864's roots were not kept (GameState has no serialization), so they were
+re-captured the same way: capture runs from seed 160260000 (A20, frozen net, 32/8 sims, nothing trained), 500
+roots, all searched. Each root searched noise-free with `amber_probe.LIVE_SEARCH` + the checkpoint's input flags
+(q_rescale, c_scale 0.1, 8 candidates) at 64, 256 and 1024 sims with search seeds 0 and 1 (noise-free, the
+search seed moves the chance draws in the tree and the worker assignment). 4 workers, 4 torch threads; probe
+time 53 / 47, 197 / 193, 676 / 578 s. Q range = max − min of the visited root edges' mean Q (seed 0's search at
+that budget). Results: `/mnt/project-files/root-budget-20261127/root_budget_500.json` (per-root π' for all six
+searches), manifest and log beside it.
+**Result, two-seed agreement of argmax π' (95 % Wilson CI; mean max π'):**
+
+| sims | all | Q range < 0.005 | 0.005-0.02 | > 0.02 | share max π' > 0.95 |
+|---|---|---|---|---|---|
+| 64 | 83.8 % [80-87]; 0.938 | 51 % (n 77); 0.891 | 84 % (n 177) | 94 % (n 246) | 77 % |
+| 256 | 85.4 % [82-88]; 0.962 | 53 % (n 79); 0.958 | 85 % (n 164) | 96 % (n 257) | 85 % |
+| 1024 | 83.0 % [79-86]; 0.980 | 53 % (n 87); 0.983 | 84 % (n 167) | 93 % (n 246) | 93 % |
+
+**Against 1024 sims (all seed pairs):** top1 64 → 81.0 % [79.2-82.7], 256 → 82.9 % [81.2-84.5]; the 1024-vs-1024
+noise ceiling across seeds is 83.0 %. KL(π'_1024 ‖ π'_b) median ≈ 0 for all, mean 1.01 (64), 1.83 (256), 2.34
+(1024 vs 1024): the mean is driven by the flipped roots, where both targets are near one-hot on different moves.
+**Disagreements:** 81 / 73 / 85 roots at 64 / 256 / 1024; about half sit in the Q range < 0.005 bucket (38 / 37 /
+41), and the share where both seeds' targets have max π' > 0.95 grows with budget (24 / 34 / 51). By decision
+(256): map 27 of 108, event 16 / 48, card reward 14 / 156, campfire 0 / 50, shop 0 / 33, boss relic 0 / 10.
+**Decision (by the fixed rules):** #4: 64 sims is 1.9 pp behind 256 in agreement with 1024 (< 5 pp) and 256 is
+itself at the 1024 noise ceiling → the data argument for 64/16 stands. #6a: 85.4 % ≥ 80 % at 256 → closed; no change.
+**Inference:** more search does not make the out-of-combat target more reproducible (agreement flat at ~84 %
+from 64 to 1024); it makes it sharper, so the ~16 % of roots whose argmax depends on the search seed get more
+confident one-hot targets with budget. These are mostly near-ties (Q range < 0.005, where the min-max rescale
+of `q_rescale` blows small Q differences up to the full range) and map / event choices. For a near-tie that costs
+little play strength, but it is label noise in the policy target. Whether that noise matters for training is
+**Open question**; a Q-range floor would be the Amber deviation the rule just closed, so it is not proposed.
+**Not covered:** combat roots (probe roots are out-of-combat only); one net; no training.
+**Knowledge impact:** this entry.
