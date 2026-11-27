@@ -29851,7 +29851,7 @@ little play strength, but it is label noise in the policy target. Whether that n
 **Not covered:** combat roots (probe roots are out-of-combat only); one net; no training.
 **Knowledge impact:** this entry.
 
-## §TBD — Held-out learning curve of the 1.2M stage-1 checkpoints 11-25 .. 11-27 (work plan W5) → value heads STALLED after ckpt 1678542 (11-25 21:00 CET); the later policy gain is generator-proximity bias, not learning (PC CPU, 2026-11-27)
+## §874 — Held-out learning curve of the 1.2M stage-1 checkpoints 11-25 .. 11-27 (work plan W5) → value heads STALLED after ckpt 1678542 (11-25 21:00 CET); the later policy gain is generator-proximity bias, not learning (PC CPU, 2026-11-27)
 
 **Question (work plan W5 of the Claude × Carbon agreement, owner's go 2026-11-27 12:01 CET):** did the 1.2M
 (AmberNet 128x4, 1,367,698 params) still improve on unseen data between 11-25 and 11-27?
