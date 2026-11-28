@@ -352,8 +352,34 @@ namespace sts::azbench {
         std::vector<std::pair<int, int>> deck;   // (CardId, upgraded) at the end
         std::vector<int> relics, potions;        // RelicId, Potion (non-empty slots) at the end
         std::int64_t elites = 0, rest = 0, smith = 0;
+        // Every fight of the run in order (2026-11-27, for per-fight HP-loss comparisons such as §701): where, the
+        // state entering it, and how it ended. exitHp: GameContext HP after the battle's exit (end-of-combat relics
+        // applied), 0 if lost or unfinished; floorEndHp: HP at the end of the fight's floor (after its rewards, as
+        // the expert logs' current_hp_per_floor), -1 if the floor never closed.
+        struct Fight {
+            int act = 0, floor = 0, room = 0, encounter = 0;
+            int entryHp = 0, entryMaxHp = 0, entryPotions = 0, deckSize = 0, upgraded = 0;
+            int won = 0, exitHp = 0, floorEndHp = -1, turns = 0, potionsUsed = 0;
+        };
+        std::vector<Fight> fightList;
     };
     std::string deathLogJson(const DeathLog &r);   // one JSON object (no newline), names spelled out
+
+    // RunConfig::fightDumpCopies: one dumped copy of a hallway fight start.
+    struct FightDump {
+        std::uint64_t seed = 0;
+        int act = 0, floor = 0, copy = 0, entryHp = 0, maxHp = 0;
+        std::vector<std::uint8_t> bytes;   // GameContextBinary snapshot
+    };
+
+    // RunConfig::fightRoots: how one root's fight ended. status 0 fight over (won or lost), 1 stall, 2 no fair
+    // view, 3 invalid action, 4 the root is not a fight start.
+    struct FightRootResult {
+        std::int64_t root = -1;
+        int status = 0, won = 0;
+        int entryHp = 0, maxHp = 0, exitHp = 0;   // exitHp: HP after the battle's exit (0 if not won)
+        int turns = 0, moves = 0, potionsUsed = 0;
+    };
 
     struct RunConfig {
         int workers = 11;
@@ -655,7 +681,22 @@ namespace sts::azbench {
         // searchEmaLambda > 0 and searchEmaHp (their per-node distributions give each root action's search-backed
         // P(win) and HP; both change only training targets, not the selection).
         std::vector<std::shared_ptr<const GameContext>> probeRoots;
+        // Fight roots (2026-11-27, research, default empty): each run starts at one of these states (a fight's
+        // start, screen BATTLE, as one_combat expertfights dumps its copies), plays that fight with the search and
+        // ends when the fight ends; FightRootResult records it (takeFightResults). No probe roots or Heart arms.
+        std::vector<std::shared_ptr<const GameContext>> fightRoots;
         bool probeNoise = false;
+        // Probe children (2026-11-28, research, default off; WORKPLAN-2 X3): each probe root's search gets one
+        // simulation per legal action (every action a candidate, budget = their count, one halving phase), so an
+        // edge's recorded leaf is its child's own net evaluation (a deterministic action) or one sampled outcome
+        // (ProbeEdge::chance). Fight starts (screen BATTLE) are probe roots too: the fight is entered first.
+        bool probeOnePerEdge = false;
+        // Fight dump (2026-11-28, research, default 0 = off; WORKPLAN-3): normal runs write a GameContextBinary
+        // snapshot of every hallway (MONSTER) fight start of acts 1-3 as fightDumpCopies copies (takeFightDumps):
+        // copy 0 is the state itself, copy r >= 1 has its combat streams (ai, cardRandom, misc, monsterHp, potion,
+        // shuffle; counters kept) and seed reseeded from (seed, floor, r) exactly as one_combat expertfights' fight
+        // copies. Logging only: play is unchanged.
+        int fightDumpCopies = 0;
         // Out-of-combat state capture (2026-11-21, diagnostic, default 0 = off): each searched out-of-combat root
         // of a normal run is copied (takeCaptures) with this probability, decided by a hash of the run seed and the
         // move number (not the search RNG), so play is the same as without it.
@@ -882,6 +923,11 @@ namespace sts::azbench {
         std::vector<float> dist;   // [57]
         std::vector<float> hpf;    // utility AMBER / AMBER2: mean E[HP_f] / 255 of floors f = 1..56 [56] (0 before the root's floor)
         bool candidate = false;    // among the search's initial candidates
+        // combat root (probeOnePerEdge): the edge leads to a chance node; and, for a deterministic edge, the child's
+        // change of the monsters' total current HP (alive monsters; removed = before - after), the player's block
+        // and the player's HP, from the public view of root and child
+        bool chance = false, combat = false;
+        int enemyHpRemoved = 0, blockGained = 0, hpChange = 0;
     };
 
     struct ProbeResult {
@@ -889,6 +935,7 @@ namespace sts::azbench {
         std::int64_t probe = -1;   // index into RunConfig::probeRoots
         int status = SEARCHED;
         int floor = 0, act = 0, screen = 0, maxHp = 0, hp = 0;
+        int combatMoves = -1;         // probeOnePerEdge fight start: moves played in the fight before the probed decision
         std::uint32_t pickBits = 0;   // the search's pick (FORCED: the only action)
         int pick = -1;                // its index in edges / the sample's actions
         // The root's net evaluation: utility value, P(win) outcome head F (search value), expected HP at the end of
@@ -997,6 +1044,21 @@ namespace sts::azbench {
             out.swap(deathLogs_);
             return out;
         }
+        // RunConfig::fightDumpCopies: the snapshots since the last call (moved out).
+        std::vector<FightDump> takeFightDumps() {
+            std::lock_guard<std::mutex> l(fightDumpM_);
+            std::vector<FightDump> out;
+            out.swap(fightDumps_);
+            return out;
+        }
+        // RunConfig::fightRoots: the results since the last call (moved out) and the count of roots done.
+        std::vector<FightRootResult> takeFightResults() {
+            std::lock_guard<std::mutex> l(fightM_);
+            std::vector<FightRootResult> out;
+            out.swap(fightResults_);
+            return out;
+        }
+        std::int64_t fightsDone() const { return fightsDone_.load(); }
         // RunConfig::probeRoots: the results so far (moved out) and the count of roots done (all recorded).
         std::vector<ProbeResult> takeProbeResults() {
             std::lock_guard<std::mutex> l(probeM_);
@@ -1057,6 +1119,11 @@ namespace sts::azbench {
         std::mutex deathLogM_;
         std::vector<DeathLog> deathLogs_;
         std::atomic<std::int64_t> probeNext_{0}, probesDone_{0};
+        std::atomic<std::int64_t> fightNext_{0}, fightsDone_{0};
+        std::mutex fightM_;
+        std::mutex fightDumpM_;
+        std::vector<FightDump> fightDumps_;
+        std::vector<FightRootResult> fightResults_;
         std::mutex probeM_;
         std::vector<ProbeResult> probeResults_;
         std::vector<Capture> captures_;

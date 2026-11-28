@@ -3,6 +3,7 @@
 // C++ waits for or packs a batch and while it posts results; batch arrays are handed to numpy without a copy.
 #include <algorithm>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -23,6 +24,7 @@
 #include "constants/Cards.h"
 #include "constants/Potions.h"
 #include "constants/Relics.h"
+#include "game/GameContextBinary.h"
 #include "sim/search/OocHiddenFuture.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
@@ -135,7 +137,7 @@ namespace {
         o["probe"] = r.probe;
         o["status"] = kStatus[std::clamp(r.status, 0, 4)];
         o["floor"] = r.floor; o["act"] = r.act; o["screen"] = r.screen; o["hp"] = r.hp; o["max_hp"] = r.maxHp;
-        o["pick"] = r.pick; o["pick_bits"] = r.pickBits;
+        o["pick"] = r.pick; o["pick_bits"] = r.pickBits; o["combat_moves"] = r.combatMoves;
         if (r.status != azbench::ProbeResult::SEARCHED) return o;
         o["root_value"] = r.rootValue; o["root_f"] = r.rootF; o["root_ehp"] = r.rootEhp;
         o["root_dist"] = toArray(r.rootDist);
@@ -168,6 +170,16 @@ namespace {
         o["pwin"] = toArray(pwin); o["ehp"] = toArray(ehp); o["candidate"] = toArray(cand);
         o["dist"] = toArray(dist).reshape({static_cast<py::ssize_t>(k), static_cast<py::ssize_t>(azbench::kOutcomeClasses)});
         if (perFloor) o["hpf"] = toArray(hpf).reshape({static_cast<py::ssize_t>(k), static_cast<py::ssize_t>(azbench::kFloors)});
+        if (k && r.edges[0].combat) {   // probeOnePerEdge, combat root
+            std::vector<std::uint8_t> ch(k);
+            std::vector<std::int32_t> ehr(k), blk(k), hpc(k);
+            for (std::size_t i = 0; i < k; ++i) {
+                ch[i] = r.edges[i].chance ? 1 : 0; ehr[i] = r.edges[i].enemyHpRemoved;
+                blk[i] = r.edges[i].blockGained; hpc[i] = r.edges[i].hpChange;
+            }
+            o["chance"] = toArray(ch); o["enemy_hp_removed"] = toArray(ehr); o["block_gained"] = toArray(blk);
+            o["hp_change"] = toArray(hpc);
+        }
         o["sample"] = sampleDict(r.sample);
         return o;
     }
@@ -385,6 +397,28 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
             return false;
 #endif
         })
+        .def_static("load_snapshots", [](const std::string &path) {
+                        // GameContextBinary records (u32 floor, u32 copy, u32 bytes, snapshot), as one_combat
+                        // expertfights writes with STS_EXPERT_FIGHTS_DUMP=1 -> [(floor, copy, GameState)].
+                        std::ifstream in(path, std::ios::binary);
+                        if (!in) throw std::runtime_error("cannot read " + path);
+                        std::vector<char> all((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                        py::list out;
+                        std::size_t at = 0;
+                        while (at < all.size()) {
+                            std::uint32_t hdr[3];
+                            if (all.size() - at < sizeof(hdr)) throw std::runtime_error(path + ": truncated record");
+                            std::memcpy(hdr, all.data() + at, sizeof(hdr));
+                            at += sizeof(hdr);
+                            if (all.size() - at < hdr[2]) throw std::runtime_error(path + ": truncated snapshot");
+                            GameStateHandle h;
+                            h.gc = std::make_shared<const GameContext>(sts::deserializeGameContext(
+                                reinterpret_cast<const std::uint8_t *>(all.data() + at), hdr[2]));
+                            at += hdr[2];
+                            out.append(py::make_tuple(hdr[0], hdr[1], h));
+                        }
+                        return out;
+                    }, py::arg("path"))
         .def_property_readonly("floor", [](const GameStateHandle &h) { return h.gc->floorNum; })
         .def_property_readonly("act", [](const GameStateHandle &h) { return h.gc->act; })
         .def_property_readonly("ascension", [](const GameStateHandle &h) { return h.gc->ascension; })
@@ -442,8 +476,13 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
                          double captureRate, bool stallLog, bool consequences, bool deathLog,
                          double wideningC, double wideningAlpha, int rootTarget, int maxBackup, bool maxTargets,
-                         bool evalCacheGen, bool lazyLeafState) {
+                         bool evalCacheGen, bool lazyLeafState, const std::vector<GameStateHandle> &fightRoots,
+                         bool probeOnePerEdge, int fightDumpCopies) {
                  azbench::RunConfig c;
+                 if (fightDumpCopies < 0 || fightDumpCopies > 64) throw std::invalid_argument("fight_dump_copies: want 0..64");
+                 c.fightDumpCopies = fightDumpCopies;
+                 c.probeOnePerEdge = probeOnePerEdge;
+                 for (const auto &h : fightRoots) c.fightRoots.push_back(h.gc);
                  if (!(wideningC > 0)) throw std::invalid_argument("widening_c: want > 0");
                  if (!(wideningAlpha >= 0 && wideningAlpha <= 1)) throw std::invalid_argument("widening_alpha: want 0..1");
                  c.wideningC = wideningC;
@@ -550,7 +589,29 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("consequences") = false, py::arg("death_log") = false,
              py::arg("widening_c") = 3.7028, py::arg("widening_alpha") = 0.52389,
              py::arg("root_target") = 0, py::arg("max_backup") = 0, py::arg("max_targets") = false,
-             py::arg("eval_cache_gen") = false, py::arg("lazy_leaf_state") = false)
+             py::arg("eval_cache_gen") = false, py::arg("lazy_leaf_state") = false,
+             py::arg("fight_roots") = std::vector<GameStateHandle>{}, py::arg("probe_one_per_edge") = false, py::arg("fight_dump_copies") = 0)
+        .def("take_fight_dumps",   // RunConfig::fightDumpCopies: (seed, act, floor, copy, entry_hp, max_hp, bytes)
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &x : d.takeFightDumps())
+                     out.append(py::make_tuple(x.seed, x.act, x.floor, x.copy, x.entryHp, x.maxHp,
+                                               py::bytes(reinterpret_cast<const char *>(x.bytes.data()), x.bytes.size())));
+                 return out;
+             })
+        .def("take_fight_results",   // RunConfig::fightRoots: the results since the last call, as dicts
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &r : d.takeFightResults()) {
+                     py::dict o;
+                     o["root"] = r.root; o["status"] = r.status; o["won"] = r.won; o["entry_hp"] = r.entryHp;
+                     o["max_hp"] = r.maxHp; o["exit_hp"] = r.exitHp; o["turns"] = r.turns; o["moves"] = r.moves;
+                     o["potions_used"] = r.potionsUsed;
+                     out.append(o);
+                 }
+                 return out;
+             })
+        .def("fights_done", &azbench::RunDriver::fightsDone)
         .def("take_probe_results",   // RunConfig::probeRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  const auto v = d.takeProbeResults();

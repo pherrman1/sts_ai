@@ -1,4 +1,6 @@
 #include "az_run_driver.h"
+#include "game/GameContextBinary.h"
+#include <random>
 
 #include <algorithm>
 #include <chrono>
@@ -430,7 +432,19 @@ namespace sts::azbench {
         os << "], \"potions\": [";
         for (std::size_t k = 0; k < r.potions.size(); ++k)
             os << (k ? ", " : "") << q(getPotionName(static_cast<Potion>(r.potions[k])));
-        os << "], \"elites\": " << r.elites << ", \"rest\": " << r.rest << ", \"smith\": " << r.smith << "}";
+        os << "], \"elites\": " << r.elites << ", \"rest\": " << r.rest << ", \"smith\": " << r.smith
+           << ", \"fight_list\": [";
+        for (std::size_t k = 0; k < r.fightList.size(); ++k) {
+            const auto &f = r.fightList[k];
+            os << (k ? ", " : "") << "{\"act\": " << f.act << ", \"floor\": " << f.floor << ", \"room\": "
+               << q(roomStrings[f.room]) << ", \"encounter\": " << q(monsterEncounterStrings[f.encounter])
+               << ", \"entry_hp\": " << f.entryHp << ", \"entry_max_hp\": " << f.entryMaxHp
+               << ", \"entry_potions\": " << f.entryPotions << ", \"deck_size\": " << f.deckSize
+               << ", \"upgraded\": " << f.upgraded << ", \"won\": " << f.won << ", \"exit_hp\": " << f.exitHp
+               << ", \"floor_end_hp\": " << f.floorEndHp << ", \"turns\": " << f.turns
+               << ", \"potions_used\": " << f.potionsUsed << "}";
+        }
+        os << "]}";
         return os.str();
     }
 
@@ -673,6 +687,8 @@ namespace sts::azbench {
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
         bool fightPotion = false;            // RunProgress::act1HallPotionFights: a potion was drunk in this fight
+        int fightPotions = 0;                // potions drunk in this fight (DeathLog::Fight, FightRootResult)
+        int fightEntryHp = 0;                // HP entering this fight
         // RunConfig::stallLog: the last StallLog::kTrail real decisions (ring; trailN written so far).
         std::array<std::string, StallLog::kTrail> trail;
         int trailN = 0;
@@ -720,6 +736,8 @@ namespace sts::azbench {
         // the simulation counts. The same per-edge sums serve RunConfig::rootTarget != 0 (also in normal runs),
         // which with searchEmaHp adds the floor HP distributions probeHpd [k][256].
         std::int64_t probe = -1;
+        std::int64_t fightRoot = -1;         // RunConfig::fightRoots: this run's root (-1 = a normal run)
+        bool fightRecorded = false;
         ProbeResult probeRes;
         std::vector<double> probeDist, probeHp, probeHpf;   // probeHpf [k][56]: utility AMBER / AMBER2
         std::vector<double> probeHpd;
@@ -1190,6 +1208,12 @@ namespace sts::azbench {
             throw std::invalid_argument("run driver: exploreAmber and exploreC are exclusive");
         if (cfg_.exploreAmber && !(cfg_.exploreT > 0 && cfg_.pickTarget > 0))
             throw std::invalid_argument("run driver: exploreAmber needs exploreT > 0 and pickTarget > 0");
+        if (!cfg_.fightRoots.empty()) {
+            if (!cfg_.probeRoots.empty() || cfg_.savescum || !cfg_.heartArms.empty())
+                throw std::invalid_argument("run driver: fightRoots exclude probeRoots, savescum and heartArms");
+            for (const auto &r : cfg_.fightRoots)
+                if (!r) throw std::invalid_argument("run driver: null fight root");
+        }
         if (!cfg_.probeRoots.empty()) {
             if (!(cfg_.searchEmaLambda > 0) || !cfg_.searchEmaHp)
                 throw std::invalid_argument("run driver: probeRoots need searchEmaLambda > 0 and searchEmaHp");
@@ -1986,13 +2010,82 @@ namespace sts::azbench {
             }
         };
 
+        // RunConfig::deathLog: the run's current fight (the last DeathLog::Fight) after the battle's exit.
+        auto recordFightRoot = [&](Run &g, int status) {
+            if (g.fightRoot < 0 || g.fightRecorded) return;
+            FightRootResult r;
+            r.root = g.fightRoot;
+            r.status = status;
+            r.won = status == 0 && g.bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+            r.entryHp = g.fightEntryHp;
+            r.maxHp = g.gc.maxHp;
+            r.exitHp = r.won ? g.gc.curHp : 0;
+            r.turns = g.bc.turn;
+            r.moves = g.fightMoves;
+            r.potionsUsed = g.fightPotions;
+            g.fightRecorded = true;
+            {
+                std::lock_guard<std::mutex> l(fightM_);
+                fightResults_.push_back(r);
+            }
+            ++fightsDone_;
+        };
+        auto fightEnded = [&](Run &g) {
+            if (g.fightRoot >= 0) {   // fight root: the fight is the whole run
+                recordFightRoot(g, 0);
+                if (g.gc.outcome == GameOutcome::UNDECIDED) g.gc.outcome = GameOutcome::PLAYER_LOSS;
+            }
+            if (!cfg.deathLog || g.dlog.fightList.empty()) return;
+            DeathLog::Fight &f = g.dlog.fightList.back();
+            f.won = g.bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+            f.exitHp = f.won ? g.gc.curHp : 0;
+            f.turns = g.bc.turn;
+            f.potionsUsed = g.fightPotions;
+        };
+
         auto enterBattle = [&](Run &g) {
+            if (cfg.fightDumpCopies > 0 && g.probe < 0 && g.fightRoot < 0 && g.gc.curRoom == Room::MONSTER
+                    && g.gc.act <= 3) {   // fight dump: the start state before the battle is initialized
+                auto smix = [](std::uint64_t x) {   // one_combat expert_replay.cpp mix (splitmix64)
+                    x += 0x9E3779B97F4A7C15ULL;
+                    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+                    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+                    return x ^ (x >> 31);
+                };
+                std::vector<FightDump> ds;
+                for (int r = 0; r < cfg.fightDumpCopies; ++r) {
+                    GameContext copy = search::detachedGameCopy(g.gc);
+                    if (r > 0) {
+                        std::mt19937_64 rng(smix(g.gc.seed ^ smix(static_cast<std::uint64_t>(g.gc.floorNum) * 1000003ULL + r)));
+                        for (auto stream : {&copy.aiRng, &copy.cardRandomRng, &copy.miscRng, &copy.monsterHpRng,
+                                            &copy.potionRng, &copy.shuffleRng}) {
+                            const auto counter = stream->counter;
+                            *stream = sts::Random(rng());
+                            stream->counter = counter;
+                        }
+                        copy.seed = rng();
+                    }
+                    FightDump d;
+                    d.seed = g.seed;
+                    d.act = g.gc.act;
+                    d.floor = g.gc.floorNum;
+                    d.copy = r;
+                    d.entryHp = g.gc.curHp;
+                    d.maxHp = g.gc.maxHp;
+                    d.bytes = serializeGameContext(copy);
+                    ds.push_back(std::move(d));
+                }
+                std::lock_guard<std::mutex> l(fightDumpM_);
+                for (auto &d : ds) fightDumps_.push_back(std::move(d));
+            }
             initObservedBattle(g.gc, g.bc, *g.knowledge);
             g.ctx = combatContext(g.gc, g.forceKeys);
             if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
             g.inBattle = true;
             g.fightMoves = 0;
             g.fightPotion = false;
+            g.fightPotions = 0;
+            g.fightEntryHp = g.gc.curHp;
             if (cfg.deathLog) {   // death log: the state entering the fight
                 DeathLog &d = g.dlog;
                 ++d.fights;
@@ -2006,6 +2099,17 @@ namespace sts::azbench {
                 d.entryPotions.clear();
                 for (int i = 0; i < std::min(g.gc.potionCapacity, 5); ++i)
                     if (g.gc.potions[i] != Potion::EMPTY_POTION_SLOT) d.entryPotions.push_back(static_cast<int>(g.gc.potions[i]));
+                DeathLog::Fight f;
+                f.act = d.fightAct;
+                f.floor = d.fightFloor;
+                f.room = d.fightRoom;
+                f.encounter = d.encounter;
+                f.entryHp = d.entryHp;
+                f.entryMaxHp = d.entryMaxHp;
+                f.entryPotions = static_cast<int>(d.entryPotions.size());
+                f.deckSize = g.gc.deck.size();
+                for (int i = 0; i < g.gc.deck.size(); ++i) f.upgraded += g.gc.deck.cards[i].isUpgraded() ? 1 : 0;
+                d.fightList.push_back(f);
             }
             if (g.gc.act == 1 && g.gc.curRoom == Room::BOSS) {
                 ++g.progress.act1BossFights;
@@ -2025,6 +2129,7 @@ namespace sts::azbench {
             r.screen = static_cast<int>(g.gc.screenState);
             r.hp = g.gc.curHp;
             r.maxHp = g.gc.maxHp;
+            if (cfg.probeOnePerEdge && g.inBattle) r.combatMoves = g.fightMoves;
             {
                 std::lock_guard<std::mutex> l(probeM_);
                 probeResults_.push_back(std::move(r));
@@ -2036,7 +2141,8 @@ namespace sts::azbench {
         // gacts holds its actions), else why not (FORCED: *only = the one action).
         auto probeStatus = [&](Run &g, std::uint32_t *only) -> int {
             if (g.gc.outcome != GameOutcome::UNDECIDED) return ProbeResult::GAME_OVER;
-            if (g.gc.screenState == ScreenState::BATTLE) return ProbeResult::COMBAT;
+            if (g.gc.screenState == ScreenState::BATTLE)
+                return cfg.probeOnePerEdge ? ProbeResult::SEARCHED : ProbeResult::COMBAT;   // fight start: entered later
             if (goldToTake(g.gc)) { *only = takeGoldBits; return ProbeResult::FORCED; }
             gacts = oocActions(g.gc, g.forceKeys);
             if (gacts.empty()) return ProbeResult::NO_ACTION;
@@ -2047,7 +2153,13 @@ namespace sts::azbench {
         auto startRun = [&](Run &g, int gi) {
             std::uint64_t seed = 0;
             std::int64_t probe = -1;
-            if (!cfg.probeRoots.empty()) {
+            std::int64_t fightRoot = -1;
+            if (!cfg.fightRoots.empty()) {
+                fightRoot = fightNext_.fetch_add(1);
+                if (fightRoot >= static_cast<std::int64_t>(cfg.fightRoots.size())) { g.active = false; return; }
+                g.gc = search::detachedGameCopy(*cfg.fightRoots[fightRoot]);
+                seed = g.gc.seed;
+            } else if (!cfg.probeRoots.empty()) {
                 // Probe roots: take the next one the driver would search; record the others without a search.
                 while (true) {
                     probe = probeNext_.fetch_add(1);
@@ -2070,14 +2182,17 @@ namespace sts::azbench {
             g.active = true;
             g.seed = seed;
             g.probe = probe;
-            g.asc = probe >= 0 ? g.gc.ascension : ascension_.load(std::memory_order_relaxed);
+            g.fightRoot = fightRoot;
+            g.fightRecorded = false;
+            const bool rooted = probe >= 0 || fightRoot >= 0;
+            g.asc = rooted ? g.gc.ascension : ascension_.load(std::memory_order_relaxed);
             g.forceKeys = forceKeys_.load(std::memory_order_relaxed);
-            g.savescum = probe < 0 && savescum_.load(std::memory_order_relaxed);
+            g.savescum = !rooted && savescum_.load(std::memory_order_relaxed);
             if (g.savescum) ++wk.st.savescumRuns;
             g.expectValid = false;
-            if (probe < 0) g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc, cfg.rngFix);
-            if (cfg.testMaxHp > 0 && probe < 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
-            if (probe < 0) for (const RelicId r : cfg.testRelics) g.gc.obtainRelic(r);
+            if (!rooted) g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc, cfg.rngFix);
+            if (cfg.testMaxHp > 0 && !rooted) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
+            if (!rooted) for (const RelicId r : cfg.testRelics) g.gc.obtainRelic(r);
             g.inBattle = false;
             g.cache.clear();
             g.cacheOld.clear();
@@ -2104,6 +2219,15 @@ namespace sts::azbench {
             g.heartStart.reset();
             g.heartJob = -1;
             ++wk.st.runsStarted;
+            if (probe >= 0 && cfg.probeOnePerEdge && g.gc.screenState == ScreenState::BATTLE) enterBattle(g);
+            if (fightRoot >= 0) {   // fight root: the state is at a fight's start
+                if (g.gc.screenState != ScreenState::BATTLE || g.gc.outcome != GameOutcome::UNDECIDED) {
+                    recordFightRoot(g, 4);
+                    g.gc.outcome = GameOutcome::PLAYER_LOSS;
+                } else {
+                    enterBattle(g);
+                }
+            }
             startMove(g, gi);
         };
 
@@ -2161,6 +2285,9 @@ namespace sts::azbench {
         };
 
         auto endRun = [&](Run &g, int gi) {
+            // fight root that ended without the fight's end (stall 1-3 -> 1, no fair view 4 -> 2, invalid 5 -> 3)
+            if (g.fightRoot >= 0 && !g.fightRecorded)
+                recordFightRoot(g, g.endCause == 4 ? 2 : g.endCause == 5 ? 3 : 1);
             if (g.heartJob >= 0) {   // Heart probe: record this play; play the next job from the same start
                 const int arms = static_cast<int>(cfg.heartArms.size());
                 const GameContext &st = *g.heartStart;
@@ -2233,6 +2360,16 @@ namespace sts::azbench {
                 d.elites = g.progress.elites;
                 d.rest = g.progress.rest;
                 d.smith = g.progress.smith;
+                for (auto &f : d.fightList) {   // the run's last floor closes after this record
+                    if (f.floor >= 1 && f.floor <= kFloors && g.floorHp[f.floor] >= 0) f.floorEndHp = g.floorHp[f.floor];
+                    else if (f.floor == g.gc.floorNum) f.floorEndHp = alive ? g.gc.curHp : 0;
+                    if (f.floor == g.gc.floorNum && !f.won && d.inFight == 0 && g.bc.outcome == Outcome::PLAYER_VICTORY) {
+                        f.won = 1;   // the run ended right at the fight's end (e.g. the Heart kill)
+                        f.exitHp = g.gc.curHp;
+                        f.turns = g.bc.turn;
+                        f.potionsUsed = g.fightPotions;
+                    }
+                }
                 std::lock_guard<std::mutex> l(deathLogM_);
                 deathLogs_.push_back(std::move(d));
             }
@@ -2453,7 +2590,10 @@ namespace sts::azbench {
             if (g.inBattle) {
                 {
                     const Action a(bits);
-                    if (a.getActionType() == search::ActionType::POTION && a.getTargetIdx() <= 5) g.fightPotion = true;
+                    if (a.getActionType() == search::ActionType::POTION && a.getTargetIdx() <= 5) {
+                        g.fightPotion = true;
+                        ++g.fightPotions;
+                    }
                     if (a.getActionType() == search::ActionType::END_TURN) ++g.progress.endTurnsAll;
                 }
                 executeObserved(g.bc, bits, *g.knowledge);
@@ -2467,6 +2607,7 @@ namespace sts::azbench {
                     }
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
+                    fightEnded(g);
                 }
             } else {
                 if (g.gc.screenState == ScreenState::REST_ROOM && !g.gc.restRoomResolved) {
@@ -2584,6 +2725,7 @@ namespace sts::azbench {
                     ++wk.st.fightsEndedAtStart;
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
+                    fightEnded(g);
                     continue;
                 }
                 std::size_t legal;
@@ -2747,8 +2889,12 @@ namespace sts::azbench {
             if (!g.rootUnder.empty())   // exploreAmber: every under-target item is a candidate on top of the usual ones
                 for (int i = m; i < k; ++i)
                     if (order[i] < static_cast<int>(g.rootUnder.size()) && g.rootUnder[order[i]]) g.cand.push_back(order[i]);
+            if (g.probe >= 0 && cfg.probeOnePerEdge) {   // probe children: every action once, one phase
+                g.cand = order;
+                g.budget = k;
+            }
             const int mc = static_cast<int>(g.cand.size());
-            g.phasesLeft = mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
+            g.phasesLeft = g.probe >= 0 && cfg.probeOnePerEdge ? 1 : mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
             if (g.probe >= 0 || edgeSums) {   // per-edge sums of the simulations' leaves
                 g.probeDist.assign(static_cast<std::size_t>(k) * kOutcomeClasses, 0.0);
                 g.probeHp.assign(k, 0.0);
@@ -2949,6 +3095,22 @@ namespace sts::azbench {
                     pe.qCompleted = q[i];
                     pe.policy = z[i] / sum;
                     pe.score = rootScore(g, root, i, sigma, q);
+                    if (cfg.probeOnePerEdge && root.combat) {
+                        pe.combat = true;
+                        pe.chance = x.chance;
+                        if (!x.chance && x.child >= 0 && g.pool[x.child].combat && g.pool[x.child].bc && root.bc) {
+                            const BattleContext &a = *root.bc, &b = *g.pool[x.child].bc;
+                            auto monHp = [](const BattleContext &s) {
+                                int t = 0;
+                                for (int m = 0; m < s.monsters.monsterCount; ++m)
+                                    if (!s.monsters.arr[m].isDeadOrEscaped()) t += s.monsters.arr[m].curHp;
+                                return t;
+                            };
+                            pe.enemyHpRemoved = monHp(a) - monHp(b);
+                            pe.blockGained = b.player.block - a.player.block;
+                            pe.hpChange = b.player.curHp - a.player.curHp;
+                        }
+                    }
                     const int c = g.probeCnt[i];
                     if (c > 0) {
                         pe.dist.resize(kOutcomeClasses);

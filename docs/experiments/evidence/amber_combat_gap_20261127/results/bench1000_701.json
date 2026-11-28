@@ -1,0 +1,3856 @@
+{
+ "runs": 1000,
+ "wins": 385,
+ "win_rate": 0.385,
+ "fights": 21543,
+ "by_act_class": {
+  "1-NORMAL": {
+   "amber": {
+    "n": 5821,
+    "runs": 1000,
+    "deaths": 38,
+    "death_rate": 0.007,
+    "won_n": 5783,
+    "net_mean": 4.6,
+    "net_ci": [
+     4.4,
+     4.8
+    ],
+    "death_ci": [
+     0.005,
+     0.008
+    ],
+    "entry_hp_frac": 0.693,
+    "potion_uses_per_fight": 0.22,
+    "carry_any": 0.462,
+    "held_mean": 0.56
+   },
+   "old_bot": {
+    "n": 6082,
+    "runs": 1024,
+    "deaths": 13,
+    "death_rate": 0.002,
+    "won_n": 6069,
+    "net_mean": 0.2,
+    "net_median": 0,
+    "entry_hp_frac": 0.797,
+    "potion_uses_per_fight": 0.1,
+    "use_any": 0.095,
+    "inv_known_n": 6082,
+    "carry_any": 0.583,
+    "held_mean": 0.8,
+    "use_any_given_carry": 0.163
+   },
+   "exp": {
+    "n": 3771,
+    "runs": 675,
+    "deaths": 11,
+    "death_rate": 0.003,
+    "won_n": 3086,
+    "net_mean": 0.6,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.725,
+    "potion_uses_per_fight": 0.07,
+    "use_any": 0.065,
+    "inv_known_n": 2751,
+    "carry_any": 0.639,
+    "held_mean": 0.9,
+    "use_any_given_carry": 0.101
+   },
+   "old_bot_minus_exp_ci": [
+    -0.7,
+    -0.2
+   ],
+   "amber_minus_exp": 4.0,
+   "amber_minus_exp_ci_amber_only": [
+    3.8,
+    4.2
+   ],
+   "amber_minus_old_bot": 4.4
+  },
+  "1-ELITE": {
+   "amber": {
+    "n": 1977,
+    "runs": 978,
+    "deaths": 70,
+    "death_rate": 0.035,
+    "won_n": 1907,
+    "net_mean": 16.5,
+    "net_ci": [
+     16.0,
+     17.1
+    ],
+    "death_ci": [
+     0.027,
+     0.044
+    ],
+    "entry_hp_frac": 0.627,
+    "potion_uses_per_fight": 0.61,
+    "carry_any": 0.68,
+    "held_mean": 0.88
+   },
+   "old_bot": {
+    "n": 2502,
+    "runs": 1019,
+    "deaths": 40,
+    "death_rate": 0.016,
+    "won_n": 2462,
+    "net_mean": 13.0,
+    "net_median": 12.0,
+    "entry_hp_frac": 0.775,
+    "potion_uses_per_fight": 0.59,
+    "use_any": 0.495,
+    "inv_known_n": 2502,
+    "carry_any": 0.861,
+    "held_mean": 1.31,
+    "use_any_given_carry": 0.575
+   },
+   "exp": {
+    "n": 1715,
+    "runs": 671,
+    "deaths": 24,
+    "death_rate": 0.014,
+    "won_n": 1691,
+    "net_mean": 9.5,
+    "net_median": 8,
+    "entry_hp_frac": 0.681,
+    "potion_uses_per_fight": 0.56,
+    "use_any": 0.508,
+    "inv_known_n": 1237,
+    "carry_any": 0.921,
+    "held_mean": 1.47,
+    "use_any_given_carry": 0.563
+   },
+   "old_bot_minus_exp_ci": [
+    2.7,
+    4.1
+   ],
+   "amber_minus_exp": 7.0,
+   "amber_minus_exp_ci_amber_only": [
+    6.5,
+    7.6
+   ],
+   "amber_minus_old_bot": 3.5
+  },
+  "1-BOSS": {
+   "amber": {
+    "n": 892,
+    "runs": 892,
+    "deaths": 85,
+    "death_rate": 0.095,
+    "won_n": 807,
+    "net_mean": 24.7,
+    "net_ci": [
+     23.6,
+     25.8
+    ],
+    "death_ci": [
+     0.077,
+     0.114
+    ],
+    "entry_hp_frac": 0.542,
+    "potion_uses_per_fight": 0.77,
+    "carry_any": 0.753,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 968,
+    "runs": 968,
+    "deaths": 81,
+    "death_rate": 0.084,
+    "won_n": 887,
+    "net_mean": 19.3,
+    "net_median": 19,
+    "entry_hp_frac": 0.723,
+    "potion_uses_per_fight": 0.96,
+    "use_any": 0.685,
+    "inv_known_n": 968,
+    "carry_any": 0.884,
+    "held_mean": 1.46,
+    "use_any_given_carry": 0.775
+   },
+   "exp": {
+    "n": 638,
+    "runs": 638,
+    "deaths": 38,
+    "death_rate": 0.06,
+    "won_n": 600,
+    "net_mean": 11.3,
+    "net_median": 10.0,
+    "entry_hp_frac": 0.548,
+    "potion_uses_per_fight": 0.57,
+    "use_any": 0.473,
+    "inv_known_n": 459,
+    "carry_any": 0.954,
+    "held_mean": 1.75,
+    "use_any_given_carry": 0.516
+   },
+   "old_bot_minus_exp_ci": [
+    6.5,
+    9.5
+   ],
+   "amber_minus_exp": 13.4,
+   "amber_minus_exp_ci_amber_only": [
+    12.3,
+    14.5
+   ],
+   "amber_minus_old_bot": 5.4
+  },
+  "1-OTHER": {
+   "amber": {
+    "n": 96,
+    "runs": 95,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 96,
+    "net_mean": 12.2,
+    "net_ci": [
+     10.0,
+     14.3
+    ],
+    "death_ci": [
+     0.0,
+     0.0
+    ],
+    "entry_hp_frac": 0.537,
+    "potion_uses_per_fight": 0.45,
+    "carry_any": 0.583,
+    "held_mean": 0.78
+   },
+   "old_bot": {
+    "n": 118,
+    "runs": 116,
+    "deaths": 2,
+    "death_rate": 0.017,
+    "won_n": 116,
+    "net_mean": 9.4,
+    "net_median": 7.5,
+    "entry_hp_frac": 0.718,
+    "potion_uses_per_fight": 0.45,
+    "use_any": 0.381,
+    "inv_known_n": 118,
+    "carry_any": 0.831,
+    "held_mean": 1.25,
+    "use_any_given_carry": 0.459
+   },
+   "exp": {
+    "n": 69,
+    "runs": 68,
+    "deaths": 1,
+    "death_rate": 0.014,
+    "won_n": 68,
+    "net_mean": 2.9,
+    "net_median": 3.0,
+    "entry_hp_frac": 0.604,
+    "potion_uses_per_fight": 0.33,
+    "use_any": 0.333,
+    "inv_known_n": 48,
+    "carry_any": 0.938,
+    "held_mean": 1.46,
+    "use_any_given_carry": 0.467
+   },
+   "old_bot_minus_exp_ci": [
+    3.1,
+    10.0
+   ],
+   "amber_minus_exp": 9.3,
+   "amber_minus_exp_ci_amber_only": [
+    7.1,
+    11.4
+   ],
+   "amber_minus_old_bot": 2.8
+  },
+  "2-NORMAL": {
+   "amber": {
+    "n": 4309,
+    "runs": 807,
+    "deaths": 98,
+    "death_rate": 0.023,
+    "won_n": 4211,
+    "net_mean": 6.4,
+    "net_ci": [
+     6.0,
+     6.7
+    ],
+    "death_ci": [
+     0.018,
+     0.028
+    ],
+    "entry_hp_frac": 0.619,
+    "potion_uses_per_fight": 0.38,
+    "carry_any": 0.644,
+    "held_mean": 0.86
+   },
+   "old_bot": {
+    "n": 4401,
+    "runs": 887,
+    "deaths": 45,
+    "death_rate": 0.01,
+    "won_n": 4356,
+    "net_mean": 2.6,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.783,
+    "potion_uses_per_fight": 0.25,
+    "use_any": 0.226,
+    "inv_known_n": 4401,
+    "carry_any": 0.79,
+    "held_mean": 1.21,
+    "use_any_given_carry": 0.286
+   },
+   "exp": {
+    "n": 2976,
+    "runs": 599,
+    "deaths": 16,
+    "death_rate": 0.005,
+    "won_n": 2960,
+    "net_mean": 1.7,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.753,
+    "potion_uses_per_fight": 0.24,
+    "use_any": 0.223,
+    "inv_known_n": 2154,
+    "carry_any": 0.934,
+    "held_mean": 1.68,
+    "use_any_given_carry": 0.232
+   },
+   "old_bot_minus_exp_ci": [
+    0.4,
+    1.4
+   ],
+   "amber_minus_exp": 4.7,
+   "amber_minus_exp_ci_amber_only": [
+    4.3,
+    5.0
+   ],
+   "amber_minus_old_bot": 3.8
+  },
+  "2-ELITE": {
+   "amber": {
+    "n": 1303,
+    "runs": 706,
+    "deaths": 76,
+    "death_rate": 0.058,
+    "won_n": 1227,
+    "net_mean": 11.9,
+    "net_ci": [
+     11.0,
+     12.7
+    ],
+    "death_ci": [
+     0.046,
+     0.072
+    ],
+    "entry_hp_frac": 0.622,
+    "potion_uses_per_fight": 0.57,
+    "carry_any": 0.702,
+    "held_mean": 0.97
+   },
+   "old_bot": {
+    "n": 1769,
+    "runs": 843,
+    "deaths": 63,
+    "death_rate": 0.036,
+    "won_n": 1706,
+    "net_mean": 10.1,
+    "net_median": 7.0,
+    "entry_hp_frac": 0.827,
+    "potion_uses_per_fight": 0.66,
+    "use_any": 0.521,
+    "inv_known_n": 1769,
+    "carry_any": 0.861,
+    "held_mean": 1.4,
+    "use_any_given_carry": 0.605
+   },
+   "exp": {
+    "n": 1371,
+    "runs": 584,
+    "deaths": 30,
+    "death_rate": 0.022,
+    "won_n": 1341,
+    "net_mean": 5.6,
+    "net_median": 3,
+    "entry_hp_frac": 0.728,
+    "potion_uses_per_fight": 0.56,
+    "use_any": 0.496,
+    "inv_known_n": 999,
+    "carry_any": 0.958,
+    "held_mean": 1.8,
+    "use_any_given_carry": 0.525
+   },
+   "old_bot_minus_exp_ci": [
+    3.4,
+    5.7
+   ],
+   "amber_minus_exp": 6.3,
+   "amber_minus_exp_ci_amber_only": [
+    5.4,
+    7.1
+   ],
+   "amber_minus_old_bot": 1.8
+  },
+  "2-BOSS": {
+   "amber": {
+    "n": 629,
+    "runs": 629,
+    "deaths": 63,
+    "death_rate": 0.1,
+    "won_n": 566,
+    "net_mean": 20.2,
+    "net_ci": [
+     18.5,
+     21.9
+    ],
+    "death_ci": [
+     0.076,
+     0.124
+    ],
+    "entry_hp_frac": 0.645,
+    "potion_uses_per_fight": 0.67,
+    "carry_any": 0.687,
+    "held_mean": 0.98
+   },
+   "old_bot": {
+    "n": 771,
+    "runs": 771,
+    "deaths": 110,
+    "death_rate": 0.143,
+    "won_n": 661,
+    "net_mean": 23.6,
+    "net_median": 20,
+    "entry_hp_frac": 0.872,
+    "potion_uses_per_fight": 0.89,
+    "use_any": 0.641,
+    "inv_known_n": 771,
+    "carry_any": 0.861,
+    "held_mean": 1.44,
+    "use_any_given_carry": 0.744
+   },
+   "exp": {
+    "n": 548,
+    "runs": 548,
+    "deaths": 30,
+    "death_rate": 0.055,
+    "won_n": 518,
+    "net_mean": 11.2,
+    "net_median": 8.0,
+    "entry_hp_frac": 0.74,
+    "potion_uses_per_fight": 0.47,
+    "use_any": 0.385,
+    "inv_known_n": 395,
+    "carry_any": 0.965,
+    "held_mean": 1.89,
+    "use_any_given_carry": 0.407
+   },
+   "old_bot_minus_exp_ci": [
+    10.1,
+    14.7
+   ],
+   "amber_minus_exp": 9.0,
+   "amber_minus_exp_ci_amber_only": [
+    7.3,
+    10.7
+   ],
+   "amber_minus_old_bot": -3.4
+  },
+  "2-OTHER": {
+   "amber": {
+    "n": 149,
+    "runs": 120,
+    "deaths": 4,
+    "death_rate": 0.027,
+    "won_n": 145,
+    "net_mean": 8.5,
+    "net_ci": [
+     6.4,
+     10.7
+    ],
+    "death_ci": [
+     0.006,
+     0.054
+    ],
+    "entry_hp_frac": 0.607,
+    "potion_uses_per_fight": 0.46,
+    "carry_any": 0.631,
+    "held_mean": 0.87
+   },
+   "old_bot": {
+    "n": 192,
+    "runs": 161,
+    "deaths": 7,
+    "death_rate": 0.036,
+    "won_n": 185,
+    "net_mean": 6.9,
+    "net_median": 4,
+    "entry_hp_frac": 0.754,
+    "potion_uses_per_fight": 0.36,
+    "use_any": 0.333,
+    "inv_known_n": 192,
+    "carry_any": 0.74,
+    "held_mean": 1.12,
+    "use_any_given_carry": 0.451
+   },
+   "exp": {
+    "n": 120,
+    "runs": 93,
+    "deaths": 3,
+    "death_rate": 0.025,
+    "won_n": 117,
+    "net_mean": 3.9,
+    "net_median": 3,
+    "entry_hp_frac": 0.718,
+    "potion_uses_per_fight": 0.32,
+    "use_any": 0.292,
+    "inv_known_n": 93,
+    "carry_any": 0.968,
+    "held_mean": 1.68,
+    "use_any_given_carry": 0.289
+   },
+   "old_bot_minus_exp_ci": [
+    -0.8,
+    6.3
+   ],
+   "amber_minus_exp": 4.6,
+   "amber_minus_exp_ci_amber_only": [
+    2.5,
+    6.8
+   ],
+   "amber_minus_old_bot": 1.6
+  },
+  "3-NORMAL": {
+   "amber": {
+    "n": 3063,
+    "runs": 566,
+    "deaths": 25,
+    "death_rate": 0.008,
+    "won_n": 3038,
+    "net_mean": 2.8,
+    "net_ci": [
+     2.4,
+     3.2
+    ],
+    "death_ci": [
+     0.005,
+     0.011
+    ],
+    "entry_hp_frac": 0.769,
+    "potion_uses_per_fight": 0.37,
+    "carry_any": 0.682,
+    "held_mean": 0.97
+   },
+   "old_bot": {
+    "n": 3290,
+    "runs": 661,
+    "deaths": 25,
+    "death_rate": 0.008,
+    "won_n": 3265,
+    "net_mean": 0.1,
+    "net_median": 0,
+    "entry_hp_frac": 0.862,
+    "potion_uses_per_fight": 0.19,
+    "use_any": 0.171,
+    "inv_known_n": 3290,
+    "carry_any": 0.796,
+    "held_mean": 1.29,
+    "use_any_given_carry": 0.215
+   },
+   "exp": {
+    "n": 2643,
+    "runs": 518,
+    "deaths": 5,
+    "death_rate": 0.002,
+    "won_n": 2638,
+    "net_mean": -0.9,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.877,
+    "potion_uses_per_fight": 0.12,
+    "use_any": 0.118,
+    "inv_known_n": 1910,
+    "carry_any": 0.976,
+    "held_mean": 1.97,
+    "use_any_given_carry": 0.123
+   },
+   "old_bot_minus_exp_ci": [
+    0.5,
+    1.6
+   ],
+   "amber_minus_exp": 3.7,
+   "amber_minus_exp_ci_amber_only": [
+    3.3,
+    4.1
+   ],
+   "amber_minus_old_bot": 2.7
+  },
+  "3-ELITE": {
+   "amber": {
+    "n": 1190,
+    "runs": 550,
+    "deaths": 37,
+    "death_rate": 0.031,
+    "won_n": 1153,
+    "net_mean": 6.5,
+    "net_ci": [
+     5.6,
+     7.4
+    ],
+    "death_ci": [
+     0.022,
+     0.041
+    ],
+    "entry_hp_frac": 0.768,
+    "potion_uses_per_fight": 0.52,
+    "carry_any": 0.728,
+    "held_mean": 1.08
+   },
+   "old_bot": {
+    "n": 1593,
+    "runs": 642,
+    "deaths": 50,
+    "death_rate": 0.031,
+    "won_n": 1543,
+    "net_mean": 6.1,
+    "net_median": 0,
+    "entry_hp_frac": 0.872,
+    "potion_uses_per_fight": 0.52,
+    "use_any": 0.411,
+    "inv_known_n": 1593,
+    "carry_any": 0.844,
+    "held_mean": 1.44,
+    "use_any_given_carry": 0.487
+   },
+   "exp": {
+    "n": 1363,
+    "runs": 514,
+    "deaths": 15,
+    "death_rate": 0.011,
+    "won_n": 1348,
+    "net_mean": 2.2,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.862,
+    "potion_uses_per_fight": 0.27,
+    "use_any": 0.228,
+    "inv_known_n": 969,
+    "carry_any": 0.983,
+    "held_mean": 2.12,
+    "use_any_given_carry": 0.231
+   },
+   "old_bot_minus_exp_ci": [
+    2.7,
+    5.1
+   ],
+   "amber_minus_exp": 4.3,
+   "amber_minus_exp_ci_amber_only": [
+    3.4,
+    5.2
+   ],
+   "amber_minus_old_bot": 0.4
+  },
+  "3-BOSS": {
+   "amber": {
+    "n": 987,
+    "runs": 501,
+    "deaths": 51,
+    "death_rate": 0.052,
+    "won_n": 936,
+    "net_mean": -2.9,
+    "net_ci": [
+     -3.7,
+     -2.0
+    ],
+    "death_ci": [
+     0.039,
+     0.066
+    ],
+    "entry_hp_frac": 0.75,
+    "potion_uses_per_fight": 0.41,
+    "carry_any": 0.624,
+    "held_mean": 0.91
+   },
+   "old_bot": {
+    "n": 1099,
+    "runs": 582,
+    "deaths": 141,
+    "death_rate": 0.128,
+    "won_n": 958,
+    "net_mean": 13.0,
+    "net_median": 7.0,
+    "entry_hp_frac": 0.828,
+    "potion_uses_per_fight": 0.59,
+    "use_any": 0.445,
+    "inv_known_n": 1099,
+    "carry_any": 0.713,
+    "held_mean": 1.19,
+    "use_any_given_carry": 0.624
+   },
+   "exp": {
+    "n": 980,
+    "runs": 495,
+    "deaths": 23,
+    "death_rate": 0.023,
+    "won_n": 957,
+    "net_mean": 8.8,
+    "net_median": 3,
+    "entry_hp_frac": 0.835,
+    "potion_uses_per_fight": 0.12,
+    "use_any": 0.1,
+    "inv_known_n": 699,
+    "carry_any": 0.99,
+    "held_mean": 2.23,
+    "use_any_given_carry": 0.104
+   },
+   "old_bot_minus_exp_ci": [
+    2.3,
+    5.9
+   ],
+   "amber_minus_exp": -11.7,
+   "amber_minus_exp_ci_amber_only": [
+    -12.5,
+    -10.8
+   ],
+   "amber_minus_old_bot": -15.9
+  },
+  "3-OTHER": {
+   "amber": {
+    "n": 234,
+    "runs": 215,
+    "deaths": 3,
+    "death_rate": 0.013,
+    "won_n": 231,
+    "net_mean": 7.6,
+    "net_ci": [
+     5.8,
+     9.4
+    ],
+    "death_ci": [
+     0.0,
+     0.03
+    ],
+    "entry_hp_frac": 0.788,
+    "potion_uses_per_fight": 0.38,
+    "carry_any": 0.709,
+    "held_mean": 0.99
+   },
+   "old_bot": {
+    "n": 365,
+    "runs": 324,
+    "deaths": 4,
+    "death_rate": 0.011,
+    "won_n": 361,
+    "net_mean": 3.3,
+    "net_median": 0,
+    "entry_hp_frac": 0.889,
+    "potion_uses_per_fight": 0.33,
+    "use_any": 0.258,
+    "inv_known_n": 365,
+    "carry_any": 0.871,
+    "held_mean": 1.48,
+    "use_any_given_carry": 0.296
+   },
+   "exp": {
+    "n": 226,
+    "runs": 196,
+    "deaths": 3,
+    "death_rate": 0.013,
+    "won_n": 223,
+    "net_mean": 3.1,
+    "net_median": 0,
+    "entry_hp_frac": 0.895,
+    "potion_uses_per_fight": 0.31,
+    "use_any": 0.265,
+    "inv_known_n": 160,
+    "carry_any": 0.975,
+    "held_mean": 2.08,
+    "use_any_given_carry": 0.282
+   },
+   "old_bot_minus_exp_ci": [
+    -2.2,
+    2.5
+   ],
+   "amber_minus_exp": 4.5,
+   "amber_minus_exp_ci_amber_only": [
+    2.7,
+    6.3
+   ],
+   "amber_minus_old_bot": 4.3
+  },
+  "4-ELITE": {
+   "amber": {
+    "n": 450,
+    "runs": 450,
+    "deaths": 7,
+    "death_rate": 0.016,
+    "won_n": 443,
+    "net_mean": 11.7,
+    "net_ci": [
+     10.2,
+     13.3
+    ],
+    "death_ci": [
+     0.004,
+     0.029
+    ],
+    "entry_hp_frac": 0.967,
+    "potion_uses_per_fight": 0.79,
+    "carry_any": 0.822,
+    "held_mean": 1.46
+   },
+   "old_bot": {
+    "n": 441,
+    "runs": 441,
+    "deaths": 15,
+    "death_rate": 0.034,
+    "won_n": 426,
+    "net_mean": 20.0,
+    "net_median": 13.0,
+    "entry_hp_frac": 0.989,
+    "potion_uses_per_fight": 0.83,
+    "use_any": 0.612,
+    "inv_known_n": 441,
+    "carry_any": 0.812,
+    "held_mean": 1.43,
+    "use_any_given_carry": 0.754
+   },
+   "exp": {
+    "n": 472,
+    "runs": 472,
+    "deaths": 8,
+    "death_rate": 0.017,
+    "won_n": 464,
+    "net_mean": 9.3,
+    "net_median": 1.0,
+    "entry_hp_frac": 0.98,
+    "potion_uses_per_fight": 0.42,
+    "use_any": 0.373,
+    "inv_known_n": 338,
+    "carry_any": 0.994,
+    "held_mean": 2.33,
+    "use_any_given_carry": 0.375
+   },
+   "old_bot_minus_exp_ci": [
+    8.1,
+    13.4
+   ],
+   "amber_minus_exp": 2.4,
+   "amber_minus_exp_ci_amber_only": [
+    0.9,
+    4.0
+   ],
+   "amber_minus_old_bot": -8.3
+  },
+  "4-BOSS": {
+   "amber": {
+    "n": 443,
+    "runs": 443,
+    "deaths": 58,
+    "death_rate": 0.131,
+    "won_n": 385,
+    "net_mean": 17.8,
+    "net_ci": [
+     15.6,
+     20.0
+    ],
+    "death_ci": [
+     0.102,
+     0.16
+    ],
+    "entry_hp_frac": 0.833,
+    "potion_uses_per_fight": 0.73,
+    "carry_any": 0.695,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 426,
+    "runs": 426,
+    "deaths": 173,
+    "death_rate": 0.406,
+    "won_n": 253,
+    "net_mean": 41.3,
+    "net_median": 39,
+    "entry_hp_frac": 0.772,
+    "potion_uses_per_fight": 0.86,
+    "use_any": 0.62,
+    "inv_known_n": 426,
+    "carry_any": 0.657,
+    "held_mean": 0.97,
+    "use_any_given_carry": 0.943
+   },
+   "exp": {
+    "n": 464,
+    "runs": 464,
+    "deaths": 39,
+    "death_rate": 0.084,
+    "won_n": 425,
+    "net_mean": 20.1,
+    "net_median": 14,
+    "entry_hp_frac": 0.875,
+    "potion_uses_per_fight": 1.94,
+    "use_any": 0.948,
+    "inv_known_n": 333,
+    "carry_any": 0.988,
+    "held_mean": 2.19,
+    "use_any_given_carry": 0.954
+   },
+   "old_bot_minus_exp_ci": [
+    16.9,
+    25.3
+   ],
+   "amber_minus_exp": -2.3,
+   "amber_minus_exp_ci_amber_only": [
+    -4.5,
+    -0.1
+   ],
+   "amber_minus_old_bot": -23.5
+  }
+ },
+ "by_encounter": {
+  "1-ELITE-gremlin nob": {
+   "amber": {
+    "n": 655,
+    "runs": 601,
+    "deaths": 29,
+    "death_rate": 0.044,
+    "won_n": 626,
+    "net_mean": 16.1,
+    "net_ci": [
+     15.0,
+     17.2
+    ],
+    "death_ci": [
+     0.029,
+     0.06
+    ],
+    "entry_hp_frac": 0.632,
+    "potion_uses_per_fight": 0.6,
+    "carry_any": 0.672,
+    "held_mean": 0.87
+   },
+   "old_bot": {
+    "n": 808,
+    "runs": 723,
+    "deaths": 21,
+    "death_rate": 0.026,
+    "won_n": 787,
+    "net_mean": 11.7,
+    "net_median": 8,
+    "entry_hp_frac": 0.776,
+    "potion_uses_per_fight": 0.73,
+    "use_any": 0.589,
+    "inv_known_n": 808,
+    "carry_any": 0.863,
+    "held_mean": 1.33,
+    "use_any_given_carry": 0.683
+   },
+   "exp": {
+    "n": 576,
+    "runs": 493,
+    "deaths": 9,
+    "death_rate": 0.016,
+    "won_n": 567,
+    "net_mean": 7.6,
+    "net_median": 3,
+    "entry_hp_frac": 0.676,
+    "potion_uses_per_fight": 0.6,
+    "use_any": 0.524,
+    "inv_known_n": 426,
+    "carry_any": 0.906,
+    "held_mean": 1.46,
+    "use_any_given_carry": 0.578
+   },
+   "old_bot_minus_exp_ci": [
+    2.7,
+    5.4
+   ],
+   "amber_minus_exp": 8.5,
+   "amber_minus_exp_ci_amber_only": [
+    7.4,
+    9.6
+   ],
+   "amber_minus_old_bot": 4.4
+  },
+  "1-ELITE-lagavulin": {
+   "amber": {
+    "n": 660,
+    "runs": 613,
+    "deaths": 23,
+    "death_rate": 0.035,
+    "won_n": 637,
+    "net_mean": 17.7,
+    "net_ci": [
+     16.8,
+     18.5
+    ],
+    "death_ci": [
+     0.021,
+     0.05
+    ],
+    "entry_hp_frac": 0.623,
+    "potion_uses_per_fight": 0.62,
+    "carry_any": 0.694,
+    "held_mean": 0.89
+   },
+   "old_bot": {
+    "n": 841,
+    "runs": 745,
+    "deaths": 9,
+    "death_rate": 0.011,
+    "won_n": 832,
+    "net_mean": 13.2,
+    "net_median": 13.0,
+    "entry_hp_frac": 0.778,
+    "potion_uses_per_fight": 0.55,
+    "use_any": 0.467,
+    "inv_known_n": 841,
+    "carry_any": 0.87,
+    "held_mean": 1.31,
+    "use_any_given_carry": 0.537
+   },
+   "exp": {
+    "n": 577,
+    "runs": 502,
+    "deaths": 2,
+    "death_rate": 0.003,
+    "won_n": 575,
+    "net_mean": 10.5,
+    "net_median": 10,
+    "entry_hp_frac": 0.684,
+    "potion_uses_per_fight": 0.56,
+    "use_any": 0.511,
+    "inv_known_n": 407,
+    "carry_any": 0.939,
+    "held_mean": 1.49,
+    "use_any_given_carry": 0.579
+   },
+   "old_bot_minus_exp_ci": [
+    1.4,
+    3.9
+   ],
+   "amber_minus_exp": 7.2,
+   "amber_minus_exp_ci_amber_only": [
+    6.3,
+    8.0
+   ],
+   "amber_minus_old_bot": 4.5
+  },
+  "1-ELITE-three sentries": {
+   "amber": {
+    "n": 662,
+    "runs": 610,
+    "deaths": 18,
+    "death_rate": 0.027,
+    "won_n": 644,
+    "net_mean": 15.8,
+    "net_ci": [
+     14.9,
+     16.8
+    ],
+    "death_ci": [
+     0.016,
+     0.041
+    ],
+    "entry_hp_frac": 0.627,
+    "potion_uses_per_fight": 0.62,
+    "carry_any": 0.674,
+    "held_mean": 0.88
+   },
+   "old_bot": {
+    "n": 853,
+    "runs": 750,
+    "deaths": 10,
+    "death_rate": 0.012,
+    "won_n": 843,
+    "net_mean": 14.1,
+    "net_median": 13,
+    "entry_hp_frac": 0.773,
+    "potion_uses_per_fight": 0.49,
+    "use_any": 0.433,
+    "inv_known_n": 853,
+    "carry_any": 0.849,
+    "held_mean": 1.28,
+    "use_any_given_carry": 0.51
+   },
+   "exp": {
+    "n": 562,
+    "runs": 491,
+    "deaths": 13,
+    "death_rate": 0.023,
+    "won_n": 549,
+    "net_mean": 10.5,
+    "net_median": 9,
+    "entry_hp_frac": 0.685,
+    "potion_uses_per_fight": 0.52,
+    "use_any": 0.488,
+    "inv_known_n": 404,
+    "carry_any": 0.918,
+    "held_mean": 1.47,
+    "use_any_given_carry": 0.531
+   },
+   "old_bot_minus_exp_ci": [
+    2.3,
+    4.9
+   ],
+   "amber_minus_exp": 5.3,
+   "amber_minus_exp_ci_amber_only": [
+    4.4,
+    6.3
+   ],
+   "amber_minus_old_bot": 1.7
+  },
+  "1-BOSS-hexaghost": {
+   "amber": {
+    "n": 290,
+    "runs": 290,
+    "deaths": 47,
+    "death_rate": 0.162,
+    "won_n": 243,
+    "net_mean": 22.4,
+    "net_ci": [
+     20.5,
+     24.3
+    ],
+    "death_ci": [
+     0.121,
+     0.207
+    ],
+    "entry_hp_frac": 0.503,
+    "potion_uses_per_fight": 0.81,
+    "carry_any": 0.748,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 302,
+    "runs": 302,
+    "deaths": 46,
+    "death_rate": 0.152,
+    "won_n": 256,
+    "net_mean": 21.8,
+    "net_median": 21.5,
+    "entry_hp_frac": 0.703,
+    "potion_uses_per_fight": 0.82,
+    "use_any": 0.619,
+    "inv_known_n": 302,
+    "carry_any": 0.861,
+    "held_mean": 1.42,
+    "use_any_given_carry": 0.719
+   },
+   "exp": {
+    "n": 234,
+    "runs": 234,
+    "deaths": 20,
+    "death_rate": 0.085,
+    "won_n": 214,
+    "net_mean": 13.0,
+    "net_median": 12.0,
+    "entry_hp_frac": 0.495,
+    "potion_uses_per_fight": 0.68,
+    "use_any": 0.547,
+    "inv_known_n": 177,
+    "carry_any": 0.949,
+    "held_mean": 1.78,
+    "use_any_given_carry": 0.56
+   },
+   "old_bot_minus_exp_ci": [
+    6.4,
+    11.3
+   ],
+   "amber_minus_exp": 9.4,
+   "amber_minus_exp_ci_amber_only": [
+    7.5,
+    11.3
+   ],
+   "amber_minus_old_bot": 0.6
+  },
+  "1-BOSS-slime boss": {
+   "amber": {
+    "n": 284,
+    "runs": 284,
+    "deaths": 21,
+    "death_rate": 0.074,
+    "won_n": 263,
+    "net_mean": 22.2,
+    "net_ci": [
+     20.3,
+     24.3
+    ],
+    "death_ci": [
+     0.046,
+     0.102
+    ],
+    "entry_hp_frac": 0.546,
+    "potion_uses_per_fight": 0.8,
+    "carry_any": 0.768,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 328,
+    "runs": 328,
+    "deaths": 16,
+    "death_rate": 0.049,
+    "won_n": 312,
+    "net_mean": 14.8,
+    "net_median": 12.0,
+    "entry_hp_frac": 0.728,
+    "potion_uses_per_fight": 0.92,
+    "use_any": 0.665,
+    "inv_known_n": 328,
+    "carry_any": 0.899,
+    "held_mean": 1.5,
+    "use_any_given_carry": 0.739
+   },
+   "exp": {
+    "n": 198,
+    "runs": 198,
+    "deaths": 11,
+    "death_rate": 0.056,
+    "won_n": 187,
+    "net_mean": 8.5,
+    "net_median": 7,
+    "entry_hp_frac": 0.559,
+    "potion_uses_per_fight": 0.48,
+    "use_any": 0.409,
+    "inv_known_n": 134,
+    "carry_any": 0.963,
+    "held_mean": 1.74,
+    "use_any_given_carry": 0.481
+   },
+   "old_bot_minus_exp_ci": [
+    3.5,
+    9.2
+   ],
+   "amber_minus_exp": 13.7,
+   "amber_minus_exp_ci_amber_only": [
+    11.8,
+    15.8
+   ],
+   "amber_minus_old_bot": 7.4
+  },
+  "1-BOSS-the guardian": {
+   "amber": {
+    "n": 318,
+    "runs": 318,
+    "deaths": 17,
+    "death_rate": 0.053,
+    "won_n": 301,
+    "net_mean": 28.7,
+    "net_ci": [
+     27.0,
+     30.4
+    ],
+    "death_ci": [
+     0.031,
+     0.082
+    ],
+    "entry_hp_frac": 0.573,
+    "potion_uses_per_fight": 0.71,
+    "carry_any": 0.745,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 338,
+    "runs": 338,
+    "deaths": 19,
+    "death_rate": 0.056,
+    "won_n": 319,
+    "net_mean": 21.6,
+    "net_median": 21,
+    "entry_hp_frac": 0.736,
+    "potion_uses_per_fight": 1.12,
+    "use_any": 0.763,
+    "inv_known_n": 338,
+    "carry_any": 0.891,
+    "held_mean": 1.44,
+    "use_any_given_carry": 0.857
+   },
+   "exp": {
+    "n": 206,
+    "runs": 206,
+    "deaths": 7,
+    "death_rate": 0.034,
+    "won_n": 199,
+    "net_mean": 12.1,
+    "net_median": 10,
+    "entry_hp_frac": 0.596,
+    "potion_uses_per_fight": 0.54,
+    "use_any": 0.451,
+    "inv_known_n": 148,
+    "carry_any": 0.953,
+    "held_mean": 1.72,
+    "use_any_given_carry": 0.496
+   },
+   "old_bot_minus_exp_ci": [
+    7.2,
+    12.0
+   ],
+   "amber_minus_exp": 16.6,
+   "amber_minus_exp_ci_amber_only": [
+    14.9,
+    18.3
+   ],
+   "amber_minus_old_bot": 7.1
+  },
+  "2-ELITE-book of stabbing": {
+   "amber": {
+    "n": 441,
+    "runs": 418,
+    "deaths": 20,
+    "death_rate": 0.045,
+    "won_n": 421,
+    "net_mean": 11.6,
+    "net_ci": [
+     10.4,
+     12.7
+    ],
+    "death_ci": [
+     0.027,
+     0.065
+    ],
+    "entry_hp_frac": 0.624,
+    "potion_uses_per_fight": 0.5,
+    "carry_any": 0.701,
+    "held_mean": 0.97
+   },
+   "old_bot": {
+    "n": 579,
+    "runs": 513,
+    "deaths": 17,
+    "death_rate": 0.029,
+    "won_n": 562,
+    "net_mean": 9.8,
+    "net_median": 7.5,
+    "entry_hp_frac": 0.828,
+    "potion_uses_per_fight": 0.53,
+    "use_any": 0.442,
+    "inv_known_n": 579,
+    "carry_any": 0.857,
+    "held_mean": 1.42,
+    "use_any_given_carry": 0.516
+   },
+   "exp": {
+    "n": 470,
+    "runs": 415,
+    "deaths": 7,
+    "death_rate": 0.015,
+    "won_n": 463,
+    "net_mean": 7.6,
+    "net_median": 5,
+    "entry_hp_frac": 0.722,
+    "potion_uses_per_fight": 0.55,
+    "use_any": 0.496,
+    "inv_known_n": 338,
+    "carry_any": 0.944,
+    "held_mean": 1.77,
+    "use_any_given_carry": 0.533
+   },
+   "old_bot_minus_exp_ci": [
+    0.5,
+    4.0
+   ],
+   "amber_minus_exp": 4.0,
+   "amber_minus_exp_ci_amber_only": [
+    2.8,
+    5.1
+   ],
+   "amber_minus_old_bot": 1.8
+  },
+  "2-ELITE-gremlin leader": {
+   "amber": {
+    "n": 447,
+    "runs": 422,
+    "deaths": 28,
+    "death_rate": 0.063,
+    "won_n": 419,
+    "net_mean": 7.0,
+    "net_ci": [
+     5.4,
+     8.4
+    ],
+    "death_ci": [
+     0.042,
+     0.087
+    ],
+    "entry_hp_frac": 0.608,
+    "potion_uses_per_fight": 0.62,
+    "carry_any": 0.687,
+    "held_mean": 0.96
+   },
+   "old_bot": {
+    "n": 590,
+    "runs": 545,
+    "deaths": 22,
+    "death_rate": 0.037,
+    "won_n": 568,
+    "net_mean": 8.1,
+    "net_median": 4.0,
+    "entry_hp_frac": 0.822,
+    "potion_uses_per_fight": 0.82,
+    "use_any": 0.619,
+    "inv_known_n": 590,
+    "carry_any": 0.871,
+    "held_mean": 1.42,
+    "use_any_given_carry": 0.71
+   },
+   "exp": {
+    "n": 457,
+    "runs": 407,
+    "deaths": 6,
+    "death_rate": 0.013,
+    "won_n": 451,
+    "net_mean": 1.6,
+    "net_median": 0,
+    "entry_hp_frac": 0.728,
+    "potion_uses_per_fight": 0.44,
+    "use_any": 0.396,
+    "inv_known_n": 330,
+    "carry_any": 0.97,
+    "held_mean": 1.82,
+    "use_any_given_carry": 0.416
+   },
+   "old_bot_minus_exp_ci": [
+    4.7,
+    8.2
+   ],
+   "amber_minus_exp": 5.4,
+   "amber_minus_exp_ci_amber_only": [
+    3.8,
+    6.8
+   ],
+   "amber_minus_old_bot": -1.1
+  },
+  "2-ELITE-slavers": {
+   "amber": {
+    "n": 415,
+    "runs": 386,
+    "deaths": 28,
+    "death_rate": 0.067,
+    "won_n": 387,
+    "net_mean": 17.5,
+    "net_ci": [
+     15.8,
+     19.1
+    ],
+    "death_ci": [
+     0.045,
+     0.093
+    ],
+    "entry_hp_frac": 0.635,
+    "potion_uses_per_fight": 0.6,
+    "carry_any": 0.72,
+    "held_mean": 0.99
+   },
+   "old_bot": {
+    "n": 600,
+    "runs": 553,
+    "deaths": 24,
+    "death_rate": 0.04,
+    "won_n": 576,
+    "net_mean": 12.3,
+    "net_median": 8.5,
+    "entry_hp_frac": 0.831,
+    "potion_uses_per_fight": 0.61,
+    "use_any": 0.502,
+    "inv_known_n": 600,
+    "carry_any": 0.855,
+    "held_mean": 1.37,
+    "use_any_given_carry": 0.587
+   },
+   "exp": {
+    "n": 444,
+    "runs": 391,
+    "deaths": 17,
+    "death_rate": 0.038,
+    "won_n": 427,
+    "net_mean": 7.4,
+    "net_median": 6,
+    "entry_hp_frac": 0.736,
+    "potion_uses_per_fight": 0.71,
+    "use_any": 0.599,
+    "inv_known_n": 331,
+    "carry_any": 0.961,
+    "held_mean": 1.8,
+    "use_any_given_carry": 0.626
+   },
+   "old_bot_minus_exp_ci": [
+    3.1,
+    6.8
+   ],
+   "amber_minus_exp": 10.1,
+   "amber_minus_exp_ci_amber_only": [
+    8.4,
+    11.7
+   ],
+   "amber_minus_old_bot": 5.2
+  },
+  "2-BOSS-automaton": {
+   "amber": {
+    "n": 222,
+    "runs": 222,
+    "deaths": 30,
+    "death_rate": 0.135,
+    "won_n": 192,
+    "net_mean": 23.5,
+    "net_ci": [
+     20.3,
+     26.5
+    ],
+    "death_ci": [
+     0.09,
+     0.18
+    ],
+    "entry_hp_frac": 0.68,
+    "potion_uses_per_fight": 0.69,
+    "carry_any": 0.703,
+    "held_mean": 1
+   },
+   "old_bot": {
+    "n": 270,
+    "runs": 270,
+    "deaths": 29,
+    "death_rate": 0.107,
+    "won_n": 241,
+    "net_mean": 24.9,
+    "net_median": 23,
+    "entry_hp_frac": 0.867,
+    "potion_uses_per_fight": 0.97,
+    "use_any": 0.659,
+    "inv_known_n": 270,
+    "carry_any": 0.841,
+    "held_mean": 1.47,
+    "use_any_given_carry": 0.784
+   },
+   "exp": {
+    "n": 188,
+    "runs": 188,
+    "deaths": 10,
+    "death_rate": 0.053,
+    "won_n": 178,
+    "net_mean": 11.2,
+    "net_median": 7.5,
+    "entry_hp_frac": 0.755,
+    "potion_uses_per_fight": 0.43,
+    "use_any": 0.367,
+    "inv_known_n": 143,
+    "carry_any": 0.972,
+    "held_mean": 1.96,
+    "use_any_given_carry": 0.41
+   },
+   "old_bot_minus_exp_ci": [
+    9.6,
+    17.7
+   ],
+   "amber_minus_exp": 12.3,
+   "amber_minus_exp_ci_amber_only": [
+    9.1,
+    15.3
+   ],
+   "amber_minus_old_bot": -1.4
+  },
+  "2-BOSS-champ": {
+   "amber": {
+    "n": 190,
+    "runs": 190,
+    "deaths": 19,
+    "death_rate": 0.1,
+    "won_n": 171,
+    "net_mean": 16.3,
+    "net_ci": [
+     13.2,
+     19.2
+    ],
+    "death_ci": [
+     0.063,
+     0.147
+    ],
+    "entry_hp_frac": 0.587,
+    "potion_uses_per_fight": 0.64,
+    "carry_any": 0.668,
+    "held_mean": 0.96
+   },
+   "old_bot": {
+    "n": 253,
+    "runs": 253,
+    "deaths": 28,
+    "death_rate": 0.111,
+    "won_n": 225,
+    "net_mean": 19.4,
+    "net_median": 14,
+    "entry_hp_frac": 0.876,
+    "potion_uses_per_fight": 0.71,
+    "use_any": 0.549,
+    "inv_known_n": 253,
+    "carry_any": 0.877,
+    "held_mean": 1.39,
+    "use_any_given_carry": 0.626
+   },
+   "exp": {
+    "n": 163,
+    "runs": 163,
+    "deaths": 7,
+    "death_rate": 0.043,
+    "won_n": 156,
+    "net_mean": 8.9,
+    "net_median": 8.0,
+    "entry_hp_frac": 0.711,
+    "potion_uses_per_fight": 0.32,
+    "use_any": 0.288,
+    "inv_known_n": 112,
+    "carry_any": 0.964,
+    "held_mean": 1.79,
+    "use_any_given_carry": 0.324
+   },
+   "old_bot_minus_exp_ci": [
+    6.7,
+    14.7
+   ],
+   "amber_minus_exp": 7.4,
+   "amber_minus_exp_ci_amber_only": [
+    4.3,
+    10.3
+   ],
+   "amber_minus_old_bot": -3.1
+  },
+  "2-BOSS-collector": {
+   "amber": {
+    "n": 217,
+    "runs": 217,
+    "deaths": 14,
+    "death_rate": 0.065,
+    "won_n": 203,
+    "net_mean": 20.4,
+    "net_ci": [
+     17.6,
+     23.6
+    ],
+    "death_ci": [
+     0.032,
+     0.101
+    ],
+    "entry_hp_frac": 0.659,
+    "potion_uses_per_fight": 0.66,
+    "carry_any": 0.687,
+    "held_mean": 0.97
+   },
+   "old_bot": {
+    "n": 248,
+    "runs": 248,
+    "deaths": 53,
+    "death_rate": 0.214,
+    "won_n": 195,
+    "net_mean": 26.8,
+    "net_median": 23,
+    "entry_hp_frac": 0.872,
+    "potion_uses_per_fight": 1.0,
+    "use_any": 0.714,
+    "inv_known_n": 248,
+    "carry_any": 0.867,
+    "held_mean": 1.47,
+    "use_any_given_carry": 0.823
+   },
+   "exp": {
+    "n": 197,
+    "runs": 197,
+    "deaths": 13,
+    "death_rate": 0.066,
+    "won_n": 184,
+    "net_mean": 13.1,
+    "net_median": 11.0,
+    "entry_hp_frac": 0.75,
+    "potion_uses_per_fight": 0.62,
+    "use_any": 0.482,
+    "inv_known_n": 140,
+    "carry_any": 0.957,
+    "held_mean": 1.9,
+    "use_any_given_carry": 0.47
+   },
+   "old_bot_minus_exp_ci": [
+    9.3,
+    18.2
+   ],
+   "amber_minus_exp": 7.3,
+   "amber_minus_exp_ci_amber_only": [
+    4.5,
+    10.5
+   ],
+   "amber_minus_old_bot": -6.4
+  },
+  "3-ELITE-giant head": {
+   "amber": {
+    "n": 388,
+    "runs": 355,
+    "deaths": 8,
+    "death_rate": 0.021,
+    "won_n": 380,
+    "net_mean": 3.7,
+    "net_ci": [
+     2.0,
+     5.3
+    ],
+    "death_ci": [
+     0.008,
+     0.036
+    ],
+    "entry_hp_frac": 0.768,
+    "potion_uses_per_fight": 0.42,
+    "carry_any": 0.716,
+    "held_mean": 1.05
+   },
+   "old_bot": {
+    "n": 519,
+    "runs": 450,
+    "deaths": 15,
+    "death_rate": 0.029,
+    "won_n": 504,
+    "net_mean": 4.0,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.87,
+    "potion_uses_per_fight": 0.48,
+    "use_any": 0.399,
+    "inv_known_n": 519,
+    "carry_any": 0.848,
+    "held_mean": 1.45,
+    "use_any_given_carry": 0.47
+   },
+   "exp": {
+    "n": 440,
+    "runs": 374,
+    "deaths": 6,
+    "death_rate": 0.014,
+    "won_n": 434,
+    "net_mean": 0.5,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.862,
+    "potion_uses_per_fight": 0.18,
+    "use_any": 0.155,
+    "inv_known_n": 315,
+    "carry_any": 0.981,
+    "held_mean": 2.11,
+    "use_any_given_carry": 0.149
+   },
+   "old_bot_minus_exp_ci": [
+    1.6,
+    5.4
+   ],
+   "amber_minus_exp": 3.2,
+   "amber_minus_exp_ci_amber_only": [
+    1.5,
+    4.8
+   ],
+   "amber_minus_old_bot": -0.3
+  },
+  "3-ELITE-nemesis": {
+   "amber": {
+    "n": 405,
+    "runs": 366,
+    "deaths": 14,
+    "death_rate": 0.035,
+    "won_n": 391,
+    "net_mean": 7.6,
+    "net_ci": [
+     6.0,
+     9.0
+    ],
+    "death_ci": [
+     0.017,
+     0.052
+    ],
+    "entry_hp_frac": 0.758,
+    "potion_uses_per_fight": 0.5,
+    "carry_any": 0.726,
+    "held_mean": 1.09
+   },
+   "old_bot": {
+    "n": 531,
+    "runs": 462,
+    "deaths": 11,
+    "death_rate": 0.021,
+    "won_n": 520,
+    "net_mean": 6.6,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.876,
+    "potion_uses_per_fight": 0.31,
+    "use_any": 0.267,
+    "inv_known_n": 531,
+    "carry_any": 0.821,
+    "held_mean": 1.35,
+    "use_any_given_carry": 0.326
+   },
+   "exp": {
+    "n": 463,
+    "runs": 388,
+    "deaths": 4,
+    "death_rate": 0.009,
+    "won_n": 459,
+    "net_mean": 2.8,
+    "net_median": 0,
+    "entry_hp_frac": 0.866,
+    "potion_uses_per_fight": 0.22,
+    "use_any": 0.194,
+    "inv_known_n": 334,
+    "carry_any": 0.982,
+    "held_mean": 2.11,
+    "use_any_given_carry": 0.204
+   },
+   "old_bot_minus_exp_ci": [
+    2.0,
+    5.6
+   ],
+   "amber_minus_exp": 4.8,
+   "amber_minus_exp_ci_amber_only": [
+    3.2,
+    6.2
+   ],
+   "amber_minus_old_bot": 1.0
+  },
+  "3-ELITE-reptomancer": {
+   "amber": {
+    "n": 397,
+    "runs": 372,
+    "deaths": 15,
+    "death_rate": 0.038,
+    "won_n": 382,
+    "net_mean": 8.2,
+    "net_ci": [
+     6.2,
+     10.0
+    ],
+    "death_ci": [
+     0.02,
+     0.058
+    ],
+    "entry_hp_frac": 0.779,
+    "potion_uses_per_fight": 0.64,
+    "carry_any": 0.741,
+    "held_mean": 1.11
+   },
+   "old_bot": {
+    "n": 543,
+    "runs": 481,
+    "deaths": 24,
+    "death_rate": 0.044,
+    "won_n": 519,
+    "net_mean": 7.7,
+    "net_median": 0,
+    "entry_hp_frac": 0.871,
+    "potion_uses_per_fight": 0.76,
+    "use_any": 0.564,
+    "inv_known_n": 543,
+    "carry_any": 0.862,
+    "held_mean": 1.51,
+    "use_any_given_carry": 0.654
+   },
+   "exp": {
+    "n": 460,
+    "runs": 395,
+    "deaths": 5,
+    "death_rate": 0.011,
+    "won_n": 455,
+    "net_mean": 3.4,
+    "net_median": 0,
+    "entry_hp_frac": 0.86,
+    "potion_uses_per_fight": 0.4,
+    "use_any": 0.333,
+    "inv_known_n": 320,
+    "carry_any": 0.988,
+    "held_mean": 2.14,
+    "use_any_given_carry": 0.339
+   },
+   "old_bot_minus_exp_ci": [
+    2.4,
+    6.4
+   ],
+   "amber_minus_exp": 4.8,
+   "amber_minus_exp_ci_amber_only": [
+    2.8,
+    6.6
+   ],
+   "amber_minus_old_bot": 0.5
+  },
+  "3-BOSS-awakened one": {
+   "amber": {
+    "n": 337,
+    "runs": 337,
+    "deaths": 18,
+    "death_rate": 0.053,
+    "won_n": 319,
+    "net_mean": -3.6,
+    "net_ci": [
+     -5.8,
+     -1.2
+    ],
+    "death_ci": [
+     0.033,
+     0.08
+    ],
+    "entry_hp_frac": 0.748,
+    "potion_uses_per_fight": 0.49,
+    "carry_any": 0.659,
+    "held_mean": 0.95
+   },
+   "old_bot": {
+    "n": 391,
+    "runs": 391,
+    "deaths": 88,
+    "death_rate": 0.225,
+    "won_n": 303,
+    "net_mean": 17.7,
+    "net_median": 12,
+    "entry_hp_frac": 0.841,
+    "potion_uses_per_fight": 0.8,
+    "use_any": 0.575,
+    "inv_known_n": 391,
+    "carry_any": 0.739,
+    "held_mean": 1.25,
+    "use_any_given_carry": 0.779
+   },
+   "exp": {
+    "n": 332,
+    "runs": 332,
+    "deaths": 10,
+    "death_rate": 0.03,
+    "won_n": 322,
+    "net_mean": 11.6,
+    "net_median": 5.0,
+    "entry_hp_frac": 0.855,
+    "potion_uses_per_fight": 0.16,
+    "use_any": 0.142,
+    "inv_known_n": 238,
+    "carry_any": 0.992,
+    "held_mean": 2.21,
+    "use_any_given_carry": 0.136
+   },
+   "old_bot_minus_exp_ci": [
+    2.6,
+    9.5
+   ],
+   "amber_minus_exp": -15.2,
+   "amber_minus_exp_ci_amber_only": [
+    -17.4,
+    -12.8
+   ],
+   "amber_minus_old_bot": -21.3
+  },
+  "3-BOSS-donu and deca": {
+   "amber": {
+    "n": 325,
+    "runs": 325,
+    "deaths": 20,
+    "death_rate": 0.062,
+    "won_n": 305,
+    "net_mean": -3.4,
+    "net_ci": [
+     -5.7,
+     -1.0
+    ],
+    "death_ci": [
+     0.034,
+     0.089
+    ],
+    "entry_hp_frac": 0.733,
+    "potion_uses_per_fight": 0.35,
+    "carry_any": 0.612,
+    "held_mean": 0.9
+   },
+   "old_bot": {
+    "n": 355,
+    "runs": 355,
+    "deaths": 28,
+    "death_rate": 0.079,
+    "won_n": 327,
+    "net_mean": 9.0,
+    "net_median": 3,
+    "entry_hp_frac": 0.82,
+    "potion_uses_per_fight": 0.52,
+    "use_any": 0.403,
+    "inv_known_n": 355,
+    "carry_any": 0.721,
+    "held_mean": 1.21,
+    "use_any_given_carry": 0.559
+   },
+   "exp": {
+    "n": 308,
+    "runs": 308,
+    "deaths": 3,
+    "death_rate": 0.01,
+    "won_n": 305,
+    "net_mean": 6.7,
+    "net_median": 3,
+    "entry_hp_frac": 0.803,
+    "potion_uses_per_fight": 0.07,
+    "use_any": 0.071,
+    "inv_known_n": 216,
+    "carry_any": 0.991,
+    "held_mean": 2.22,
+    "use_any_given_carry": 0.075
+   },
+   "old_bot_minus_exp_ci": [
+    -0.7,
+    5.1
+   ],
+   "amber_minus_exp": -10.1,
+   "amber_minus_exp_ci_amber_only": [
+    -12.4,
+    -7.7
+   ],
+   "amber_minus_old_bot": -12.4
+  },
+  "3-BOSS-time eater": {
+   "amber": {
+    "n": 325,
+    "runs": 325,
+    "deaths": 13,
+    "death_rate": 0.04,
+    "won_n": 312,
+    "net_mean": -1.6,
+    "net_ci": [
+     -3.6,
+     0.8
+    ],
+    "death_ci": [
+     0.022,
+     0.062
+    ],
+    "entry_hp_frac": 0.77,
+    "potion_uses_per_fight": 0.38,
+    "carry_any": 0.6,
+    "held_mean": 0.89
+   },
+   "old_bot": {
+    "n": 353,
+    "runs": 353,
+    "deaths": 25,
+    "death_rate": 0.071,
+    "won_n": 328,
+    "net_mean": 12.5,
+    "net_median": 8.0,
+    "entry_hp_frac": 0.821,
+    "potion_uses_per_fight": 0.43,
+    "use_any": 0.343,
+    "inv_known_n": 353,
+    "carry_any": 0.677,
+    "held_mean": 1.12,
+    "use_any_given_carry": 0.506
+   },
+   "exp": {
+    "n": 340,
+    "runs": 340,
+    "deaths": 10,
+    "death_rate": 0.029,
+    "won_n": 330,
+    "net_mean": 8.1,
+    "net_median": 3.0,
+    "entry_hp_frac": 0.844,
+    "potion_uses_per_fight": 0.11,
+    "use_any": 0.085,
+    "inv_known_n": 245,
+    "carry_any": 0.988,
+    "held_mean": 2.27,
+    "use_any_given_carry": 0.099
+   },
+   "old_bot_minus_exp_ci": [
+    1.7,
+    7.0
+   ],
+   "amber_minus_exp": -9.7,
+   "amber_minus_exp_ci_amber_only": [
+    -11.7,
+    -7.3
+   ],
+   "amber_minus_old_bot": -14.1
+  },
+  "4-ELITE-shield and spear": {
+   "amber": {
+    "n": 450,
+    "runs": 450,
+    "deaths": 7,
+    "death_rate": 0.016,
+    "won_n": 443,
+    "net_mean": 11.7,
+    "net_ci": [
+     10.1,
+     13.2
+    ],
+    "death_ci": [
+     0.004,
+     0.029
+    ],
+    "entry_hp_frac": 0.967,
+    "potion_uses_per_fight": 0.79,
+    "carry_any": 0.822,
+    "held_mean": 1.46
+   },
+   "old_bot": {
+    "n": 441,
+    "runs": 441,
+    "deaths": 15,
+    "death_rate": 0.034,
+    "won_n": 426,
+    "net_mean": 20.0,
+    "net_median": 13.0,
+    "entry_hp_frac": 0.989,
+    "potion_uses_per_fight": 0.83,
+    "use_any": 0.612,
+    "inv_known_n": 441,
+    "carry_any": 0.812,
+    "held_mean": 1.43,
+    "use_any_given_carry": 0.754
+   },
+   "exp": {
+    "n": 472,
+    "runs": 472,
+    "deaths": 8,
+    "death_rate": 0.017,
+    "won_n": 464,
+    "net_mean": 9.3,
+    "net_median": 1.0,
+    "entry_hp_frac": 0.98,
+    "potion_uses_per_fight": 0.42,
+    "use_any": 0.373,
+    "inv_known_n": 338,
+    "carry_any": 0.994,
+    "held_mean": 2.33,
+    "use_any_given_carry": 0.375
+   },
+   "old_bot_minus_exp_ci": [
+    8.0,
+    13.2
+   ],
+   "amber_minus_exp": 2.4,
+   "amber_minus_exp_ci_amber_only": [
+    0.8,
+    3.9
+   ],
+   "amber_minus_old_bot": -8.3
+  },
+  "4-BOSS-the heart": {
+   "amber": {
+    "n": 443,
+    "runs": 443,
+    "deaths": 58,
+    "death_rate": 0.131,
+    "won_n": 385,
+    "net_mean": 17.8,
+    "net_ci": [
+     15.6,
+     20.2
+    ],
+    "death_ci": [
+     0.097,
+     0.163
+    ],
+    "entry_hp_frac": 0.833,
+    "potion_uses_per_fight": 0.73,
+    "carry_any": 0.695,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 426,
+    "runs": 426,
+    "deaths": 173,
+    "death_rate": 0.406,
+    "won_n": 253,
+    "net_mean": 41.3,
+    "net_median": 39,
+    "entry_hp_frac": 0.772,
+    "potion_uses_per_fight": 0.86,
+    "use_any": 0.62,
+    "inv_known_n": 426,
+    "carry_any": 0.657,
+    "held_mean": 0.97,
+    "use_any_given_carry": 0.943
+   },
+   "exp": {
+    "n": 464,
+    "runs": 464,
+    "deaths": 39,
+    "death_rate": 0.084,
+    "won_n": 425,
+    "net_mean": 20.1,
+    "net_median": 14,
+    "entry_hp_frac": 0.875,
+    "potion_uses_per_fight": 1.94,
+    "use_any": 0.948,
+    "inv_known_n": 333,
+    "carry_any": 0.988,
+    "held_mean": 2.19,
+    "use_any_given_carry": 0.954
+   },
+   "old_bot_minus_exp_ci": [
+    17.0,
+    25.3
+   ],
+   "amber_minus_exp": -2.3,
+   "amber_minus_exp_ci_amber_only": [
+    -4.5,
+    0.1
+   ],
+   "amber_minus_old_bot": -23.5
+  }
+ },
+ "by_entry_hp": {
+  "ELITE-0-0.5": {
+   "amber": {
+    "n": 1022,
+    "runs": 647,
+    "deaths": 130,
+    "death_rate": 0.127,
+    "won_n": 892,
+    "net_mean": 6.0,
+    "net_ci": [
+     5.1,
+     6.9
+    ],
+    "death_ci": [
+     0.109,
+     0.148
+    ],
+    "entry_hp_frac": 0.354,
+    "potion_uses_per_fight": 0.6,
+    "carry_any": 0.718,
+    "held_mean": 1.0
+   },
+   "old_bot": {
+    "n": 372,
+    "runs": 304,
+    "deaths": 63,
+    "death_rate": 0.169,
+    "won_n": 309,
+    "net_mean": 2.3,
+    "net_median": 2,
+    "entry_hp_frac": 0.382,
+    "potion_uses_per_fight": 0.78,
+    "use_any": 0.64,
+    "inv_known_n": 372,
+    "carry_any": 0.844,
+    "held_mean": 1.31,
+    "use_any_given_carry": 0.758
+   },
+   "exp": {
+    "n": 609,
+    "runs": 395,
+    "deaths": 35,
+    "death_rate": 0.057,
+    "won_n": 574,
+    "net_mean": 3.1,
+    "net_median": 2.0,
+    "entry_hp_frac": 0.387,
+    "potion_uses_per_fight": 0.64,
+    "use_any": 0.555,
+    "inv_known_n": 438,
+    "carry_any": 0.92,
+    "held_mean": 1.66,
+    "use_any_given_carry": 0.628
+   },
+   "old_bot_minus_exp_ci": [
+    -2.6,
+    0.9
+   ],
+   "amber_minus_exp": 2.9,
+   "amber_minus_exp_ci_amber_only": [
+    2.0,
+    3.8
+   ],
+   "amber_minus_old_bot": 3.7
+  },
+  "ELITE-0.5-0.7": {
+   "amber": {
+    "n": 1352,
+    "runs": 728,
+    "deaths": 34,
+    "death_rate": 0.025,
+    "won_n": 1318,
+    "net_mean": 11.4,
+    "net_ci": [
+     10.5,
+     12.3
+    ],
+    "death_ci": [
+     0.017,
+     0.033
+    ],
+    "entry_hp_frac": 0.604,
+    "potion_uses_per_fight": 0.59,
+    "carry_any": 0.704,
+    "held_mean": 0.97
+   },
+   "old_bot": {
+    "n": 1062,
+    "runs": 644,
+    "deaths": 42,
+    "death_rate": 0.04,
+    "won_n": 1020,
+    "net_mean": 8.1,
+    "net_median": 8.0,
+    "entry_hp_frac": 0.615,
+    "potion_uses_per_fight": 0.61,
+    "use_any": 0.492,
+    "inv_known_n": 1062,
+    "carry_any": 0.855,
+    "held_mean": 1.35,
+    "use_any_given_carry": 0.575
+   },
+   "exp": {
+    "n": 1138,
+    "runs": 556,
+    "deaths": 22,
+    "death_rate": 0.019,
+    "won_n": 1116,
+    "net_mean": 6.0,
+    "net_median": 4.5,
+    "entry_hp_frac": 0.607,
+    "potion_uses_per_fight": 0.52,
+    "use_any": 0.457,
+    "inv_known_n": 800,
+    "carry_any": 0.945,
+    "held_mean": 1.66,
+    "use_any_given_carry": 0.491
+   },
+   "old_bot_minus_exp_ci": [
+    1.0,
+    3.4
+   ],
+   "amber_minus_exp": 5.4,
+   "amber_minus_exp_ci_amber_only": [
+    4.5,
+    6.3
+   ],
+   "amber_minus_old_bot": 3.3
+  },
+  "ELITE-0.7-0.85": {
+   "amber": {
+    "n": 1087,
+    "runs": 662,
+    "deaths": 15,
+    "death_rate": 0.014,
+    "won_n": 1072,
+    "net_mean": 16.0,
+    "net_ci": [
+     15.1,
+     17.1
+    ],
+    "death_ci": [
+     0.007,
+     0.021
+    ],
+    "entry_hp_frac": 0.77,
+    "potion_uses_per_fight": 0.6,
+    "carry_any": 0.678,
+    "held_mean": 0.91
+   },
+   "old_bot": {
+    "n": 1355,
+    "runs": 748,
+    "deaths": 18,
+    "death_rate": 0.013,
+    "won_n": 1337,
+    "net_mean": 10.6,
+    "net_median": 9,
+    "entry_hp_frac": 0.778,
+    "potion_uses_per_fight": 0.62,
+    "use_any": 0.505,
+    "inv_known_n": 1355,
+    "carry_any": 0.868,
+    "held_mean": 1.39,
+    "use_any_given_carry": 0.582
+   },
+   "exp": {
+    "n": 933,
+    "runs": 503,
+    "deaths": 6,
+    "death_rate": 0.006,
+    "won_n": 927,
+    "net_mean": 7.3,
+    "net_median": 5,
+    "entry_hp_frac": 0.772,
+    "potion_uses_per_fight": 0.51,
+    "use_any": 0.458,
+    "inv_known_n": 682,
+    "carry_any": 0.955,
+    "held_mean": 1.74,
+    "use_any_given_carry": 0.49
+   },
+   "old_bot_minus_exp_ci": [
+    1.9,
+    4.6
+   ],
+   "amber_minus_exp": 8.7,
+   "amber_minus_exp_ci_amber_only": [
+    7.8,
+    9.8
+   ],
+   "amber_minus_old_bot": 5.4
+  },
+  "ELITE-0.85-1.01": {
+   "amber": {
+    "n": 1009,
+    "runs": 546,
+    "deaths": 4,
+    "death_rate": 0.004,
+    "won_n": 1005,
+    "net_mean": 15.9,
+    "net_ci": [
+     14.8,
+     17.0
+    ],
+    "death_ci": [
+     0.001,
+     0.008
+    ],
+    "entry_hp_frac": 0.941,
+    "potion_uses_per_fight": 0.52,
+    "carry_any": 0.696,
+    "held_mean": 0.96
+   },
+   "old_bot": {
+    "n": 3075,
+    "runs": 896,
+    "deaths": 30,
+    "death_rate": 0.01,
+    "won_n": 3045,
+    "net_mean": 11.7,
+    "net_median": 7,
+    "entry_hp_frac": 0.957,
+    "potion_uses_per_fight": 0.55,
+    "use_any": 0.446,
+    "inv_known_n": 3075,
+    "carry_any": 0.853,
+    "held_mean": 1.38,
+    "use_any_given_carry": 0.523
+   },
+   "exp": {
+    "n": 1769,
+    "runs": 534,
+    "deaths": 6,
+    "death_rate": 0.003,
+    "won_n": 1763,
+    "net_mean": 6.4,
+    "net_median": 1,
+    "entry_hp_frac": 0.959,
+    "potion_uses_per_fight": 0.36,
+    "use_any": 0.326,
+    "inv_known_n": 1285,
+    "carry_any": 0.964,
+    "held_mean": 1.9,
+    "use_any_given_carry": 0.339
+   },
+   "old_bot_minus_exp_ci": [
+    4.4,
+    6.2
+   ],
+   "amber_minus_exp": 9.5,
+   "amber_minus_exp_ci_amber_only": [
+    8.4,
+    10.6
+   ],
+   "amber_minus_old_bot": 4.2
+  },
+  "BOSS-0-0.5": {
+   "amber": {
+    "n": 743,
+    "runs": 518,
+    "deaths": 108,
+    "death_rate": 0.145,
+    "won_n": 635,
+    "net_mean": 3.8,
+    "net_ci": [
+     2.2,
+     5.5
+    ],
+    "death_ci": [
+     0.122,
+     0.171
+    ],
+    "entry_hp_frac": 0.358,
+    "potion_uses_per_fight": 0.68,
+    "carry_any": 0.693,
+    "held_mean": 1
+   },
+   "old_bot": {
+    "n": 231,
+    "runs": 200,
+    "deaths": 86,
+    "death_rate": 0.372,
+    "won_n": 145,
+    "net_mean": 6.1,
+    "net_median": 8,
+    "entry_hp_frac": 0.369,
+    "potion_uses_per_fight": 0.69,
+    "use_any": 0.506,
+    "inv_known_n": 231,
+    "carry_any": 0.597,
+    "held_mean": 0.94,
+    "use_any_given_carry": 0.848
+   },
+   "exp": {
+    "n": 446,
+    "runs": 354,
+    "deaths": 45,
+    "death_rate": 0.101,
+    "won_n": 401,
+    "net_mean": 6.0,
+    "net_median": 6,
+    "entry_hp_frac": 0.368,
+    "potion_uses_per_fight": 0.64,
+    "use_any": 0.496,
+    "inv_known_n": 315,
+    "carry_any": 0.959,
+    "held_mean": 1.84,
+    "use_any_given_carry": 0.523
+   },
+   "old_bot_minus_exp_ci": [
+    -2.6,
+    2.8
+   ],
+   "amber_minus_exp": -2.2,
+   "amber_minus_exp_ci_amber_only": [
+    -3.8,
+    -0.5
+   ],
+   "amber_minus_old_bot": -2.3
+  },
+  "BOSS-0.5-0.7": {
+   "amber": {
+    "n": 678,
+    "runs": 501,
+    "deaths": 57,
+    "death_rate": 0.084,
+    "won_n": 621,
+    "net_mean": 15.3,
+    "net_ci": [
+     13.6,
+     17.1
+    ],
+    "death_ci": [
+     0.063,
+     0.104
+    ],
+    "entry_hp_frac": 0.594,
+    "potion_uses_per_fight": 0.65,
+    "carry_any": 0.689,
+    "held_mean": 0.96
+   },
+   "old_bot": {
+    "n": 612,
+    "runs": 497,
+    "deaths": 84,
+    "death_rate": 0.137,
+    "won_n": 528,
+    "net_mean": 15.7,
+    "net_median": 16.0,
+    "entry_hp_frac": 0.615,
+    "potion_uses_per_fight": 0.96,
+    "use_any": 0.678,
+    "inv_known_n": 612,
+    "carry_any": 0.842,
+    "held_mean": 1.38,
+    "use_any_given_carry": 0.806
+   },
+   "exp": {
+    "n": 524,
+    "runs": 384,
+    "deaths": 27,
+    "death_rate": 0.052,
+    "won_n": 497,
+    "net_mean": 12.3,
+    "net_median": 12,
+    "entry_hp_frac": 0.6,
+    "potion_uses_per_fight": 0.42,
+    "use_any": 0.355,
+    "inv_known_n": 384,
+    "carry_any": 0.958,
+    "held_mean": 1.84,
+    "use_any_given_carry": 0.389
+   },
+   "old_bot_minus_exp_ci": [
+    1.1,
+    5.6
+   ],
+   "amber_minus_exp": 3.0,
+   "amber_minus_exp_ci_amber_only": [
+    1.3,
+    4.8
+   ],
+   "amber_minus_old_bot": -0.4
+  },
+  "BOSS-0.7-0.85": {
+   "amber": {
+    "n": 421,
+    "runs": 328,
+    "deaths": 23,
+    "death_rate": 0.055,
+    "won_n": 398,
+    "net_mean": 16.0,
+    "net_ci": [
+     13.6,
+     18.3
+    ],
+    "death_ci": [
+     0.034,
+     0.078
+    ],
+    "entry_hp_frac": 0.768,
+    "potion_uses_per_fight": 0.56,
+    "carry_any": 0.677,
+    "held_mean": 0.95
+   },
+   "old_bot": {
+    "n": 555,
+    "runs": 450,
+    "deaths": 59,
+    "death_rate": 0.106,
+    "won_n": 496,
+    "net_mean": 20.2,
+    "net_median": 19.0,
+    "entry_hp_frac": 0.771,
+    "potion_uses_per_fight": 0.81,
+    "use_any": 0.587,
+    "inv_known_n": 555,
+    "carry_any": 0.822,
+    "held_mean": 1.29,
+    "use_any_given_carry": 0.715
+   },
+   "exp": {
+    "n": 333,
+    "runs": 252,
+    "deaths": 7,
+    "death_rate": 0.021,
+    "won_n": 326,
+    "net_mean": 10.5,
+    "net_median": 9.0,
+    "entry_hp_frac": 0.772,
+    "potion_uses_per_fight": 0.27,
+    "use_any": 0.228,
+    "inv_known_n": 244,
+    "carry_any": 0.98,
+    "held_mean": 2.16,
+    "use_any_given_carry": 0.259
+   },
+   "old_bot_minus_exp_ci": [
+    7.1,
+    12.6
+   ],
+   "amber_minus_exp": 5.5,
+   "amber_minus_exp_ci_amber_only": [
+    3.1,
+    7.8
+   ],
+   "amber_minus_old_bot": -4.2
+  },
+  "BOSS-0.85-1.01": {
+   "amber": {
+    "n": 666,
+    "runs": 386,
+    "deaths": 11,
+    "death_rate": 0.017,
+    "won_n": 655,
+    "net_mean": 15.8,
+    "net_ci": [
+     14.0,
+     17.6
+    ],
+    "death_ci": [
+     0.007,
+     0.026
+    ],
+    "entry_hp_frac": 0.956,
+    "potion_uses_per_fight": 0.48,
+    "carry_any": 0.68,
+    "held_mean": 1.0
+   },
+   "old_bot": {
+    "n": 1440,
+    "runs": 702,
+    "deaths": 103,
+    "death_rate": 0.072,
+    "won_n": 1337,
+    "net_mean": 19.4,
+    "net_median": 14,
+    "entry_hp_frac": 0.967,
+    "potion_uses_per_fight": 0.74,
+    "use_any": 0.547,
+    "inv_known_n": 1440,
+    "carry_any": 0.83,
+    "held_mean": 1.43,
+    "use_any_given_carry": 0.659
+   },
+   "exp": {
+    "n": 863,
+    "runs": 406,
+    "deaths": 12,
+    "death_rate": 0.014,
+    "won_n": 851,
+    "net_mean": 10.7,
+    "net_median": 3,
+    "entry_hp_frac": 0.97,
+    "potion_uses_per_fight": 0.16,
+    "use_any": 0.148,
+    "inv_known_n": 610,
+    "carry_any": 0.987,
+    "held_mean": 2.13,
+    "use_any_given_carry": 0.15
+   },
+   "old_bot_minus_exp_ci": [
+    6.9,
+    10.6
+   ],
+   "amber_minus_exp": 5.1,
+   "amber_minus_exp_ci_amber_only": [
+    3.3,
+    6.9
+   ],
+   "amber_minus_old_bot": -3.6
+  }
+ },
+ "by_deck": {
+  "1-ELITE-deck0-15": {
+   "amber": {
+    "n": 1122,
+    "runs": 766,
+    "deaths": 36,
+    "death_rate": 0.032,
+    "won_n": 1086,
+    "net_mean": 18.3,
+    "net_ci": [
+     17.6,
+     19.1
+    ],
+    "death_ci": [
+     0.022,
+     0.042
+    ],
+    "entry_hp_frac": 0.683,
+    "potion_uses_per_fight": 0.67,
+    "carry_any": 0.685,
+    "held_mean": 0.88
+   },
+   "old_bot": {
+    "n": 744,
+    "runs": 581,
+    "deaths": 20,
+    "death_rate": 0.027,
+    "won_n": 724,
+    "net_mean": 18.6,
+    "net_median": 19.0,
+    "entry_hp_frac": 0.851,
+    "potion_uses_per_fight": 0.74,
+    "use_any": 0.616,
+    "inv_known_n": 744,
+    "carry_any": 0.849,
+    "held_mean": 1.26,
+    "use_any_given_carry": 0.725
+   },
+   "exp": {
+    "n": 655,
+    "runs": 442,
+    "deaths": 9,
+    "death_rate": 0.014,
+    "won_n": 646,
+    "net_mean": 11.3,
+    "net_median": 10.0,
+    "entry_hp_frac": 0.741,
+    "potion_uses_per_fight": 0.62,
+    "use_any": 0.56,
+    "inv_known_n": 451,
+    "carry_any": 0.911,
+    "held_mean": 1.43,
+    "use_any_given_carry": 0.647
+   },
+   "old_bot_minus_exp_ci": [
+    5.9,
+    8.7
+   ],
+   "amber_minus_exp": 7.0,
+   "amber_minus_exp_ci_amber_only": [
+    6.3,
+    7.8
+   ],
+   "amber_minus_old_bot": -0.3
+  },
+  "1-ELITE-deck16-20": {
+   "amber": {
+    "n": 849,
+    "runs": 585,
+    "deaths": 33,
+    "death_rate": 0.039,
+    "won_n": 816,
+    "net_mean": 14.2,
+    "net_ci": [
+     13.3,
+     15.0
+    ],
+    "death_ci": [
+     0.027,
+     0.053
+    ],
+    "entry_hp_frac": 0.555,
+    "potion_uses_per_fight": 0.54,
+    "carry_any": 0.673,
+    "held_mean": 0.89
+   },
+   "old_bot": {
+    "n": 1646,
+    "runs": 897,
+    "deaths": 19,
+    "death_rate": 0.012,
+    "won_n": 1627,
+    "net_mean": 11.1,
+    "net_median": 10,
+    "entry_hp_frac": 0.747,
+    "potion_uses_per_fight": 0.53,
+    "use_any": 0.448,
+    "inv_known_n": 1646,
+    "carry_any": 0.862,
+    "held_mean": 1.31,
+    "use_any_given_carry": 0.519
+   },
+   "exp": {
+    "n": 1029,
+    "runs": 565,
+    "deaths": 14,
+    "death_rate": 0.014,
+    "won_n": 1015,
+    "net_mean": 8.5,
+    "net_median": 7,
+    "entry_hp_frac": 0.645,
+    "potion_uses_per_fight": 0.53,
+    "use_any": 0.478,
+    "inv_known_n": 765,
+    "carry_any": 0.929,
+    "held_mean": 1.5,
+    "use_any_given_carry": 0.519
+   },
+   "old_bot_minus_exp_ci": [
+    1.7,
+    3.4
+   ],
+   "amber_minus_exp": 5.7,
+   "amber_minus_exp_ci_amber_only": [
+    4.8,
+    6.5
+   ],
+   "amber_minus_old_bot": 3.1
+  },
+  "1-ELITE-deck21-25": {
+   "amber": {
+    "n": 6,
+    "runs": 6,
+    "deaths": 1,
+    "death_rate": 0.167,
+    "won_n": 5,
+    "net_mean": 8.6,
+    "net_ci": [
+     -1,
+     18.2
+    ],
+    "death_ci": [
+     0.0,
+     0.5
+    ],
+    "entry_hp_frac": 0.49,
+    "potion_uses_per_fight": 0.33,
+    "carry_any": 0.667,
+    "held_mean": 1
+   },
+   "old_bot": {
+    "n": 111,
+    "runs": 100,
+    "deaths": 1,
+    "death_rate": 0.009,
+    "won_n": 110,
+    "net_mean": 4.9,
+    "net_median": 1.5,
+    "entry_hp_frac": 0.691,
+    "potion_uses_per_fight": 0.47,
+    "use_any": 0.387,
+    "inv_known_n": 111,
+    "carry_any": 0.919,
+    "held_mean": 1.58,
+    "use_any_given_carry": 0.422
+   },
+   "exp": {
+    "n": 31,
+    "runs": 25,
+    "deaths": 1,
+    "death_rate": 0.032,
+    "won_n": 30,
+    "net_mean": 6.7,
+    "net_median": 4.0,
+    "entry_hp_frac": 0.609,
+    "potion_uses_per_fight": 0.39,
+    "use_any": 0.387,
+    "inv_known_n": 21,
+    "carry_any": 0.81,
+    "held_mean": 1.38,
+    "use_any_given_carry": 0.353
+   },
+   "old_bot_minus_exp_ci": [
+    -5.1,
+    1.2
+   ],
+   "amber_minus_exp": 1.9,
+   "amber_minus_exp_ci_amber_only": [
+    -7.7,
+    11.5
+   ],
+   "amber_minus_old_bot": 3.7
+  },
+  "1-BOSS-deck16-20": {
+   "amber": {
+    "n": 718,
+    "runs": 718,
+    "deaths": 74,
+    "death_rate": 0.103,
+    "won_n": 644,
+    "net_mean": 24.7,
+    "net_ci": [
+     23.4,
+     25.9
+    ],
+    "death_ci": [
+     0.082,
+     0.124
+    ],
+    "entry_hp_frac": 0.539,
+    "potion_uses_per_fight": 0.77,
+    "carry_any": 0.756,
+    "held_mean": 1.06
+   },
+   "old_bot": {
+    "n": 607,
+    "runs": 607,
+    "deaths": 62,
+    "death_rate": 0.102,
+    "won_n": 545,
+    "net_mean": 20.1,
+    "net_median": 20,
+    "entry_hp_frac": 0.721,
+    "potion_uses_per_fight": 0.97,
+    "use_any": 0.684,
+    "inv_known_n": 607,
+    "carry_any": 0.871,
+    "held_mean": 1.43,
+    "use_any_given_carry": 0.784
+   },
+   "exp": {
+    "n": 507,
+    "runs": 507,
+    "deaths": 31,
+    "death_rate": 0.061,
+    "won_n": 476,
+    "net_mean": 12.2,
+    "net_median": 11.0,
+    "entry_hp_frac": 0.549,
+    "potion_uses_per_fight": 0.55,
+    "use_any": 0.464,
+    "inv_known_n": 359,
+    "carry_any": 0.955,
+    "held_mean": 1.73,
+    "use_any_given_carry": 0.504
+   },
+   "old_bot_minus_exp_ci": [
+    6.2,
+    9.7
+   ],
+   "amber_minus_exp": 12.5,
+   "amber_minus_exp_ci_amber_only": [
+    11.2,
+    13.7
+   ],
+   "amber_minus_old_bot": 4.6
+  },
+  "1-BOSS-deck21-25": {
+   "amber": {
+    "n": 84,
+    "runs": 84,
+    "deaths": 3,
+    "death_rate": 0.036,
+    "won_n": 81,
+    "net_mean": 24.3,
+    "net_ci": [
+     21.0,
+     27.3
+    ],
+    "death_ci": [
+     0.0,
+     0.083
+    ],
+    "entry_hp_frac": 0.557,
+    "potion_uses_per_fight": 0.8,
+    "carry_any": 0.726,
+    "held_mean": 1.05
+   },
+   "old_bot": {
+    "n": 349,
+    "runs": 349,
+    "deaths": 17,
+    "death_rate": 0.049,
+    "won_n": 332,
+    "net_mean": 18.2,
+    "net_median": 16.0,
+    "entry_hp_frac": 0.727,
+    "potion_uses_per_fight": 0.94,
+    "use_any": 0.693,
+    "inv_known_n": 349,
+    "carry_any": 0.905,
+    "held_mean": 1.49,
+    "use_any_given_carry": 0.766
+   },
+   "exp": {
+    "n": 107,
+    "runs": 107,
+    "deaths": 5,
+    "death_rate": 0.047,
+    "won_n": 102,
+    "net_mean": 8.0,
+    "net_median": 7.0,
+    "entry_hp_frac": 0.563,
+    "potion_uses_per_fight": 0.63,
+    "use_any": 0.505,
+    "inv_known_n": 83,
+    "carry_any": 0.94,
+    "held_mean": 1.8,
+    "use_any_given_carry": 0.538
+   },
+   "old_bot_minus_exp_ci": [
+    7.1,
+    13.2
+   ],
+   "amber_minus_exp": 16.3,
+   "amber_minus_exp_ci_amber_only": [
+    13.0,
+    19.3
+   ],
+   "amber_minus_old_bot": 6.1
+  },
+  "2-ELITE-deck16-20": {
+   "amber": {
+    "n": 366,
+    "runs": 256,
+    "deaths": 20,
+    "death_rate": 0.055,
+    "won_n": 346,
+    "net_mean": 11.9,
+    "net_ci": [
+     10.1,
+     13.7
+    ],
+    "death_ci": [
+     0.032,
+     0.081
+    ],
+    "entry_hp_frac": 0.643,
+    "potion_uses_per_fight": 0.58,
+    "carry_any": 0.702,
+    "held_mean": 0.95
+   },
+   "old_bot": {
+    "n": 47,
+    "runs": 38,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 47,
+    "net_mean": 16.3,
+    "net_median": 13,
+    "entry_hp_frac": 0.866,
+    "potion_uses_per_fight": 0.81,
+    "use_any": 0.617,
+    "inv_known_n": 47,
+    "carry_any": 0.957,
+    "held_mean": 1.64,
+    "use_any_given_carry": 0.644
+   },
+   "exp": {
+    "n": 193,
+    "runs": 125,
+    "deaths": 5,
+    "death_rate": 0.026,
+    "won_n": 188,
+    "net_mean": 6.6,
+    "net_median": 4.5,
+    "entry_hp_frac": 0.696,
+    "potion_uses_per_fight": 0.59,
+    "use_any": 0.534,
+    "inv_known_n": 126,
+    "carry_any": 0.976,
+    "held_mean": 1.71,
+    "use_any_given_carry": 0.602
+   },
+   "old_bot_minus_exp_ci": [
+    5.1,
+    14.2
+   ],
+   "amber_minus_exp": 5.3,
+   "amber_minus_exp_ci_amber_only": [
+    3.5,
+    7.1
+   ],
+   "amber_minus_old_bot": -4.4
+  },
+  "2-ELITE-deck21-25": {
+   "amber": {
+    "n": 791,
+    "runs": 494,
+    "deaths": 51,
+    "death_rate": 0.064,
+    "won_n": 740,
+    "net_mean": 12.2,
+    "net_ci": [
+     11.0,
+     13.3
+    ],
+    "death_ci": [
+     0.048,
+     0.082
+    ],
+    "entry_hp_frac": 0.621,
+    "potion_uses_per_fight": 0.58,
+    "carry_any": 0.699,
+    "held_mean": 0.98
+   },
+   "old_bot": {
+    "n": 829,
+    "runs": 538,
+    "deaths": 36,
+    "death_rate": 0.043,
+    "won_n": 793,
+    "net_mean": 12.1,
+    "net_median": 9,
+    "entry_hp_frac": 0.835,
+    "potion_uses_per_fight": 0.69,
+    "use_any": 0.552,
+    "inv_known_n": 829,
+    "carry_any": 0.869,
+    "held_mean": 1.39,
+    "use_any_given_carry": 0.636
+   },
+   "exp": {
+    "n": 838,
+    "runs": 449,
+    "deaths": 21,
+    "death_rate": 0.025,
+    "won_n": 817,
+    "net_mean": 6.0,
+    "net_median": 3,
+    "entry_hp_frac": 0.717,
+    "potion_uses_per_fight": 0.6,
+    "use_any": 0.524,
+    "inv_known_n": 626,
+    "carry_any": 0.952,
+    "held_mean": 1.81,
+    "use_any_given_carry": 0.55
+   },
+   "old_bot_minus_exp_ci": [
+    4.6,
+    7.7
+   ],
+   "amber_minus_exp": 6.2,
+   "amber_minus_exp_ci_amber_only": [
+    5.0,
+    7.3
+   ],
+   "amber_minus_old_bot": 0.1
+  },
+  "2-ELITE-deck26-30": {
+   "amber": {
+    "n": 125,
+    "runs": 96,
+    "deaths": 5,
+    "death_rate": 0.04,
+    "won_n": 120,
+    "net_mean": 9.6,
+    "net_ci": [
+     6.9,
+     12.5
+    ],
+    "death_ci": [
+     0.008,
+     0.078
+    ],
+    "entry_hp_frac": 0.564,
+    "potion_uses_per_fight": 0.51,
+    "carry_any": 0.72,
+    "held_mean": 1.02
+   },
+   "old_bot": {
+    "n": 758,
+    "runs": 503,
+    "deaths": 25,
+    "death_rate": 0.033,
+    "won_n": 733,
+    "net_mean": 8.4,
+    "net_median": 5,
+    "entry_hp_frac": 0.817,
+    "potion_uses_per_fight": 0.62,
+    "use_any": 0.5,
+    "inv_known_n": 758,
+    "carry_any": 0.85,
+    "held_mean": 1.4,
+    "use_any_given_carry": 0.589
+   },
+   "exp": {
+    "n": 315,
+    "runs": 198,
+    "deaths": 4,
+    "death_rate": 0.013,
+    "won_n": 311,
+    "net_mean": 3.8,
+    "net_median": 1,
+    "entry_hp_frac": 0.769,
+    "potion_uses_per_fight": 0.47,
+    "use_any": 0.406,
+    "inv_known_n": 229,
+    "carry_any": 0.961,
+    "held_mean": 1.8,
+    "use_any_given_carry": 0.432
+   },
+   "old_bot_minus_exp_ci": [
+    2.9,
+    6.3
+   ],
+   "amber_minus_exp": 5.8,
+   "amber_minus_exp_ci_amber_only": [
+    3.1,
+    8.7
+   ],
+   "amber_minus_old_bot": 1.2
+  },
+  "2-BOSS-deck21-25": {
+   "amber": {
+    "n": 349,
+    "runs": 349,
+    "deaths": 37,
+    "death_rate": 0.106,
+    "won_n": 312,
+    "net_mean": 20.5,
+    "net_ci": [
+     18.3,
+     23.1
+    ],
+    "death_ci": [
+     0.077,
+     0.14
+    ],
+    "entry_hp_frac": 0.651,
+    "potion_uses_per_fight": 0.67,
+    "carry_any": 0.676,
+    "held_mean": 0.96
+   },
+   "old_bot": {
+    "n": 103,
+    "runs": 103,
+    "deaths": 17,
+    "death_rate": 0.165,
+    "won_n": 86,
+    "net_mean": 26.6,
+    "net_median": 28.0,
+    "entry_hp_frac": 0.863,
+    "potion_uses_per_fight": 0.97,
+    "use_any": 0.689,
+    "inv_known_n": 103,
+    "carry_any": 0.893,
+    "held_mean": 1.49,
+    "use_any_given_carry": 0.772
+   },
+   "exp": {
+    "n": 222,
+    "runs": 222,
+    "deaths": 12,
+    "death_rate": 0.054,
+    "won_n": 210,
+    "net_mean": 12.0,
+    "net_median": 8.5,
+    "entry_hp_frac": 0.706,
+    "potion_uses_per_fight": 0.56,
+    "use_any": 0.432,
+    "inv_known_n": 160,
+    "carry_any": 0.969,
+    "held_mean": 1.89,
+    "use_any_given_carry": 0.445
+   },
+   "old_bot_minus_exp_ci": [
+    8.8,
+    20.5
+   ],
+   "amber_minus_exp": 8.5,
+   "amber_minus_exp_ci_amber_only": [
+    6.3,
+    11.1
+   ],
+   "amber_minus_old_bot": -6.1
+  },
+  "2-BOSS-deck26-30": {
+   "amber": {
+    "n": 198,
+    "runs": 198,
+    "deaths": 21,
+    "death_rate": 0.106,
+    "won_n": 177,
+    "net_mean": 20.3,
+    "net_ci": [
+     17.1,
+     23.2
+    ],
+    "death_ci": [
+     0.066,
+     0.152
+    ],
+    "entry_hp_frac": 0.649,
+    "potion_uses_per_fight": 0.68,
+    "carry_any": 0.712,
+    "held_mean": 1.05
+   },
+   "old_bot": {
+    "n": 473,
+    "runs": 473,
+    "deaths": 60,
+    "death_rate": 0.127,
+    "won_n": 413,
+    "net_mean": 23.8,
+    "net_median": 21,
+    "entry_hp_frac": 0.876,
+    "potion_uses_per_fight": 0.94,
+    "use_any": 0.666,
+    "inv_known_n": 473,
+    "carry_any": 0.871,
+    "held_mean": 1.48,
+    "use_any_given_carry": 0.765
+   },
+   "exp": {
+    "n": 257,
+    "runs": 257,
+    "deaths": 13,
+    "death_rate": 0.051,
+    "won_n": 244,
+    "net_mean": 11.9,
+    "net_median": 8.0,
+    "entry_hp_frac": 0.762,
+    "potion_uses_per_fight": 0.41,
+    "use_any": 0.354,
+    "inv_known_n": 186,
+    "carry_any": 0.952,
+    "held_mean": 1.91,
+    "use_any_given_carry": 0.373
+   },
+   "old_bot_minus_exp_ci": [
+    8.6,
+    15.4
+   ],
+   "amber_minus_exp": 8.4,
+   "amber_minus_exp_ci_amber_only": [
+    5.2,
+    11.3
+   ],
+   "amber_minus_old_bot": -3.5
+  },
+  "2-BOSS-deck31-98": {
+   "amber": {
+    "n": 19,
+    "runs": 19,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 19,
+    "net_mean": 20.2,
+    "net_ci": [
+     9.3,
+     31.4
+    ],
+    "death_ci": [
+     0.0,
+     0.0
+    ],
+    "entry_hp_frac": 0.605,
+    "potion_uses_per_fight": 0.63,
+    "carry_any": 0.579,
+    "held_mean": 0.89
+   },
+   "old_bot": {
+    "n": 194,
+    "runs": 194,
+    "deaths": 33,
+    "death_rate": 0.17,
+    "won_n": 161,
+    "net_mean": 21.3,
+    "net_median": 15,
+    "entry_hp_frac": 0.865,
+    "potion_uses_per_fight": 0.74,
+    "use_any": 0.552,
+    "inv_known_n": 194,
+    "carry_any": 0.82,
+    "held_mean": 1.33,
+    "use_any_given_carry": 0.673
+   },
+   "exp": {
+    "n": 44,
+    "runs": 44,
+    "deaths": 2,
+    "death_rate": 0.045,
+    "won_n": 42,
+    "net_mean": 5.0,
+    "net_median": 4.0,
+    "entry_hp_frac": 0.825,
+    "potion_uses_per_fight": 0.39,
+    "use_any": 0.364,
+    "inv_known_n": 34,
+    "carry_any": 1.0,
+    "held_mean": 1.85,
+    "use_any_given_carry": 0.412
+   },
+   "old_bot_minus_exp_ci": [
+    9.3,
+    23.4
+   ],
+   "amber_minus_exp": 15.2,
+   "amber_minus_exp_ci_amber_only": [
+    4.3,
+    26.4
+   ],
+   "amber_minus_old_bot": -1.1
+  },
+  "3-ELITE-deck26-30": {
+   "amber": {
+    "n": 567,
+    "runs": 326,
+    "deaths": 23,
+    "death_rate": 0.041,
+    "won_n": 544,
+    "net_mean": 6.4,
+    "net_ci": [
+     5.1,
+     7.7
+    ],
+    "death_ci": [
+     0.024,
+     0.058
+    ],
+    "entry_hp_frac": 0.762,
+    "potion_uses_per_fight": 0.56,
+    "carry_any": 0.735,
+    "held_mean": 1.09
+   },
+   "old_bot": {
+    "n": 224,
+    "runs": 150,
+    "deaths": 9,
+    "death_rate": 0.04,
+    "won_n": 215,
+    "net_mean": 8.2,
+    "net_median": 0,
+    "entry_hp_frac": 0.885,
+    "potion_uses_per_fight": 0.62,
+    "use_any": 0.478,
+    "inv_known_n": 224,
+    "carry_any": 0.826,
+    "held_mean": 1.41,
+    "use_any_given_carry": 0.578
+   },
+   "exp": {
+    "n": 547,
+    "runs": 280,
+    "deaths": 7,
+    "death_rate": 0.013,
+    "won_n": 540,
+    "net_mean": 3.3,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.86,
+    "potion_uses_per_fight": 0.27,
+    "use_any": 0.221,
+    "inv_known_n": 384,
+    "carry_any": 0.984,
+    "held_mean": 2.11,
+    "use_any_given_carry": 0.217
+   },
+   "old_bot_minus_exp_ci": [
+    2.7,
+    7.6
+   ],
+   "amber_minus_exp": 3.1,
+   "amber_minus_exp_ci_amber_only": [
+    1.8,
+    4.4
+   ],
+   "amber_minus_old_bot": -1.8
+  },
+  "3-ELITE-deck31-98": {
+   "amber": {
+    "n": 343,
+    "runs": 195,
+    "deaths": 8,
+    "death_rate": 0.023,
+    "won_n": 335,
+    "net_mean": 5.4,
+    "net_ci": [
+     3.7,
+     7.0
+    ],
+    "death_ci": [
+     0.009,
+     0.041
+    ],
+    "entry_hp_frac": 0.769,
+    "potion_uses_per_fight": 0.52,
+    "carry_any": 0.735,
+    "held_mean": 1.13
+   },
+   "old_bot": {
+    "n": 1340,
+    "runs": 583,
+    "deaths": 40,
+    "death_rate": 0.03,
+    "won_n": 1300,
+    "net_mean": 5.7,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.87,
+    "potion_uses_per_fight": 0.51,
+    "use_any": 0.401,
+    "inv_known_n": 1340,
+    "carry_any": 0.849,
+    "held_mean": 1.45,
+    "use_any_given_carry": 0.472
+   },
+   "exp": {
+    "n": 671,
+    "runs": 302,
+    "deaths": 5,
+    "death_rate": 0.007,
+    "won_n": 666,
+    "net_mean": 1.1,
+    "net_median": 0.0,
+    "entry_hp_frac": 0.868,
+    "potion_uses_per_fight": 0.25,
+    "use_any": 0.219,
+    "inv_known_n": 481,
+    "carry_any": 0.981,
+    "held_mean": 2.15,
+    "use_any_given_carry": 0.231
+   },
+   "old_bot_minus_exp_ci": [
+    3.3,
+    6.1
+   ],
+   "amber_minus_exp": 4.3,
+   "amber_minus_exp_ci_amber_only": [
+    2.6,
+    5.9
+   ],
+   "amber_minus_old_bot": -0.3
+  },
+  "3-BOSS-deck26-30": {
+   "amber": {
+    "n": 371,
+    "runs": 188,
+    "deaths": 12,
+    "death_rate": 0.032,
+    "won_n": 359,
+    "net_mean": -3.2,
+    "net_ci": [
+     -4.5,
+     -1.9
+    ],
+    "death_ci": [
+     0.016,
+     0.054
+    ],
+    "entry_hp_frac": 0.767,
+    "potion_uses_per_fight": 0.42,
+    "carry_any": 0.59,
+    "held_mean": 0.84
+   },
+   "old_bot": {
+    "n": 32,
+    "runs": 17,
+    "deaths": 6,
+    "death_rate": 0.188,
+    "won_n": 26,
+    "net_mean": 20.8,
+    "net_median": 14.0,
+    "entry_hp_frac": 0.801,
+    "potion_uses_per_fight": 0.66,
+    "use_any": 0.438,
+    "inv_known_n": 32,
+    "carry_any": 0.625,
+    "held_mean": 1.09,
+    "use_any_given_carry": 0.7
+   },
+   "exp": {
+    "n": 228,
+    "runs": 117,
+    "deaths": 12,
+    "death_rate": 0.053,
+    "won_n": 216,
+    "net_mean": 10.2,
+    "net_median": 5.0,
+    "entry_hp_frac": 0.805,
+    "potion_uses_per_fight": 0.18,
+    "use_any": 0.14,
+    "inv_known_n": 153,
+    "carry_any": 0.98,
+    "held_mean": 2.2,
+    "use_any_given_carry": 0.147
+   },
+   "old_bot_minus_exp_ci": [
+    0.9,
+    20.7
+   ],
+   "amber_minus_exp": -13.4,
+   "amber_minus_exp_ci_amber_only": [
+    -14.7,
+    -12.1
+   ],
+   "amber_minus_old_bot": -24.0
+  },
+  "3-BOSS-deck31-98": {
+   "amber": {
+    "n": 491,
+    "runs": 250,
+    "deaths": 36,
+    "death_rate": 0.073,
+    "won_n": 455,
+    "net_mean": -2.3,
+    "net_ci": [
+     -3.6,
+     -1.0
+    ],
+    "death_ci": [
+     0.051,
+     0.096
+    ],
+    "entry_hp_frac": 0.742,
+    "potion_uses_per_fight": 0.39,
+    "carry_any": 0.637,
+    "held_mean": 0.95
+   },
+   "old_bot": {
+    "n": 1059,
+    "runs": 561,
+    "deaths": 135,
+    "death_rate": 0.127,
+    "won_n": 924,
+    "net_mean": 12.5,
+    "net_median": 7.0,
+    "entry_hp_frac": 0.829,
+    "potion_uses_per_fight": 0.59,
+    "use_any": 0.447,
+    "inv_known_n": 1059,
+    "carry_any": 0.718,
+    "held_mean": 1.2,
+    "use_any_given_carry": 0.622
+   },
+   "exp": {
+    "n": 697,
+    "runs": 350,
+    "deaths": 10,
+    "death_rate": 0.014,
+    "won_n": 687,
+    "net_mean": 8.6,
+    "net_median": 3,
+    "entry_hp_frac": 0.846,
+    "potion_uses_per_fight": 0.1,
+    "use_any": 0.086,
+    "inv_known_n": 505,
+    "carry_any": 0.992,
+    "held_mean": 2.26,
+    "use_any_given_carry": 0.09
+   },
+   "old_bot_minus_exp_ci": [
+    2.0,
+    5.9
+   ],
+   "amber_minus_exp": -10.9,
+   "amber_minus_exp_ci_amber_only": [
+    -12.2,
+    -9.6
+   ],
+   "amber_minus_old_bot": -14.8
+  }
+ },
+ "early": {
+  "act1 gremlin nob, floor<=8, deck<=13, <=1 upgrade": {
+   "amber": {
+    "n": 71,
+    "runs": 70,
+    "deaths": 1,
+    "death_rate": 0.014,
+    "won_n": 70,
+    "net_mean": 19.1,
+    "net_ci": [
+     15.7,
+     22.8
+    ],
+    "death_ci": [
+     0.0,
+     0.043
+    ],
+    "entry_hp_frac": 0.745,
+    "potion_uses_per_fight": 0.65,
+    "carry_any": 0.634,
+    "held_mean": 0.8
+   },
+   "old_bot": {
+    "n": 32,
+    "runs": 32,
+    "deaths": 1,
+    "death_rate": 0.031,
+    "won_n": 31,
+    "net_mean": 16.4,
+    "net_median": 18,
+    "entry_hp_frac": 0.866,
+    "potion_uses_per_fight": 0.84,
+    "use_any": 0.688,
+    "inv_known_n": 32,
+    "carry_any": 0.812,
+    "held_mean": 1.16,
+    "use_any_given_carry": 0.846
+   },
+   "exp": {
+    "n": 23,
+    "runs": 23,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 23,
+    "net_mean": 5.7,
+    "net_median": 2,
+    "entry_hp_frac": 0.791,
+    "potion_uses_per_fight": 0.43,
+    "use_any": 0.391,
+    "inv_known_n": 16,
+    "carry_any": 0.812,
+    "held_mean": 1.31,
+    "use_any_given_carry": 0.462
+   },
+   "old_bot_minus_exp_ci": [
+    3.3,
+    17.9
+   ],
+   "amber_minus_exp": 13.4,
+   "amber_minus_exp_ci_amber_only": [
+    10.0,
+    17.1
+   ],
+   "amber_minus_old_bot": 2.7
+  },
+  "act1 lagavulin, floor<=8, deck<=13, <=1 upgrade": {
+   "amber": {
+    "n": 70,
+    "runs": 70,
+    "deaths": 1,
+    "death_rate": 0.014,
+    "won_n": 69,
+    "net_mean": 23.7,
+    "net_ci": [
+     21.0,
+     26.3
+    ],
+    "death_ci": [
+     0.0,
+     0.043
+    ],
+    "entry_hp_frac": 0.737,
+    "potion_uses_per_fight": 0.63,
+    "carry_any": 0.671,
+    "held_mean": 0.87
+   },
+   "old_bot": {
+    "n": 24,
+    "runs": 24,
+    "deaths": 1,
+    "death_rate": 0.042,
+    "won_n": 23,
+    "net_mean": 25.0,
+    "net_median": 24,
+    "entry_hp_frac": 0.907,
+    "potion_uses_per_fight": 0.67,
+    "use_any": 0.583,
+    "inv_known_n": 24,
+    "carry_any": 0.875,
+    "held_mean": 1.25,
+    "use_any_given_carry": 0.667
+   },
+   "exp": {
+    "n": 27,
+    "runs": 27,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 27,
+    "net_mean": 11.1,
+    "net_median": 13,
+    "entry_hp_frac": 0.829,
+    "potion_uses_per_fight": 0.56,
+    "use_any": 0.519,
+    "inv_known_n": 22,
+    "carry_any": 0.773,
+    "held_mean": 1.32,
+    "use_any_given_carry": 0.824
+   },
+   "old_bot_minus_exp_ci": [
+    7.7,
+    20.3
+   ],
+   "amber_minus_exp": 12.6,
+   "amber_minus_exp_ci_amber_only": [
+    9.9,
+    15.2
+   ],
+   "amber_minus_old_bot": -1.3
+  },
+  "act1 three sentries, floor<=8, deck<=13, <=1 upgrade": {
+   "amber": {
+    "n": 66,
+    "runs": 66,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 66,
+    "net_mean": 22.4,
+    "net_ci": [
+     19.6,
+     25.2
+    ],
+    "death_ci": [
+     0.0,
+     0.0
+    ],
+    "entry_hp_frac": 0.738,
+    "potion_uses_per_fight": 0.8,
+    "carry_any": 0.773,
+    "held_mean": 1
+   },
+   "old_bot": {
+    "n": 20,
+    "runs": 20,
+    "deaths": 1,
+    "death_rate": 0.05,
+    "won_n": 19,
+    "net_mean": 27.4,
+    "net_median": 26,
+    "entry_hp_frac": 0.89,
+    "potion_uses_per_fight": 0.8,
+    "use_any": 0.7,
+    "inv_known_n": 20,
+    "carry_any": 0.8,
+    "held_mean": 1.05,
+    "use_any_given_carry": 0.875
+   },
+   "exp": {
+    "n": 23,
+    "runs": 23,
+    "deaths": 0,
+    "death_rate": 0.0,
+    "won_n": 23,
+    "net_mean": 11.5,
+    "net_median": 10,
+    "entry_hp_frac": 0.792,
+    "potion_uses_per_fight": 0.39,
+    "use_any": 0.391,
+    "inv_known_n": 13,
+    "carry_any": 1.0,
+    "held_mean": 1.85,
+    "use_any_given_carry": 0.615
+   },
+   "old_bot_minus_exp_ci": [
+    6.0,
+    24.6
+   ],
+   "amber_minus_exp": 10.9,
+   "amber_minus_exp_ci_amber_only": [
+    8.1,
+    13.7
+   ],
+   "amber_minus_old_bot": -5.0
+  }
+ }
+}

@@ -1,0 +1,1695 @@
+{
+ "fights": 1596,
+ "dropped": {
+  "amber_not_finished": 3,
+  "amber1024_missing": 278
+ },
+ "primary": {
+  "n": 1596,
+  "runs": 257,
+  "expert": 8.62,
+  "expert_death": 0.024,
+  "prod": {
+   "hp_lost": 11.641,
+   "_death": 0.055,
+   "_potions": 0.561,
+   "_turns": 4.597
+  },
+  "amber": {
+   "hp_lost": 20.763,
+   "_death": 0.055,
+   "_potions": 0.822,
+   "_turns": 6.345
+  },
+  "amber1024": {
+   "hp_lost": 20.505,
+   "_death": 0.044,
+   "_potions": 0.851,
+   "_turns": 6.622
+  },
+  "prod_minus_expert_ci": [
+   2.24,
+   3.78
+  ],
+  "amber_minus_prod": 9.12,
+  "amber_minus_prod_ci": [
+   8.02,
+   10.28
+  ],
+  "amber_minus_expert": 12.14,
+  "amber_minus_expert_ci": [
+   10.96,
+   13.31
+  ],
+  "amber_death_minus_prod_ci": [
+   -0.01,
+   0.01
+  ],
+  "amber1024_minus_prod": 8.86,
+  "amber1024_minus_prod_ci": [
+   7.71,
+   10.07
+  ],
+  "amber1024_minus_expert": 11.88,
+  "amber1024_minus_expert_ci": [
+   10.64,
+   13.1
+  ],
+  "amber1024_death_minus_prod_ci": [
+   -0.02,
+   -0.0
+  ]
+ },
+ "by_act": {
+  "1": {
+   "n": 837,
+   "runs": 257,
+   "expert": 10.61,
+   "expert_death": 0.025,
+   "prod": {
+    "hp_lost": 12.192,
+    "_death": 0.053,
+    "_potions": 0.7,
+    "_turns": 4.772
+   },
+   "amber": {
+    "hp_lost": 19.234,
+    "_death": 0.054,
+    "_potions": 0.97,
+    "_turns": 6.438
+   },
+   "amber1024": {
+    "hp_lost": 19.38,
+    "_death": 0.042,
+    "_potions": 1.0,
+    "_turns": 6.82
+   },
+   "prod_minus_expert_ci": [
+    0.82,
+    2.34
+   ],
+   "amber_minus_prod": 7.04,
+   "amber_minus_prod_ci": [
+    6.09,
+    8.03
+   ],
+   "amber_minus_expert": 8.62,
+   "amber_minus_expert_ci": [
+    7.6,
+    9.68
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.01,
+    0.01
+   ],
+   "amber1024_minus_prod": 7.19,
+   "amber1024_minus_prod_ci": [
+    6.17,
+    8.26
+   ],
+   "amber1024_minus_expert": 8.77,
+   "amber1024_minus_expert_ci": [
+    7.66,
+    9.9
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.02,
+    0.0
+   ]
+  },
+  "2": {
+   "n": 454,
+   "runs": 158,
+   "expert": 7.84,
+   "expert_death": 0.037,
+   "prod": {
+    "hp_lost": 12.499,
+    "_death": 0.07,
+    "_potions": 0.488,
+    "_turns": 3.993
+   },
+   "amber": {
+    "hp_lost": 21.935,
+    "_death": 0.077,
+    "_potions": 0.789,
+    "_turns": 5.478
+   },
+   "amber1024": {
+    "hp_lost": 21.102,
+    "_death": 0.061,
+    "_potions": 0.794,
+    "_turns": 5.594
+   },
+   "prod_minus_expert_ci": [
+    3.21,
+    6.17
+   ],
+   "amber_minus_prod": 9.44,
+   "amber_minus_prod_ci": [
+    7.9,
+    11.02
+   ],
+   "amber_minus_expert": 14.1,
+   "amber_minus_expert_ci": [
+    12.23,
+    16.0
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.01,
+    0.03
+   ],
+   "amber1024_minus_prod": 8.6,
+   "amber1024_minus_prod_ci": [
+    6.97,
+    10.29
+   ],
+   "amber1024_minus_expert": 13.27,
+   "amber1024_minus_expert_ci": [
+    11.35,
+    15.26
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.02,
+    0.0
+   ]
+  },
+  "3": {
+   "n": 305,
+   "runs": 74,
+   "expert": 4.34,
+   "expert_death": 0.003,
+   "prod": {
+    "hp_lost": 8.851,
+    "_death": 0.039,
+    "_potions": 0.29,
+    "_turns": 5.018
+   },
+   "amber": {
+    "hp_lost": 23.216,
+    "_death": 0.026,
+    "_potions": 0.467,
+    "_turns": 7.38
+   },
+   "amber1024": {
+    "hp_lost": 22.705,
+    "_death": 0.023,
+    "_potions": 0.526,
+    "_turns": 7.608
+   },
+   "prod_minus_expert_ci": [
+    2.58,
+    6.5
+   ],
+   "amber_minus_prod": 14.37,
+   "amber_minus_prod_ci": [
+    11.15,
+    17.91
+   ],
+   "amber_minus_expert": 18.88,
+   "amber_minus_expert_ci": [
+    15.75,
+    22.45
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.03,
+    0.01
+   ],
+   "amber1024_minus_prod": 13.85,
+   "amber1024_minus_prod_ci": [
+    10.46,
+    17.66
+   ],
+   "amber1024_minus_expert": 18.37,
+   "amber1024_minus_expert_ci": [
+    14.99,
+    22.19
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.03,
+    0.0
+   ]
+  }
+ },
+ "by_room": {
+  "E": {
+   "n": 1143,
+   "runs": 255,
+   "expert": 7.3,
+   "expert_death": 0.015,
+   "prod": {
+    "hp_lost": 10.068,
+    "_death": 0.033,
+    "_potions": 0.51,
+    "_turns": 3.735
+   },
+   "amber": {
+    "hp_lost": 17.57,
+    "_death": 0.036,
+    "_potions": 0.833,
+    "_turns": 5.368
+   },
+   "amber1024": {
+    "hp_lost": 17.128,
+    "_death": 0.031,
+    "_potions": 0.866,
+    "_turns": 5.731
+   },
+   "prod_minus_expert_ci": [
+    2.0,
+    3.55
+   ],
+   "amber_minus_prod": 7.5,
+   "amber_minus_prod_ci": [
+    6.58,
+    8.45
+   ],
+   "amber_minus_expert": 10.27,
+   "amber_minus_expert_ci": [
+    9.19,
+    11.31
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.0,
+    0.01
+   ],
+   "amber1024_minus_prod": 7.06,
+   "amber1024_minus_prod_ci": [
+    6.13,
+    8.0
+   ],
+   "amber1024_minus_expert": 9.83,
+   "amber1024_minus_expert_ci": [
+    8.74,
+    10.89
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.01,
+    0.0
+   ]
+  },
+  "B": {
+   "n": 453,
+   "runs": 215,
+   "expert": 11.96,
+   "expert_death": 0.049,
+   "prod": {
+    "hp_lost": 15.609,
+    "_death": 0.11,
+    "_potions": 0.691,
+    "_turns": 6.773
+   },
+   "amber": {
+    "hp_lost": 28.822,
+    "_death": 0.104,
+    "_potions": 0.795,
+    "_turns": 8.811
+   },
+   "amber1024": {
+    "hp_lost": 29.028,
+    "_death": 0.076,
+    "_potions": 0.813,
+    "_turns": 8.87
+   },
+   "prod_minus_expert_ci": [
+    2.1,
+    5.21
+   ],
+   "amber_minus_prod": 13.21,
+   "amber_minus_prod_ci": [
+    11.06,
+    15.55
+   ],
+   "amber_minus_expert": 16.86,
+   "amber_minus_expert_ci": [
+    14.62,
+    19.18
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.03,
+    0.02
+   ],
+   "amber1024_minus_prod": 13.42,
+   "amber1024_minus_prod_ci": [
+    11.24,
+    15.79
+   ],
+   "amber1024_minus_expert": 17.07,
+   "amber1024_minus_expert_ci": [
+    14.82,
+    19.42
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.05,
+    -0.01
+   ]
+  }
+ },
+ "by_act_room": {
+  "1E": {
+   "n": 622,
+   "runs": 255,
+   "expert": 9.82,
+   "expert_death": 0.016,
+   "prod": {
+    "hp_lost": 11.138,
+    "_death": 0.028,
+    "_potions": 0.638,
+    "_turns": 4.012
+   },
+   "amber": {
+    "hp_lost": 17.735,
+    "_death": 0.031,
+    "_potions": 0.981,
+    "_turns": 5.656
+   },
+   "amber1024": {
+    "hp_lost": 17.976,
+    "_death": 0.027,
+    "_potions": 1.012,
+    "_turns": 6.173
+   },
+   "prod_minus_expert_ci": [
+    0.51,
+    2.13
+   ],
+   "amber_minus_prod": 6.6,
+   "amber_minus_prod_ci": [
+    5.61,
+    7.61
+   ],
+   "amber_minus_expert": 7.92,
+   "amber_minus_expert_ci": [
+    6.79,
+    9.07
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.01,
+    0.01
+   ],
+   "amber1024_minus_prod": 6.84,
+   "amber1024_minus_prod_ci": [
+    5.8,
+    7.88
+   ],
+   "amber1024_minus_expert": 8.16,
+   "amber1024_minus_expert_ci": [
+    6.95,
+    9.38
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.01,
+    0.01
+   ]
+  },
+  "1B": {
+   "n": 215,
+   "runs": 215,
+   "expert": 12.92,
+   "expert_death": 0.051,
+   "prod": {
+    "hp_lost": 15.24,
+    "_death": 0.123,
+    "_potions": 0.877,
+    "_turns": 6.97
+   },
+   "amber": {
+    "hp_lost": 23.572,
+    "_death": 0.123,
+    "_potions": 0.937,
+    "_turns": 8.702
+   },
+   "amber1024": {
+    "hp_lost": 23.442,
+    "_death": 0.088,
+    "_potions": 0.965,
+    "_turns": 8.693
+   },
+   "prod_minus_expert_ci": [
+    0.63,
+    3.99
+   ],
+   "amber_minus_prod": 8.33,
+   "amber_minus_prod_ci": [
+    6.6,
+    10.13
+   ],
+   "amber_minus_expert": 10.66,
+   "amber_minus_expert_ci": [
+    8.72,
+    12.62
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.03,
+    0.03
+   ],
+   "amber1024_minus_prod": 8.2,
+   "amber1024_minus_prod_ci": [
+    6.4,
+    10.07
+   ],
+   "amber1024_minus_expert": 10.53,
+   "amber1024_minus_expert_ci": [
+    8.58,
+    12.47
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.07,
+    -0.0
+   ]
+  },
+  "2E": {
+   "n": 335,
+   "runs": 157,
+   "expert": 5.43,
+   "expert_death": 0.021,
+   "prod": {
+    "hp_lost": 10.325,
+    "_death": 0.055,
+    "_potions": 0.416,
+    "_turns": 3.169
+   },
+   "amber": {
+    "hp_lost": 17.852,
+    "_death": 0.063,
+    "_potions": 0.77,
+    "_turns": 4.585
+   },
+   "amber1024": {
+    "hp_lost": 16.6,
+    "_death": 0.055,
+    "_potions": 0.796,
+    "_turns": 4.716
+   },
+   "prod_minus_expert_ci": [
+    3.44,
+    6.42
+   ],
+   "amber_minus_prod": 7.53,
+   "amber_minus_prod_ci": [
+    6.06,
+    9.07
+   ],
+   "amber_minus_expert": 12.43,
+   "amber_minus_expert_ci": [
+    10.65,
+    14.31
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.01,
+    0.02
+   ],
+   "amber1024_minus_prod": 6.27,
+   "amber1024_minus_prod_ci": [
+    4.84,
+    7.75
+   ],
+   "amber1024_minus_expert": 11.17,
+   "amber1024_minus_expert_ci": [
+    9.5,
+    12.88
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.02,
+    0.01
+   ]
+  },
+  "2B": {
+   "n": 119,
+   "runs": 119,
+   "expert": 14.62,
+   "expert_death": 0.084,
+   "prod": {
+    "hp_lost": 18.618,
+    "_death": 0.113,
+    "_potions": 0.689,
+    "_turns": 6.315
+   },
+   "amber": {
+    "hp_lost": 33.429,
+    "_death": 0.118,
+    "_potions": 0.84,
+    "_turns": 7.992
+   },
+   "amber1024": {
+    "hp_lost": 33.777,
+    "_death": 0.076,
+    "_potions": 0.79,
+    "_turns": 8.063
+   },
+   "prod_minus_expert_ci": [
+    0.42,
+    7.54
+   ],
+   "amber_minus_prod": 14.81,
+   "amber_minus_prod_ci": [
+    11.35,
+    18.28
+   ],
+   "amber_minus_expert": 18.81,
+   "amber_minus_expert_ci": [
+    14.58,
+    23.08
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.04,
+    0.05
+   ],
+   "amber1024_minus_prod": 15.16,
+   "amber1024_minus_prod_ci": [
+    11.16,
+    19.03
+   ],
+   "amber1024_minus_expert": 19.16,
+   "amber1024_minus_expert_ci": [
+    14.54,
+    23.73
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.08,
+    0.0
+   ]
+  },
+  "3E": {
+   "n": 186,
+   "runs": 73,
+   "expert": 2.26,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 6.024,
+    "_death": 0.011,
+    "_potions": 0.247,
+    "_turns": 3.831
+   },
+   "amber": {
+    "hp_lost": 16.508,
+    "_death": 0.008,
+    "_potions": 0.452,
+    "_turns": 5.815
+   },
+   "amber1024": {
+    "hp_lost": 15.242,
+    "_death": 0.003,
+    "_potions": 0.503,
+    "_turns": 6.081
+   },
+   "prod_minus_expert_ci": [
+    1.59,
+    5.94
+   ],
+   "amber_minus_prod": 10.48,
+   "amber_minus_prod_ci": [
+    7.91,
+    13.17
+   ],
+   "amber_minus_expert": 14.24,
+   "amber_minus_expert_ci": [
+    11.44,
+    17.13
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.02,
+    0.01
+   ],
+   "amber1024_minus_prod": 9.22,
+   "amber1024_minus_prod_ci": [
+    6.87,
+    11.68
+   ],
+   "amber1024_minus_expert": 12.98,
+   "amber1024_minus_expert_ci": [
+    10.28,
+    15.68
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.02,
+    0.0
+   ]
+  },
+  "3B": {
+   "n": 119,
+   "runs": 62,
+   "expert": 7.58,
+   "expert_death": 0.008,
+   "prod": {
+    "hp_lost": 13.269,
+    "_death": 0.084,
+    "_potions": 0.357,
+    "_turns": 6.874
+   },
+   "amber": {
+    "hp_lost": 33.702,
+    "_death": 0.055,
+    "_potions": 0.492,
+    "_turns": 9.828
+   },
+   "amber1024": {
+    "hp_lost": 34.37,
+    "_death": 0.055,
+    "_potions": 0.563,
+    "_turns": 9.996
+   },
+   "prod_minus_expert_ci": [
+    1.99,
+    9.4
+   ],
+   "amber_minus_prod": 20.43,
+   "amber_minus_prod_ci": [
+    14.61,
+    26.72
+   ],
+   "amber_minus_expert": 26.12,
+   "amber_minus_expert_ci": [
+    20.57,
+    32.1
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.08,
+    0.02
+   ],
+   "amber1024_minus_prod": 21.1,
+   "amber1024_minus_prod_ci": [
+    14.91,
+    27.95
+   ],
+   "amber1024_minus_expert": 26.79,
+   "amber1024_minus_expert_ci": [
+    20.85,
+    33.39
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.07,
+    0.01
+   ]
+  }
+ },
+ "by_encounter": {
+  "3 Sentries": {
+   "n": 197,
+   "runs": 175,
+   "expert": 10.97,
+   "expert_death": 0.025,
+   "prod": {
+    "hp_lost": 12.497,
+    "_death": 0.025,
+    "_potions": 0.614,
+    "_turns": 5.206
+   },
+   "amber": {
+    "hp_lost": 18.373,
+    "_death": 0.041,
+    "_potions": 1.005,
+    "_turns": 8.69
+   },
+   "amber1024": {
+    "hp_lost": 18.817,
+    "_death": 0.028,
+    "_potions": 1.028,
+    "_turns": 10.015
+   },
+   "prod_minus_expert_ci": [
+    0.19,
+    2.83
+   ],
+   "amber_minus_prod": 5.88,
+   "amber_minus_prod_ci": [
+    4.61,
+    7.14
+   ],
+   "amber_minus_expert": 7.4,
+   "amber_minus_expert_ci": [
+    5.8,
+    8.98
+   ],
+   "amber_death_minus_prod_ci": [
+    0.0,
+    0.03
+   ],
+   "amber1024_minus_prod": 6.32,
+   "amber1024_minus_prod_ci": [
+    4.91,
+    7.8
+   ],
+   "amber1024_minus_expert": 7.85,
+   "amber1024_minus_expert_ci": [
+    6.04,
+    9.66
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.01,
+    0.02
+   ]
+  },
+  "Automaton": {
+   "n": 40,
+   "runs": 40,
+   "expert": 10.4,
+   "expert_death": 0.075,
+   "prod": {
+    "hp_lost": 19.663,
+    "_death": 0.188,
+    "_potions": 0.787,
+    "_turns": 6.325
+   },
+   "amber": {
+    "hp_lost": 32.45,
+    "_death": 0.15,
+    "_potions": 0.838,
+    "_turns": 7.763
+   },
+   "amber1024": {
+    "hp_lost": 33.175,
+    "_death": 0.1,
+    "_potions": 0.738,
+    "_turns": 7.987
+   },
+   "prod_minus_expert_ci": [
+    2.65,
+    15.78
+   ],
+   "amber_minus_prod": 12.79,
+   "amber_minus_prod_ci": [
+    6.39,
+    19.57
+   ],
+   "amber_minus_expert": 22.05,
+   "amber_minus_expert_ci": [
+    15.62,
+    28.69
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.14,
+    0.06
+   ],
+   "amber1024_minus_prod": 13.51,
+   "amber1024_minus_prod_ci": [
+    6.14,
+    21.24
+   ],
+   "amber1024_minus_expert": 22.77,
+   "amber1024_minus_expert_ci": [
+    15.7,
+    29.95
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.19,
+    0.0
+   ]
+  },
+  "Awakened One": {
+   "n": 37,
+   "runs": 37,
+   "expert": 6.76,
+   "expert_death": 0.027,
+   "prod": {
+    "hp_lost": 19.243,
+    "_death": 0.189,
+    "_potions": 0.635,
+    "_turns": 9.23
+   },
+   "amber": {
+    "hp_lost": 35.5,
+    "_death": 0.068,
+    "_potions": 0.757,
+    "_turns": 11.77
+   },
+   "amber1024": {
+    "hp_lost": 33.554,
+    "_death": 0.054,
+    "_potions": 0.892,
+    "_turns": 12.243
+   },
+   "prod_minus_expert_ci": [
+    5.61,
+    19.95
+   ],
+   "amber_minus_prod": 16.26,
+   "amber_minus_prod_ci": [
+    5.0,
+    27.36
+   ],
+   "amber_minus_expert": 28.74,
+   "amber_minus_expert_ci": [
+    21.04,
+    37.0
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.26,
+    0.0
+   ],
+   "amber1024_minus_prod": 14.31,
+   "amber1024_minus_prod_ci": [
+    4.0,
+    24.64
+   ],
+   "amber1024_minus_expert": 26.8,
+   "amber1024_minus_expert_ci": [
+    19.2,
+    35.01
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.24,
+    -0.04
+   ]
+  },
+  "Book of Stabbing": {
+   "n": 116,
+   "runs": 107,
+   "expert": 7.18,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 10.409,
+    "_death": 0.047,
+    "_potions": 0.405,
+    "_turns": 3.078
+   },
+   "amber": {
+    "hp_lost": 16.737,
+    "_death": 0.043,
+    "_potions": 0.75,
+    "_turns": 3.888
+   },
+   "amber1024": {
+    "hp_lost": 15.957,
+    "_death": 0.039,
+    "_potions": 0.746,
+    "_turns": 4.026
+   },
+   "prod_minus_expert_ci": [
+    1.03,
+    5.6
+   ],
+   "amber_minus_prod": 6.33,
+   "amber_minus_prod_ci": [
+    4.36,
+    8.33
+   ],
+   "amber_minus_expert": 9.56,
+   "amber_minus_expert_ci": [
+    6.83,
+    12.37
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.03,
+    0.03
+   ],
+   "amber1024_minus_prod": 5.55,
+   "amber1024_minus_prod_ci": [
+    3.73,
+    7.39
+   ],
+   "amber1024_minus_expert": 8.78,
+   "amber1024_minus_expert_ci": [
+    6.5,
+    11.09
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.04,
+    0.02
+   ]
+  },
+  "Champ": {
+   "n": 32,
+   "runs": 32,
+   "expert": 11.19,
+   "expert_death": 0.062,
+   "prod": {
+    "hp_lost": 14.359,
+    "_death": 0.031,
+    "_potions": 0.531,
+    "_turns": 7.891
+   },
+   "amber": {
+    "hp_lost": 32.203,
+    "_death": 0.078,
+    "_potions": 0.688,
+    "_turns": 9.828
+   },
+   "amber1024": {
+    "hp_lost": 30.25,
+    "_death": 0.031,
+    "_potions": 0.719,
+    "_turns": 9.781
+   },
+   "prod_minus_expert_ci": [
+    -3.08,
+    8.97
+   ],
+   "amber_minus_prod": 17.84,
+   "amber_minus_prod_ci": [
+    12.02,
+    24.14
+   ],
+   "amber_minus_expert": 21.02,
+   "amber_minus_expert_ci": [
+    12.52,
+    29.91
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.02,
+    0.11
+   ],
+   "amber1024_minus_prod": 15.89,
+   "amber1024_minus_prod_ci": [
+    9.03,
+    23.0
+   ],
+   "amber1024_minus_expert": 19.06,
+   "amber1024_minus_expert_ci": [
+    9.27,
+    28.64
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.05,
+    0.05
+   ]
+  },
+  "Collector": {
+   "n": 47,
+   "runs": 47,
+   "expert": 20.55,
+   "expert_death": 0.106,
+   "prod": {
+    "hp_lost": 20.628,
+    "_death": 0.106,
+    "_potions": 0.713,
+    "_turns": 5.234
+   },
+   "amber": {
+    "hp_lost": 35.096,
+    "_death": 0.117,
+    "_potions": 0.947,
+    "_turns": 6.936
+   },
+   "amber1024": {
+    "hp_lost": 36.691,
+    "_death": 0.085,
+    "_potions": 0.883,
+    "_turns": 6.957
+   },
+   "prod_minus_expert_ci": [
+    -5.19,
+    5.33
+   ],
+   "amber_minus_prod": 14.47,
+   "amber_minus_prod_ci": [
+    9.2,
+    19.84
+   ],
+   "amber_minus_expert": 14.54,
+   "amber_minus_expert_ci": [
+    7.87,
+    21.23
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.05,
+    0.07
+   ],
+   "amber1024_minus_prod": 16.06,
+   "amber1024_minus_prod_ci": [
+    10.41,
+    22.11
+   ],
+   "amber1024_minus_expert": 16.14,
+   "amber1024_minus_expert_ci": [
+    9.05,
+    23.46
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.06,
+    0.02
+   ]
+  },
+  "Donu and Deca": {
+   "n": 37,
+   "runs": 37,
+   "expert": 6.14,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 9.392,
+    "_death": 0.054,
+    "_potions": 0.216,
+    "_turns": 4.514
+   },
+   "amber": {
+    "hp_lost": 28.703,
+    "_death": 0.068,
+    "_potions": 0.432,
+    "_turns": 7.608
+   },
+   "amber1024": {
+    "hp_lost": 32.959,
+    "_death": 0.108,
+    "_potions": 0.432,
+    "_turns": 7.284
+   },
+   "prod_minus_expert_ci": [
+    -2.76,
+    8.78
+   ],
+   "amber_minus_prod": 19.31,
+   "amber_minus_prod_ci": [
+    11.89,
+    28.41
+   ],
+   "amber_minus_expert": 22.57,
+   "amber_minus_expert_ci": [
+    13.34,
+    32.96
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.03,
+    0.07
+   ],
+   "amber1024_minus_prod": 23.57,
+   "amber1024_minus_prod_ci": [
+    14.18,
+    33.88
+   ],
+   "amber1024_minus_expert": 26.82,
+   "amber1024_minus_expert_ci": [
+    16.89,
+    37.61
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.01,
+    0.14
+   ]
+  },
+  "Giant Head": {
+   "n": 60,
+   "runs": 50,
+   "expert": 0.82,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 2.9,
+    "_death": 0,
+    "_potions": 0.258,
+    "_turns": 4.158
+   },
+   "amber": {
+    "hp_lost": 13.025,
+    "_death": 0.008,
+    "_potions": 0.442,
+    "_turns": 5.742
+   },
+   "amber1024": {
+    "hp_lost": 12.892,
+    "_death": 0,
+    "_potions": 0.433,
+    "_turns": 6.092
+   },
+   "prod_minus_expert_ci": [
+    -1.45,
+    5.66
+   ],
+   "amber_minus_prod": 10.12,
+   "amber_minus_prod_ci": [
+    6.0,
+    14.25
+   ],
+   "amber_minus_expert": 12.21,
+   "amber_minus_expert_ci": [
+    7.31,
+    17.23
+   ],
+   "amber_death_minus_prod_ci": [
+    0.0,
+    0.03
+   ],
+   "amber1024_minus_prod": 9.99,
+   "amber1024_minus_prod_ci": [
+    6.4,
+    13.75
+   ],
+   "amber1024_minus_expert": 12.07,
+   "amber1024_minus_expert_ci": [
+    7.57,
+    16.83
+   ],
+   "amber1024_death_minus_prod_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "Gremlin Leader": {
+   "n": 107,
+   "runs": 100,
+   "expert": 0.64,
+   "expert_death": 0.028,
+   "prod": {
+    "hp_lost": 5.519,
+    "_death": 0.042,
+    "_potions": 0.453,
+    "_turns": 3.355
+   },
+   "amber": {
+    "hp_lost": 12.514,
+    "_death": 0.037,
+    "_potions": 0.822,
+    "_turns": 5.285
+   },
+   "amber1024": {
+    "hp_lost": 11.453,
+    "_death": 0.042,
+    "_potions": 0.869,
+    "_turns": 5.589
+   },
+   "prod_minus_expert_ci": [
+    2.79,
+    6.98
+   ],
+   "amber_minus_prod": 7.0,
+   "amber_minus_prod_ci": [
+    4.46,
+    9.69
+   ],
+   "amber_minus_expert": 11.88,
+   "amber_minus_expert_ci": [
+    9.38,
+    14.52
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.04,
+    0.03
+   ],
+   "amber1024_minus_prod": 5.93,
+   "amber1024_minus_prod_ci": [
+    3.19,
+    8.79
+   ],
+   "amber1024_minus_expert": 10.82,
+   "amber1024_minus_expert_ci": [
+    8.23,
+    13.51
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.03,
+    0.02
+   ]
+  },
+  "Gremlin Nob": {
+   "n": 204,
+   "runs": 178,
+   "expert": 8.28,
+   "expert_death": 0.025,
+   "prod": {
+    "hp_lost": 9.637,
+    "_death": 0.029,
+    "_potions": 0.708,
+    "_turns": 2.39
+   },
+   "amber": {
+    "hp_lost": 14.949,
+    "_death": 0.029,
+    "_potions": 0.983,
+    "_turns": 2.76
+   },
+   "amber1024": {
+    "hp_lost": 15.152,
+    "_death": 0.034,
+    "_potions": 1.044,
+    "_turns": 2.809
+   },
+   "prod_minus_expert_ci": [
+    -0.29,
+    3.02
+   ],
+   "amber_minus_prod": 5.31,
+   "amber_minus_prod_ci": [
+    3.68,
+    7.03
+   ],
+   "amber_minus_expert": 6.67,
+   "amber_minus_expert_ci": [
+    4.64,
+    8.74
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.02,
+    0.01
+   ],
+   "amber1024_minus_prod": 5.51,
+   "amber1024_minus_prod_ci": [
+    3.98,
+    7.08
+   ],
+   "amber1024_minus_expert": 6.87,
+   "amber1024_minus_expert_ci": [
+    4.8,
+    8.93
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.01,
+    0.02
+   ]
+  },
+  "Hexaghost": {
+   "n": 75,
+   "runs": 75,
+   "expert": 15.6,
+   "expert_death": 0.067,
+   "prod": {
+    "hp_lost": 17.187,
+    "_death": 0.153,
+    "_potions": 0.92,
+    "_turns": 6.907
+   },
+   "amber": {
+    "hp_lost": 23.313,
+    "_death": 0.173,
+    "_potions": 1.06,
+    "_turns": 7.513
+   },
+   "amber1024": {
+    "hp_lost": 23.567,
+    "_death": 0.127,
+    "_potions": 1.153,
+    "_turns": 7.667
+   },
+   "prod_minus_expert_ci": [
+    -0.74,
+    3.91
+   ],
+   "amber_minus_prod": 6.13,
+   "amber_minus_prod_ci": [
+    3.71,
+    8.66
+   ],
+   "amber_minus_expert": 7.71,
+   "amber_minus_expert_ci": [
+    5.04,
+    10.63
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.05,
+    0.09
+   ],
+   "amber1024_minus_prod": 6.38,
+   "amber1024_minus_prod_ci": [
+    3.81,
+    9.12
+   ],
+   "amber1024_minus_expert": 7.97,
+   "amber1024_minus_expert_ci": [
+    5.38,
+    10.63
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.09,
+    0.04
+   ]
+  },
+  "Lagavulin": {
+   "n": 221,
+   "runs": 195,
+   "expert": 10.2,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 11.312,
+    "_death": 0.029,
+    "_potions": 0.595,
+    "_turns": 4.446
+   },
+   "amber": {
+    "hp_lost": 19.738,
+    "_death": 0.023,
+    "_potions": 0.957,
+    "_turns": 5.624
+   },
+   "amber1024": {
+    "hp_lost": 19.833,
+    "_death": 0.018,
+    "_potions": 0.968,
+    "_turns": 5.853
+   },
+   "prod_minus_expert_ci": [
+    -0.16,
+    2.33
+   ],
+   "amber_minus_prod": 8.43,
+   "amber_minus_prod_ci": [
+    6.88,
+    10.03
+   ],
+   "amber_minus_expert": 9.53,
+   "amber_minus_expert_ci": [
+    7.92,
+    11.16
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.02,
+    0.01
+   ],
+   "amber1024_minus_prod": 8.52,
+   "amber1024_minus_prod_ci": [
+    6.96,
+    10.16
+   ],
+   "amber1024_minus_expert": 9.63,
+   "amber1024_minus_expert_ci": [
+    7.95,
+    11.31
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.02,
+    0.0
+   ]
+  },
+  "Nemesis": {
+   "n": 64,
+   "runs": 58,
+   "expert": 1.45,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 7.133,
+    "_death": 0.008,
+    "_potions": 0.164,
+    "_turns": 4.047
+   },
+   "amber": {
+    "hp_lost": 18.281,
+    "_death": 0.008,
+    "_potions": 0.398,
+    "_turns": 6.391
+   },
+   "amber1024": {
+    "hp_lost": 17.75,
+    "_death": 0,
+    "_potions": 0.516,
+    "_turns": 6.656
+   },
+   "prod_minus_expert_ci": [
+    2.66,
+    8.74
+   ],
+   "amber_minus_prod": 11.15,
+   "amber_minus_prod_ci": [
+    7.61,
+    14.9
+   ],
+   "amber_minus_expert": 16.83,
+   "amber_minus_expert_ci": [
+    12.82,
+    20.89
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.02,
+    0.02
+   ],
+   "amber1024_minus_prod": 10.62,
+   "amber1024_minus_prod_ci": [
+    7.13,
+    14.28
+   ],
+   "amber1024_minus_expert": 16.3,
+   "amber1024_minus_expert_ci": [
+    12.4,
+    20.18
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.02,
+    0.0
+   ]
+  },
+  "Reptomancer": {
+   "n": 62,
+   "runs": 54,
+   "expert": 4.5,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 7.903,
+    "_death": 0.024,
+    "_potions": 0.323,
+    "_turns": 3.29
+   },
+   "amber": {
+    "hp_lost": 18.048,
+    "_death": 0.008,
+    "_potions": 0.516,
+    "_turns": 5.29
+   },
+   "amber1024": {
+    "hp_lost": 14.927,
+    "_death": 0.008,
+    "_potions": 0.556,
+    "_turns": 5.476
+   },
+   "prod_minus_expert_ci": [
+    -1.18,
+    7.62
+   ],
+   "amber_minus_prod": 10.15,
+   "amber_minus_prod_ci": [
+    6.49,
+    13.8
+   ],
+   "amber_minus_expert": 13.55,
+   "amber_minus_expert_ci": [
+    8.8,
+    18.23
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.05,
+    0.0
+   ],
+   "amber1024_minus_prod": 7.02,
+   "amber1024_minus_prod_ci": [
+    3.55,
+    10.59
+   ],
+   "amber1024_minus_expert": 10.43,
+   "amber1024_minus_expert_ci": [
+    6.13,
+    14.73
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.05,
+    0.0
+   ]
+  },
+  "Slavers": {
+   "n": 112,
+   "runs": 102,
+   "expert": 8.19,
+   "expert_death": 0.036,
+   "prod": {
+    "hp_lost": 14.83,
+    "_death": 0.076,
+    "_potions": 0.393,
+    "_turns": 3.085
+   },
+   "amber": {
+    "hp_lost": 24.107,
+    "_death": 0.107,
+    "_potions": 0.741,
+    "_turns": 4.638
+   },
+   "amber1024": {
+    "hp_lost": 22.183,
+    "_death": 0.085,
+    "_potions": 0.777,
+    "_turns": 4.598
+   },
+   "prod_minus_expert_ci": [
+    3.62,
+    9.65
+   ],
+   "amber_minus_prod": 9.28,
+   "amber_minus_prod_ci": [
+    7.02,
+    11.66
+   ],
+   "amber_minus_expert": 15.92,
+   "amber_minus_expert_ci": [
+    12.79,
+    19.0
+   ],
+   "amber_death_minus_prod_ci": [
+    0.0,
+    0.06
+   ],
+   "amber1024_minus_prod": 7.35,
+   "amber1024_minus_prod_ci": [
+    5.37,
+    9.33
+   ],
+   "amber1024_minus_expert": 14.0,
+   "amber1024_minus_expert_ci": [
+    11.0,
+    16.93
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.01,
+    0.03
+   ]
+  },
+  "Slime Boss": {
+   "n": 68,
+   "runs": 68,
+   "expert": 10.25,
+   "expert_death": 0.044,
+   "prod": {
+    "hp_lost": 10.375,
+    "_death": 0.103,
+    "_potions": 0.831,
+    "_turns": 5.897
+   },
+   "amber": {
+    "hp_lost": 18.963,
+    "_death": 0.11,
+    "_potions": 0.868,
+    "_turns": 7.779
+   },
+   "amber1024": {
+    "hp_lost": 18.816,
+    "_death": 0.066,
+    "_potions": 0.846,
+    "_turns": 7.507
+   },
+   "prod_minus_expert_ci": [
+    -3.32,
+    3.54
+   ],
+   "amber_minus_prod": 8.59,
+   "amber_minus_prod_ci": [
+    5.07,
+    12.35
+   ],
+   "amber_minus_expert": 8.71,
+   "amber_minus_expert_ci": [
+    4.94,
+    12.74
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.04,
+    0.05
+   ],
+   "amber1024_minus_prod": 8.44,
+   "amber1024_minus_prod_ci": [
+    4.91,
+    12.2
+   ],
+   "amber1024_minus_expert": 8.57,
+   "amber1024_minus_expert_ci": [
+    4.96,
+    12.39
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.09,
+    0.01
+   ]
+  },
+  "The Guardian": {
+   "n": 72,
+   "runs": 72,
+   "expert": 12.64,
+   "expert_death": 0.042,
+   "prod": {
+    "hp_lost": 17.806,
+    "_death": 0.111,
+    "_potions": 0.875,
+    "_turns": 8.049
+   },
+   "amber": {
+    "hp_lost": 28.194,
+    "_death": 0.083,
+    "_potions": 0.875,
+    "_turns": 10.812
+   },
+   "amber1024": {
+    "hp_lost": 27.681,
+    "_death": 0.069,
+    "_potions": 0.882,
+    "_turns": 10.882
+   },
+   "prod_minus_expert_ci": [
+    2.53,
+    7.9
+   ],
+   "amber_minus_prod": 10.39,
+   "amber_minus_prod_ci": [
+    7.39,
+    13.44
+   ],
+   "amber_minus_expert": 15.56,
+   "amber_minus_expert_ci": [
+    12.27,
+    18.99
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.07,
+    0.01
+   ],
+   "amber1024_minus_prod": 9.88,
+   "amber1024_minus_prod_ci": [
+    6.61,
+    13.15
+   ],
+   "amber1024_minus_expert": 15.04,
+   "amber1024_minus_expert_ci": [
+    11.58,
+    18.56
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.09,
+    0.0
+   ]
+  },
+  "Time Eater": {
+   "n": 45,
+   "runs": 45,
+   "expert": 9.44,
+   "expert_death": 0.0,
+   "prod": {
+    "hp_lost": 11.544,
+    "_death": 0.022,
+    "_potions": 0.244,
+    "_turns": 6.878
+   },
+   "amber": {
+    "hp_lost": 36.333,
+    "_death": 0.033,
+    "_potions": 0.322,
+    "_turns": 10.056
+   },
+   "amber1024": {
+    "hp_lost": 36.2,
+    "_death": 0.011,
+    "_potions": 0.4,
+    "_turns": 10.378
+   },
+   "prod_minus_expert_ci": [
+    -3.08,
+    7.12
+   ],
+   "amber_minus_prod": 24.79,
+   "amber_minus_prod_ci": [
+    16.49,
+    33.71
+   ],
+   "amber_minus_expert": 26.89,
+   "amber_minus_expert_ci": [
+    18.56,
+    35.71
+   ],
+   "amber_death_minus_prod_ci": [
+    -0.04,
+    0.08
+   ],
+   "amber1024_minus_prod": 24.66,
+   "amber1024_minus_prod_ci": [
+    15.43,
+    35.13
+   ],
+   "amber1024_minus_expert": 26.76,
+   "amber1024_minus_expert_ci": [
+    17.18,
+    37.26
+   ],
+   "amber1024_death_minus_prod_ci": [
+    -0.03,
+    0.0
+   ]
+  }
+ }
+}

@@ -30,4 +30,9 @@ int expertFightsGen(const std::string &runFile, const std::string &output);
 // on the same copy seeds; STS_SELF_FIGHTS_PROD=main leaves production at the copies the main line needs. Writes
 // one JSON object with a record per fight.
 int selfFightsGen(std::uint64_t seed, const std::string &output);
+// one_combat statefights 1 STATES OUT.jsonl (2026-11-28, research): plays every GameContextBinary record of STATES
+// (u32 floor, u32 copy, u32 bytes, snapshot at a fight's start, as az_bench --fight-dump writes them) once with the
+// production Silver agent (fightSims budget at base 10000, agent RNG from (seed, floor, copy)); one JSON line per
+// record: floor, copy, entry HP, won, exit HP after the battle's exit, turns, potions used, CPU seconds.
+int stateFightsGen(const std::string &states, const std::string &output);
 }

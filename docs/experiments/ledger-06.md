@@ -29990,3 +29990,89 @@ Live check (12:36-12:46, against 12:05-12:25 at 256/32): 8,470 vs 2,750 moves/s,
 **Not covered:** play strength beyond the benches; self-play win rate (2 % at the restart); whether 64/16 or the §872 fix
 drives the gain (both changed at once by design).
 **Knowledge impact:** this entry (gate log also in `stage1/distill_20261127/GATES.md` on the PC).
+## §TBD — Amber 1.2M net on Baalorlord's A20 elite and boss states (§770's benchmark, exact states): 20.46 HP lost per fight vs production Silver 11.60 and Baalorlord 8.76, +8.86 [+7.89, +9.86], deaths equal; 1024 instead of 128 simulations: HP loss −0.2 [−0.7, +0.3], fight deaths −1.2 pp [−1.9, −0.5] (paired) → combat is the 1.2M net's weak part; more search saves deaths, not HP (PC, 2026-11-27)
+
+**Question (Philipp, 2026-11-27):** on the benchmark §770 used for the Silver combat stack, is the frozen 1.2M Amber
+net (amber_scratch `ckpt_1828683.pt`) weak in combat or out of combat?
+**Data:** [RESULT](evidence/amber_combat_gap_20261127/RESULT.md), `results/`, `dump_unit.sh`, `analyze_matched.py`,
+`analyze.py`. New research paths, default off: `include/game/GameContextBinary.h` (same-build GameContext
+snapshots), one_combat expertfights `STS_EXPERT_FIGHTS_DUMP=1` (writes every production copy start of the arm-room
+fights; arm rooms then need no arms), az_bench `RunDriver(fight_roots=…)` / `GameState.load_snapshots` and
+`selfplay.py --fight-roots / --fight-log` (each state's fight played once by the Amber search), and the death log's
+per-fight `fight_list`. Code 9bc1d3eb. States: §770's 329 runs with §770's production environment (no arms, arm
+rooms 1E,1B,2E,2B,3E,3B, 4 copies); the production side reproduces §770 (11.60 HP, expert 8.76, 1,874 fights).
+Amber: the fixed-seed bench's search (all moves 128 simulations, 8 candidates); arm 1024 simulations on copies
+0-1 only, stopped by its RAM watchdog at 3,200 of 3,754 copies (1,596 fights compared).
+**Result:** 128: Amber 20.46 HP lost per fight, production 11.60, Baalorlord 8.76; Amber − production +8.86
+[+7.89, +9.86]; 1E +6.3, 1B +9.0, 2E +7.1, 2B +14.7, 3E +9.8, 3B +20.7; worse on every encounter with n ≥ 20 (Time
+Eater +24.5, Donu and Deca +20.1). Deaths 0.057 = production's; potions 0.82 vs 0.55 per fight. 1024 (copies 0-1):
+Amber 20.50 vs 128 20.76, production 11.64. Paired 1024 − 128 on the same 3,197 copies (run-clustered
+bootstrap, 95%): HP lost −0.20 [−0.75, +0.35]; fight deaths 0.0557 → 0.0441, −0.0116 [−0.0187, −0.0048]
+(discordant copies 77 died only at 128, 40 only at 1024). Side bench (own runs, 1000 fixed seeds,
+`results/bench1000_701.json`): 38.5 % A20 wins; net HP per won fight vs §701's Baalorlord cells act-1 elites 16.5
+vs 9.5, act-1 boss 24.7 vs 11.3.
+**Interpretation (Inference):** on identical states the net loses about twice production's HP per elite and boss
+fight at the same death rate; 8× search leaves the HP loss where it is (the gap is the net's in-fight evaluation /
+prior) but cuts fight deaths by about a fifth, which over ~10 elite/boss fights per run is of the order of the
+whole-run gain more simulations buy; whether that accounts for it is not measured here.
+With this combat it still wins 38.5 % of its own A20 runs, so its out-of-combat play carries the run.
+Not tested: whether the HP loss is a deliberate P(win) trade, larger budgets, the 0.44M student.
+**Decision:** none (diagnostic). Combat strength of the Amber net is the open lever.
+Seeds: none new (§694's external expert seeds replayed; side bench on the fixed benchmark 160200000-160200999).
+**Knowledge impact:** this entry; the research tools above.
+
+## §TBD — X1 (WORKPLAN-2 item A): of the 98 net fewer losses that 1024 instead of 128 simulations give the 1.2M checkpoint 1755240 on the fixed bench, hallways hold 50 % [22 %, 90 %], elites + act bosses + Heart 47 % [7 %, 75 %] → by the fixed rule: recommend extending the identical-state comparison to hallway states (not started); logs only (PC, 2026-11-28)
+
+**Question:** in whole runs on the net's own decks, in which room class do the losses disappear that 1024 simulations remove?
+**Data:** `bench_curve_20261123/step_1755240` (128 sims, 37.5 %) and `sims1024_1755240` (1024 sims, 47.3 %), same
+checkpoint `ckpt_bench_1755240.pt` (sha256 85c5c488…), seeds 160200000-160200999; both have `deaths.jsonl`
+(sha256 fde978b8…, 485f1bf1…). Death room = the death log's last fight (every loss of both arms ended in a fight).
+Script `evidence/amber_combat_gap_20261127/x1_loss_table.py`, `results/x1_loss_table.json`; bootstrap over seeds.
+**Result:** deaths 128 → 1024: hallway 158 → 109, elite 193 → 168, act boss 193 → 167, Heart 69 → 74, other 12 → 9.
+Net reduction 98: hallway +49 (share 0.50 [0.22, 0.90]), elite +25 (0.26), boss +26 (0.27), Heart −5, other +3;
+elite + boss + Heart 0.47 [0.07, 0.75]. Hallway deaths fall in every act (39 → 22, 98 → 79, 21 → 8). Paired seeds:
+lost at 128 / won at 1024 = 220, the reverse 132.
+**Verdict (fixed rule):** hallways ≥ 40 % → recommend a hallway identical-state comparison; elite + boss + Heart
+< 60 %, so the combat reading of the Baalorlord entry does not carry over in full. Intervals are wide and the arms'
+runs diverge after the first differing decision (the classes are where each arm dies, not the same fights).
+Seeds: none new. **Knowledge impact:** this entry.
+
+## §TBD — X3 (WORKPLAN-2 item B): at the first decision of Baalorlord's fight starts the 1.2M net's 0.5 H term spans 0.13× the F range and changes the best action at 3.3 % of roots, U rises with enemy HP removed (+3.9e-5 per HP [+1.1e-5, +6.8e-5]); lowering current HP by 1 lowers the predicted end-of-floor HP by 0.70 and U by 0.0013 → undecided by the fixed rule (PC CPU, 2026-11-28)
+
+**Question:** is the slow, HP-losing combat play a property of the utility at this strength, or a poorly learned
+per-floor HP head?
+**Part 1 data:** the dumped fight starts of the Baalorlord entry (copy 0, 1,877 roots), `ckpt_1828683.pt`, the
+fixed-seed bench's input options, new research option `selfplay.py --probe-states` (RunConfig::probeOnePerEdge:
+every legal first action one simulation; a deterministic action's leaf is its child's own net evaluation; fight
+starts entered first; no game seeds advanced). Kept actions: not END_TURN, no chance edge, one visit; roots with
+≥ 2 kept: 1,742 roots, 10,122 actions (135 roots excluded with < 2). F = E[final floor] / 57, H = amberH, U =
+(F + 0.5 H) / 1.5. `x3_part1.py`, `results/x3_part1.json`; probe log on the PC at `stage1/amber_combat_gap_20261127/x3/probe.jsonl` (sha256 4986dd47…, 16 MB gzipped, not committed).
+**Part 1 result:** range over a root's actions of 0.5 H median 0.0027 (p10 0.0007, p90 0.0073), of F median 0.020
+(0.004, 0.062), ratio median 0.13 (0.09, 0.26); argmax(F + 0.5 H) ≠ argmax(F) at 3.3 % of roots. Pooled within-root
+slope of U on enemy HP removed +3.9e-5 per HP [+1.1e-5, +6.8e-5] (bootstrap over fights); on block gained
+−4.1e-4 per block [−5.0e-4, −3.3e-4].
+**Part 2 data:** the heads-audit UNSEEN slice of `backup_1p2m_20261127` (455 runs; npz sha256 e8c74f57…,
+0ddd04e8…), 45,634 pairs of consecutive kept combat rows of the same run and floor (14,248 with an HP change);
+current HP from the PLAYER token. `x3_part2.py`, `results/x3_part2_heads_unseen_{1828683,1805354}.json`.
+**Part 2 result (1828683):** slope of the change of predicted end-of-floor HP on the change of current HP 0.113
+[0.101, 0.126], correlation 0.23 [0.21, 0.25]; std(0.5 dH) / std(dF) = 0.12. Checkpoint 1805354 (clean on this
+slice): slope 0.110, correlation 0.22.
+**Verdict (fixed rule):** undecided. The HP prediction follows current HP (slope clearly positive) and 0.5 H changes
+the best action at < 5 % of roots, but U's slope on enemy HP removed is distinguishable from 0 (positive), so the
+"utility property" branch does not apply; the "HP head does not follow" branch does not apply either.
+**Correction (2026-11-28):** the differenced slope is not a test of the head: a calibrated predictor has already
+priced in the HP loss it can see coming, so its prediction moves only by the unpredicted part of the change; 0.11 is
+that share as measured, not evidence of a weak head. The perturbation check that answers the question is the next
+part of this entry.
+**Part 2b (perturbation, replaces the differenced reading):** on the same slice's 54,538 combat rows the player's
+current HP in the input (PLAYER floats 0 and 2) lowered by 1 / 5 / 10 (rows that would go below 1 HP skipped),
+`x3_part2b.py`, `results/x3_part2b_{1828683,1805354}.json`. Per HP removed, 1828683, d = 1 (d = 5 / 10 within
+±0.02 of it): (a) predicted HP at the end of the current floor −0.70 [0.68, 0.71] (median 0.75; act 1 0.78, act 2
+0.75, act 3 0.60, act 4 0.57); (b) summed predicted HP over all later floors −6.8 [6.5, 7.1] (act 1 11.1, act 2 8.2,
+act 3 3.2), a carry-over horizon of about 7 floors; (c) F −0.0016 [0.0016, 0.0018] (act 1 0.0030, act 3 0.0005);
+(d) U −0.0013 [0.0012, 0.0014]. 1805354: (a) 0.71, (b) 6.6, (c) 0.0016, (d) 0.0013.
+**Verdict with Part 2b (fixed rule):** still undecided: the HP head follows current HP (0.70 per HP, clearly
+positive) and 0.5 H changes the best action at 3.3 % of roots, but U's slope on enemy HP removed is above 0.
+For scale (measured, no rule): one HP of the player's own moves U by about 33× what one HP of enemy damage does
+at the first decision (0.0013 vs 3.9e-5).
+Seeds: none (deterministic first actions on dumped states). **Knowledge impact:** this entry; research option above.

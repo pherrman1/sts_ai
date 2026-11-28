@@ -1,0 +1,123 @@
+{
+ "seeds": 1000,
+ "win_128": 0.375,
+ "win_1024": 0.473,
+ "deaths": {
+  "128": {
+   "1-boss": 88,
+   "1-elite": 61,
+   "1-hallway": 39,
+   "1-other": 4,
+   "2-boss": 67,
+   "2-elite": 94,
+   "2-hallway": 98,
+   "2-other": 5,
+   "3-boss": 38,
+   "3-elite": 32,
+   "3-hallway": 21,
+   "3-other": 3,
+   "4-elite": 6,
+   "4-heart": 69,
+   "boss": 193,
+   "elite": 193,
+   "hallway": 158,
+   "heart": 69,
+   "other": 12
+  },
+  "1024": {
+   "1-boss": 70,
+   "1-elite": 53,
+   "1-hallway": 22,
+   "1-other": 3,
+   "2-boss": 49,
+   "2-elite": 77,
+   "2-hallway": 79,
+   "2-other": 4,
+   "3-boss": 48,
+   "3-elite": 29,
+   "3-hallway": 8,
+   "3-other": 2,
+   "4-elite": 9,
+   "4-heart": 74,
+   "boss": 167,
+   "elite": 168,
+   "hallway": 109,
+   "heart": 74,
+   "other": 9
+  }
+ },
+ "lost128_won1024_by_128_death": {
+  "4-elite": 2,
+  "3-hallway": 9,
+  "2-elite": 36,
+  "3-boss": 17,
+  "4-heart": 38,
+  "1-boss": 33,
+  "3-elite": 12,
+  "1-elite": 19,
+  "2-hallway": 24,
+  "2-boss": 21,
+  "1-hallway": 13,
+  "2-other": 2,
+  "3-other": 1,
+  "1-other": 3
+ },
+ "won128_lost1024_by_1024_death": {
+  "3-elite": 16,
+  "1-boss": 16,
+  "1-elite": 13,
+  "3-hallway": 3,
+  "2-boss": 9,
+  "2-hallway": 10,
+  "2-elite": 16,
+  "3-boss": 10,
+  "4-heart": 29,
+  "1-hallway": 4,
+  "4-elite": 4,
+  "1-other": 1,
+  "2-other": 1
+ },
+ "net_reduction": {
+  "hallway": 49,
+  "elite": 25,
+  "boss": 26,
+  "heart": -5,
+  "other": 3
+ },
+ "total_net_reduction": 98,
+ "share": {
+  "hallway": 0.5,
+  "elite": 0.255,
+  "boss": 0.265,
+  "heart": -0.051,
+  "other": 0.031,
+  "combat": 0.469
+ },
+ "share_ci": {
+  "hallway": [
+   0.22,
+   0.898
+  ],
+  "elite": [
+   -0.095,
+   0.58
+  ],
+  "boss": [
+   -0.072,
+   0.583
+  ],
+  "heart": [
+   -0.348,
+   0.163
+  ],
+  "other": [
+   -0.064,
+   0.128
+  ],
+  "combat": [
+   0.068,
+   0.752
+  ]
+ },
+ "verdict": "recommend hallway identical-state comparison"
+}

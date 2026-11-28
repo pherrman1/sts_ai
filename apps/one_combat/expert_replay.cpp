@@ -1,4 +1,5 @@
 #include "expert_replay.h"
+#include "game/GameContextBinary.h"
 #include "driver_shared.h"
 #include "expert_run_log.h"
 #include "heart_outcome_capture.h"
@@ -6,6 +7,8 @@
 
 #include <algorithm>
 #include <ctime>
+#include <cstring>
+#include <iterator>
 #include <random>
 #include <cstdlib>
 #include <filesystem>
@@ -737,6 +740,12 @@ std::vector<FightArm> fightArmsFromEnv(const std::string &prefix) {
 class FightCopies {
 public:
     json fights() const { return fights_; }
+    // State dump (STS_EXPERT_FIGHTS_DUMP=1, research, default off): every production copy of an arm fight writes
+    // its start state (GameContextBinary) to out, as records (u32 floor, u32 copy, u32 bytes, snapshot), so another
+    // executable of the same build can play the same fights. Arm rooms then need no arms: production plays those
+    // fights' armK copies in full and the others until the first win, so the main line is the same as with arms.
+    void setDump(std::ofstream *out) { dump_ = out; }
+    int dumped() const { return dumped_; }
 
 protected:
     FightCopies(int replicates, std::vector<FightArm> arms, std::set<std::string> armRooms, int armK,
@@ -750,6 +759,9 @@ protected:
     bool playCopies(GameContext &gc, search::ScumSearchAgent2 &agent, json rec) {
         const int f = gc.floorNum;
         const auto entryPotions = potionNames(gc.potions);
+        // Arm fight: act and room in armRooms_ (with research arms or a state dump), floor in armCopies_ when set.
+        const bool armFight = (!arms_.empty() || dump_) && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom))
+            && (armCopies_.empty() || armCopies_.count(f));
         // Copy r from this state: production settings, or arm `arm` (research, see FightArm).
         auto playCopy = [&](int r, const FightArm *arm, std::optional<GameContext> *winner) {
             GameContext copy = detachedCounterfactualCopy(gc);
@@ -762,6 +774,25 @@ protected:
                     stream->counter = counter;
                 }
                 copy.seed = rng();
+            }
+            if (dump_ && armFight && !arm) {   // state dump: the copy's start, as production plays it
+                const auto bytes = serializeGameContext(copy);
+                const std::uint32_t hdr[3] = {static_cast<std::uint32_t>(f), static_cast<std::uint32_t>(r),
+                                              static_cast<std::uint32_t>(bytes.size())};
+                dump_->write(reinterpret_cast<const char *>(hdr), sizeof(hdr));
+                dump_->write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+                if (!*dump_) throw std::runtime_error("expertfights: state dump write failed");
+                // Round trip: the reader rebuilds the state (spot checks; the image's padding bytes are not compared).
+                const GameContext back = deserializeGameContext(bytes.data(), bytes.size());
+                const bool same = back.seed == copy.seed && back.curHp == copy.curHp && back.maxHp == copy.maxHp
+                    && back.floorNum == copy.floorNum && back.deck.size() == copy.deck.size()
+                    && back.relics.relics.size() == copy.relics.relics.size() && back.potions == copy.potions
+                    && back.info.encounter == copy.info.encounter && back.screenState == copy.screenState
+                    && back.aiRng.counter == copy.aiRng.counter && back.shuffleRng.counter == copy.shuffleRng.counter
+                    && back.eventList == copy.eventList && back.bossRelicPool == copy.bossRelicPool
+                    && (back.map != nullptr) == (copy.map != nullptr);
+                if (!same) throw std::runtime_error("expertfights: state dump round trip differs");
+                ++dumped_;
             }
             search::ScumSearchAgent2 a;
             a.simulationCountBase = arm && arm->flat > 0 ? arm->flat : agent.simulationCountBase;
@@ -846,9 +877,7 @@ protected:
         // With research arms only fights in armRooms_ play copies 0..armK_-1 in full, production and each arm on
         // the same copy seeds; any other copy is played only until the first win (the main line continues from
         // the first winning copy either way, so it is the same as without arms).
-        const bool armFight = !arms_.empty() && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom))
-            && (armCopies_.empty() || armCopies_.count(f));
-        const int full = arms_.empty() ? k_ : armFight && prodFull_ ? armK_ : 0;
+        const int full = arms_.empty() && !dump_ ? k_ : armFight && prodFull_ ? armK_ : 0;
         auto selected = [&](int r) {
             if (armCopies_.empty()) return true;
             const auto it = armCopies_.find(f);
@@ -878,6 +907,8 @@ protected:
         return true;
     }
 
+    std::ofstream *dump_ = nullptr;
+    int dumped_ = 0;
     int k_;
     std::vector<FightArm> arms_;
     std::set<std::string> armRooms_;
@@ -931,7 +962,13 @@ FightCopyConfig fightCopyConfigFromEnv(const std::string &prefix, int replicates
             c.armRooms.insert(t);
         }
     } else if (const char *rooms = std::getenv(roomsVar.c_str()); rooms && *rooms) {
-        throw std::runtime_error(roomsVar + " requires " + armsVar);
+        const char *dump = std::getenv((prefix + "_DUMP").c_str());
+        if (!dump || std::string(dump) != "1") throw std::runtime_error(roomsVar + " requires " + armsVar + " or " + prefix + "_DUMP=1");
+        for (const auto &t : split(rooms, ',')) {
+            if (t.size() != 2 || t[0] < '1' || t[0] > '3' || std::string("MEB?$T").find(t[1]) == std::string::npos)
+                throw std::runtime_error(roomsVar + ": bad entry " + t);
+            c.armRooms.insert(t);
+        }
     }
     const std::string kVar = prefix + "_ARM_REPLICATES";
     const char *kv = std::getenv(kVar.c_str());
@@ -1155,6 +1192,14 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     const int armK = cfg.armK;
     const auto &armCopies = cfg.armCopies;
     FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert", arms, armRooms, armK, armCopies);
+    std::ofstream dumpOut;
+    if (const char *d = std::getenv("STS_EXPERT_FIGHTS_DUMP"); d && *d) {
+        if (std::string(d) != "1") throw std::runtime_error("STS_EXPERT_FIGHTS_DUMP must be 1");
+        if (armRooms.empty()) throw std::runtime_error("STS_EXPERT_FIGHTS_DUMP needs STS_EXPERT_FIGHTS_ARM_ROOMS");
+        dumpOut.open(output + ".states", std::ios::binary | std::ios::trunc);
+        if (!dumpOut) throw std::runtime_error("cannot write " + output + ".states");
+        fights.setDump(&dumpOut);
+    }
     // The run ends at the first decision the log does not replay exactly: the
     // measurement only covers the expert's own states.
     t_oocDecisionOverride = [&](GameContext &gc) -> const char * {
@@ -1168,6 +1213,10 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     trainingRunStart();
     const auto result = runFullRunOOC(seed, 10000, 20, deployedRestV(), true);
     if (!trainingRunValid(true)) throw std::runtime_error("expert fights run failed simulator integrity");
+    if (dumpOut.is_open()) {
+        dumpOut.close();
+        if (!dumpOut) throw std::runtime_error("expertfights: state dump close failed");
+    }
     const json out = {{"schema", "expert-fights-v1"}, {"runFile", std::filesystem::path(runFile).filename().string()},
         {"playId", run.value("play_id", std::string())}, {"seedPlayed", seedPlayed}, {"engineSeed", seed},
         {"replicates", replicates}, {"maxAct", maxAct}, {"potionMode", potionMode},
@@ -1176,7 +1225,7 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
         {"armCopies", [&] { json a = json::object();
                             for (const auto &[floor, copies] : armCopies) a[std::to_string(floor)] = copies;
                             return a; }()}, {"endFloor", result.floor}, {"endAct", result.act},
-        {"diedInMainLine", result.deathCombat >= 0}, {"sec", result.sec},
+        {"diedInMainLine", result.deathCombat >= 0}, {"sec", result.sec}, {"statesDumped", fights.dumped()},
         {"expert", {{"victory", run.value("victory", false)}, {"floorReached", run["floor_reached"]}}},
         {"replay", replayer.summary()}, {"potionLog", fights.potionLog()}, {"fights", fights.fights()},
         {"syncs", fights.syncs()}, {"producerSha", trainingExecutableGitSha()},
@@ -1190,6 +1239,50 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     return 0;
 }
 
+
+int stateFightsGen(const std::string &states, const std::string &output) {
+    if (std::filesystem::exists(output) && std::filesystem::file_size(output) > 0)
+        throw std::runtime_error("statefights output " + output + " already exists");
+    std::ifstream in(states, std::ios::binary);
+    if (!in) throw std::runtime_error("cannot read " + states);
+    const std::vector<char> all((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    std::ofstream out(output);
+    if (!out) throw std::runtime_error("cannot write " + output);
+    trainingRunStart();
+    std::size_t at = 0;
+    int n = 0;
+    while (at < all.size()) {
+        std::uint32_t hdr[3];
+        if (all.size() - at < sizeof(hdr)) throw std::runtime_error(states + ": truncated record");
+        std::memcpy(hdr, all.data() + at, sizeof(hdr));
+        at += sizeof(hdr);
+        if (all.size() - at < hdr[2]) throw std::runtime_error(states + ": truncated snapshot");
+        GameContext copy = deserializeGameContext(reinterpret_cast<const std::uint8_t *>(all.data() + at), hdr[2]);
+        at += hdr[2];
+        if (copy.screenState != ScreenState::BATTLE) throw std::runtime_error(states + ": a record is not a fight start");
+        const int f = copy.floorNum, r = static_cast<int>(hdr[1]);
+        const int entryHp = copy.curHp;
+        const auto entryPotions = potionNames(copy.potions);
+        search::ScumSearchAgent2 a;
+        a.simulationCountBase = fightSims(copy, 10000);
+        a.rng = std::default_random_engine(static_cast<unsigned>(mix(copy.seed + 7919ULL * f + r)));
+        BattleContext bc{};
+        const double t0 = threadCpuSeconds();
+        a.playoutBattle(copy, bc);
+        const double cpu = threadCpuSeconds() - t0;
+        const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+        const auto exitPotions = potionNames(bc.potions);
+        if (won) bc.exitBattle(copy);
+        const json rec = {{"floor", f}, {"copy", r}, {"act", copy.act}, {"entryHp", entryHp}, {"maxHp", copy.maxHp},
+                          {"won", won}, {"decided", bc.outcome != Outcome::UNDECIDED}, {"exitHp", won ? copy.curHp : 0},
+                          {"turns", bc.turn}, {"potionsUsed", minus(entryPotions, exitPotions).size()}, {"cpu", cpu}};
+        out << rec.dump() << '\n';
+        ++n;
+    }
+    if (!out) throw std::runtime_error("write failed: " + output);
+    std::cout << "[statefights] " << states << " fights=" << n << std::endl;
+    return 0;
+}
 
 int selfFightsGen(std::uint64_t seed, const std::string &output) {
     if (!g_collectKeys || g_stopAfterAct != 0 || g_forceRelic != sts::RelicId::INVALID)

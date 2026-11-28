@@ -3224,7 +3224,7 @@ int main(int argc, char **argv) {
         const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
         // expertreplay plays one A20 whole run per process (no sims argument).
         const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay"
-            || mode == "expertfights" || mode == "selffights";
+            || mode == "expertfights" || mode == "selffights" || mode == "statefights";
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3969,6 +3969,10 @@ int main(int argc, char **argv) {
         if (argc != 5 || std::string(argv[2]) != "1")
             throw std::runtime_error("usage: one_combat expertfights 1 RUN.json OUT.json");
         return one_combat::expertFightsGen(argv[3], argv[4]);
+    } else if (mode == "statefights") {
+        if (argc != 5 || std::string(argv[2]) != "1")
+            throw std::runtime_error("usage: one_combat statefights 1 STATES OUT.jsonl");
+        return one_combat::stateFightsGen(argv[3], argv[4]);
     } else if (mode == "selffights") {
         if (argc != 5 || std::string(argv[2]) != "1")
             throw std::runtime_error("usage: one_combat selffights 1 SEED OUT.json");
