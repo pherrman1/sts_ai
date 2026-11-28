@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <ctime>
+#include <cstring>
+#include <iterator>
 #include <random>
 #include <cstdlib>
 #include <filesystem>
@@ -1237,6 +1239,50 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     return 0;
 }
 
+
+int stateFightsGen(const std::string &states, const std::string &output) {
+    if (std::filesystem::exists(output) && std::filesystem::file_size(output) > 0)
+        throw std::runtime_error("statefights output " + output + " already exists");
+    std::ifstream in(states, std::ios::binary);
+    if (!in) throw std::runtime_error("cannot read " + states);
+    const std::vector<char> all((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    std::ofstream out(output);
+    if (!out) throw std::runtime_error("cannot write " + output);
+    trainingRunStart();
+    std::size_t at = 0;
+    int n = 0;
+    while (at < all.size()) {
+        std::uint32_t hdr[3];
+        if (all.size() - at < sizeof(hdr)) throw std::runtime_error(states + ": truncated record");
+        std::memcpy(hdr, all.data() + at, sizeof(hdr));
+        at += sizeof(hdr);
+        if (all.size() - at < hdr[2]) throw std::runtime_error(states + ": truncated snapshot");
+        GameContext copy = deserializeGameContext(reinterpret_cast<const std::uint8_t *>(all.data() + at), hdr[2]);
+        at += hdr[2];
+        if (copy.screenState != ScreenState::BATTLE) throw std::runtime_error(states + ": a record is not a fight start");
+        const int f = copy.floorNum, r = static_cast<int>(hdr[1]);
+        const int entryHp = copy.curHp;
+        const auto entryPotions = potionNames(copy.potions);
+        search::ScumSearchAgent2 a;
+        a.simulationCountBase = fightSims(copy, 10000);
+        a.rng = std::default_random_engine(static_cast<unsigned>(mix(copy.seed + 7919ULL * f + r)));
+        BattleContext bc{};
+        const double t0 = threadCpuSeconds();
+        a.playoutBattle(copy, bc);
+        const double cpu = threadCpuSeconds() - t0;
+        const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+        const auto exitPotions = potionNames(bc.potions);
+        if (won) bc.exitBattle(copy);
+        const json rec = {{"floor", f}, {"copy", r}, {"act", copy.act}, {"entryHp", entryHp}, {"maxHp", copy.maxHp},
+                          {"won", won}, {"decided", bc.outcome != Outcome::UNDECIDED}, {"exitHp", won ? copy.curHp : 0},
+                          {"turns", bc.turn}, {"potionsUsed", minus(entryPotions, exitPotions).size()}, {"cpu", cpu}};
+        out << rec.dump() << '\n';
+        ++n;
+    }
+    if (!out) throw std::runtime_error("write failed: " + output);
+    std::cout << "[statefights] " << states << " fights=" << n << std::endl;
+    return 0;
+}
 
 int selfFightsGen(std::uint64_t seed, const std::string &output) {
     if (!g_collectKeys || g_stopAfterAct != 0 || g_forceRelic != sts::RelicId::INVALID)

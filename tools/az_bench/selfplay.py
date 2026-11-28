@@ -96,6 +96,7 @@ import copy
 import gzip
 import importlib.util
 import json
+import struct
 import math
 import os
 import shutil
@@ -1662,6 +1663,11 @@ def main(argv=None):
                          "is played. Results to --probe-log; the process stops when all are done")
     ap.add_argument("--probe-copy", type=int, default=0, help="--probe-states: the copy index to take")
     ap.add_argument("--probe-log", default=None, metavar="PATH", help="--probe-states: JSON lines out")
+    ap.add_argument("--fight-dump", default=None, metavar="DIR",
+                    help="research (2026-11-28, default off; WORKPLAN-3): write a GameContextBinary snapshot of every "
+                         "hallway fight start of acts 1-3 (RunConfig::fightDumpCopies copies each) to DIR/S-<seed>.states "
+                         "and one JSON line per snapshot to DIR/index.jsonl; play is unchanged")
+    ap.add_argument("--fight-dump-copies", type=int, default=4, help="--fight-dump: copies per fight start")
     ap.add_argument("--fight-log", default=None, metavar="PATH",
                     help="--fight-roots: append one JSON record per fight root (file, floor, copy, status, won, entry "
                          "/ exit HP, turns, moves, potions drunk) to PATH")
@@ -2223,7 +2229,8 @@ def main(argv=None):
         **({"max_backup": args.max_backup} if args.max_backup else {}),
         **({"max_targets": True} if args.max_targets else {}),
         **({"fight_roots": fight_states} if fight_states else {}),
-        **({"probe_roots": probe_states, "probe_one_per_edge": True} if probe_states else {}))
+        **({"probe_roots": probe_states, "probe_one_per_edge": True} if probe_states else {}),
+        **({"fight_dump_copies": args.fight_dump_copies} if args.fight_dump else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
@@ -2266,6 +2273,24 @@ def main(argv=None):
     death_logged = [0]   # records (this process)
     fight_logged = [0]
     probe_logged = [0]
+    dumped = [0]
+    if args.fight_dump:
+        os.makedirs(args.fight_dump, exist_ok=True)
+
+    def drain_fight_dump():
+        if not args.fight_dump:
+            return
+        recs = drv.take_fight_dumps()
+        if not recs:
+            return
+        with open(os.path.join(args.fight_dump, "index.jsonl"), "a") as idx:
+            for seed, act, floor, copy_i, entry_hp, max_hp, blob in recs:
+                with open(os.path.join(args.fight_dump, f"S-{seed}.states"), "ab") as fo:
+                    fo.write(struct.pack("<III", floor, copy_i, len(blob)))
+                    fo.write(blob)
+                idx.write(json.dumps({"seed": seed, "act": act, "floor": floor, "copy": copy_i, "entry_hp": entry_hp,
+                                      "max_hp": max_hp}) + "\n")
+        dumped[0] += len(recs)
 
     def drain_probe_log():
         if not probe_states:
@@ -3081,6 +3106,9 @@ def main(argv=None):
             if fight_states:
                 drain_fight_log()
                 row["fight_log"] = fight_logged[0]
+            if args.fight_dump:
+                drain_fight_dump()
+                row["fight_dump"] = dumped[0]
             if probe_states:
                 drain_probe_log()
                 row["probe_log"] = probe_logged[0]
@@ -3117,6 +3145,7 @@ def main(argv=None):
         drain_death_log()
         drain_fight_log()
         drain_probe_log()
+        drain_fight_dump()
         path, c = save_ckpt(counters["step"], drv.stats(), time.time())
         print(json.dumps({"final_checkpoint": path, "errors": errors, "counters": c}), flush=True)
         if args.replay_save:

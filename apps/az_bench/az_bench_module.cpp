@@ -477,8 +477,10 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          double captureRate, bool stallLog, bool consequences, bool deathLog,
                          double wideningC, double wideningAlpha, int rootTarget, int maxBackup, bool maxTargets,
                          bool evalCacheGen, bool lazyLeafState, const std::vector<GameStateHandle> &fightRoots,
-                         bool probeOnePerEdge) {
+                         bool probeOnePerEdge, int fightDumpCopies) {
                  azbench::RunConfig c;
+                 if (fightDumpCopies < 0 || fightDumpCopies > 64) throw std::invalid_argument("fight_dump_copies: want 0..64");
+                 c.fightDumpCopies = fightDumpCopies;
                  c.probeOnePerEdge = probeOnePerEdge;
                  for (const auto &h : fightRoots) c.fightRoots.push_back(h.gc);
                  if (!(wideningC > 0)) throw std::invalid_argument("widening_c: want > 0");
@@ -588,7 +590,15 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("widening_c") = 3.7028, py::arg("widening_alpha") = 0.52389,
              py::arg("root_target") = 0, py::arg("max_backup") = 0, py::arg("max_targets") = false,
              py::arg("eval_cache_gen") = false, py::arg("lazy_leaf_state") = false,
-             py::arg("fight_roots") = std::vector<GameStateHandle>{}, py::arg("probe_one_per_edge") = false)
+             py::arg("fight_roots") = std::vector<GameStateHandle>{}, py::arg("probe_one_per_edge") = false, py::arg("fight_dump_copies") = 0)
+        .def("take_fight_dumps",   // RunConfig::fightDumpCopies: (seed, act, floor, copy, entry_hp, max_hp, bytes)
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &x : d.takeFightDumps())
+                     out.append(py::make_tuple(x.seed, x.act, x.floor, x.copy, x.entryHp, x.maxHp,
+                                               py::bytes(reinterpret_cast<const char *>(x.bytes.data()), x.bytes.size())));
+                 return out;
+             })
         .def("take_fight_results",   // RunConfig::fightRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  py::list out;

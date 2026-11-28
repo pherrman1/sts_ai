@@ -1,4 +1,6 @@
 #include "az_run_driver.h"
+#include "game/GameContextBinary.h"
+#include <random>
 
 #include <algorithm>
 #include <chrono>
@@ -2042,6 +2044,40 @@ namespace sts::azbench {
         };
 
         auto enterBattle = [&](Run &g) {
+            if (cfg.fightDumpCopies > 0 && g.probe < 0 && g.fightRoot < 0 && g.gc.curRoom == Room::MONSTER
+                    && g.gc.act <= 3) {   // fight dump: the start state before the battle is initialized
+                auto smix = [](std::uint64_t x) {   // one_combat expert_replay.cpp mix (splitmix64)
+                    x += 0x9E3779B97F4A7C15ULL;
+                    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+                    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+                    return x ^ (x >> 31);
+                };
+                std::vector<FightDump> ds;
+                for (int r = 0; r < cfg.fightDumpCopies; ++r) {
+                    GameContext copy = search::detachedGameCopy(g.gc);
+                    if (r > 0) {
+                        std::mt19937_64 rng(smix(g.gc.seed ^ smix(static_cast<std::uint64_t>(g.gc.floorNum) * 1000003ULL + r)));
+                        for (auto stream : {&copy.aiRng, &copy.cardRandomRng, &copy.miscRng, &copy.monsterHpRng,
+                                            &copy.potionRng, &copy.shuffleRng}) {
+                            const auto counter = stream->counter;
+                            *stream = sts::Random(rng());
+                            stream->counter = counter;
+                        }
+                        copy.seed = rng();
+                    }
+                    FightDump d;
+                    d.seed = g.seed;
+                    d.act = g.gc.act;
+                    d.floor = g.gc.floorNum;
+                    d.copy = r;
+                    d.entryHp = g.gc.curHp;
+                    d.maxHp = g.gc.maxHp;
+                    d.bytes = serializeGameContext(copy);
+                    ds.push_back(std::move(d));
+                }
+                std::lock_guard<std::mutex> l(fightDumpM_);
+                for (auto &d : ds) fightDumps_.push_back(std::move(d));
+            }
             initObservedBattle(g.gc, g.bc, *g.knowledge);
             g.ctx = combatContext(g.gc, g.forceKeys);
             if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
