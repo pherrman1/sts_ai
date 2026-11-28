@@ -30037,7 +30037,7 @@ lost at 128 / won at 1024 = 220, the reverse 132.
 runs diverge after the first differing decision (the classes are where each arm dies, not the same fights).
 Seeds: none new. **Knowledge impact:** this entry.
 
-## §TBD — X3 (WORKPLAN-2 item B): at the first decision of Baalorlord's fight starts the 1.2M net's 0.5 H term spans 0.13× the F range and changes the best action at 3.3 % of roots, U rises with enemy HP removed (+3.9e-5 per HP [+1.1e-5, +6.8e-5]); the per-floor HP head moves 0.11 HP [0.10, 0.13] per HP actually lost inside a fight → undecided by the fixed rule (PC CPU, 2026-11-28)
+## §TBD — X3 (WORKPLAN-2 item B): at the first decision of Baalorlord's fight starts the 1.2M net's 0.5 H term spans 0.13× the F range and changes the best action at 3.3 % of roots, U rises with enemy HP removed (+3.9e-5 per HP [+1.1e-5, +6.8e-5]); lowering current HP by 1 lowers the predicted end-of-floor HP by 0.70 and U by 0.0013 → undecided by the fixed rule (PC CPU, 2026-11-28)
 
 **Question:** is the slow, HP-losing combat play a property of the utility at this strength, or a poorly learned
 per-floor HP head?
@@ -30060,7 +30060,19 @@ slice): slope 0.110, correlation 0.22.
 **Verdict (fixed rule):** undecided. The HP prediction follows current HP (slope clearly positive) and 0.5 H changes
 the best action at < 5 % of roots, but U's slope on enemy HP removed is distinguishable from 0 (positive), so the
 "utility property" branch does not apply; the "HP head does not follow" branch does not apply either.
-**Inference (not the rule's verdict):** a head that tracked HP would move the end-of-floor prediction by close to 1 HP
-per HP lost mid-fight (end-of-fight heals are fixed amounts); 0.11 is an order of magnitude below that, and 0.5 H
-moves about a tenth as much as F. Together that is why HP rarely decides a move.
+**Correction (2026-11-28):** the differenced slope is not a test of the head: a calibrated predictor has already
+priced in the HP loss it can see coming, so its prediction moves only by the unpredicted part of the change; 0.11 is
+that share as measured, not evidence of a weak head. The perturbation check that answers the question is the next
+part of this entry.
+**Part 2b (perturbation, replaces the differenced reading):** on the same slice's 54,538 combat rows the player's
+current HP in the input (PLAYER floats 0 and 2) lowered by 1 / 5 / 10 (rows that would go below 1 HP skipped),
+`x3_part2b.py`, `results/x3_part2b_{1828683,1805354}.json`. Per HP removed, 1828683, d = 1 (d = 5 / 10 within
+±0.02 of it): (a) predicted HP at the end of the current floor −0.70 [0.68, 0.71] (median 0.75; act 1 0.78, act 2
+0.75, act 3 0.60, act 4 0.57); (b) summed predicted HP over all later floors −6.8 [6.5, 7.1] (act 1 11.1, act 2 8.2,
+act 3 3.2), a carry-over horizon of about 7 floors; (c) F −0.0016 [0.0016, 0.0018] (act 1 0.0030, act 3 0.0005);
+(d) U −0.0013 [0.0012, 0.0014]. 1805354: (a) 0.71, (b) 6.6, (c) 0.0016, (d) 0.0013.
+**Verdict with Part 2b (fixed rule):** still undecided: the HP head follows current HP (0.70 per HP, clearly
+positive) and 0.5 H changes the best action at 3.3 % of roots, but U's slope on enemy HP removed is above 0.
+For scale (measured, no rule): one HP of the player's own moves U by about 33× what one HP of enemy damage does
+at the first decision (0.0013 vs 3.9e-5).
 Seeds: none (deterministic first actions on dumped states). **Knowledge impact:** this entry; research option above.
