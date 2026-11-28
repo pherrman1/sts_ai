@@ -30046,7 +30046,7 @@ fixed-seed bench's input options, new research option `selfplay.py --probe-state
 every legal first action one simulation; a deterministic action's leaf is its child's own net evaluation; fight
 starts entered first; no game seeds advanced). Kept actions: not END_TURN, no chance edge, one visit; roots with
 ≥ 2 kept: 1,742 roots, 10,122 actions (135 roots excluded with < 2). F = E[final floor] / 57, H = amberH, U =
-(F + 0.5 H) / 1.5. `x3_part1.py`, `results/x3_part1.json`, `results/x3_probe.jsonl.gz` (sha256 4986dd47…).
+(F + 0.5 H) / 1.5. `x3_part1.py`, `results/x3_part1.json`; probe log on the PC at `stage1/amber_combat_gap_20261127/x3/probe.jsonl` (sha256 4986dd47…, 16 MB gzipped, not committed).
 **Part 1 result:** range over a root's actions of 0.5 H median 0.0027 (p10 0.0007, p90 0.0073), of F median 0.020
 (0.004, 0.062), ratio median 0.13 (0.09, 0.26); argmax(F + 0.5 H) ≠ argmax(F) at 3.3 % of roots. Pooled within-root
 slope of U on enemy HP removed +3.9e-5 per HP [+1.1e-5, +6.8e-5] (bootstrap over fights); on block gained
