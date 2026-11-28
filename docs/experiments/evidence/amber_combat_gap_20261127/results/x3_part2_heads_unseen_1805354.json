@@ -1,0 +1,21 @@
+{
+ "ckpt": "ckpt_1805354.pt",
+ "slice": "/home/philippherrmann/Documents/sts/stage1/backup_1p2m_20261127/heads_unseen/unseen_*.npz",
+ "runs": 455,
+ "pairs": 45634,
+ "pairs_hp_changed": 14248,
+ "slope_dPred_per_dHP": 0.11004169102605259,
+ "slope_ci": [
+  0.09820592081133926,
+  0.12246008966736602
+ ],
+ "corr": 0.21534172461334303,
+ "corr_ci": [
+  0.19572073617094904,
+  0.23461855376681895
+ ],
+ "slope_hp_changed_only": 0.10853717746196548,
+ "std_half_dH": 0.002333283773752685,
+ "std_dF": 0.01989280202084836,
+ "ratio": 0.11729286660106109
+}

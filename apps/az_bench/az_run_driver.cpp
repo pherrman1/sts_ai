@@ -2093,6 +2093,7 @@ namespace sts::azbench {
             r.screen = static_cast<int>(g.gc.screenState);
             r.hp = g.gc.curHp;
             r.maxHp = g.gc.maxHp;
+            if (cfg.probeOnePerEdge && g.inBattle) r.combatMoves = g.fightMoves;
             {
                 std::lock_guard<std::mutex> l(probeM_);
                 probeResults_.push_back(std::move(r));
@@ -2104,7 +2105,8 @@ namespace sts::azbench {
         // gacts holds its actions), else why not (FORCED: *only = the one action).
         auto probeStatus = [&](Run &g, std::uint32_t *only) -> int {
             if (g.gc.outcome != GameOutcome::UNDECIDED) return ProbeResult::GAME_OVER;
-            if (g.gc.screenState == ScreenState::BATTLE) return ProbeResult::COMBAT;
+            if (g.gc.screenState == ScreenState::BATTLE)
+                return cfg.probeOnePerEdge ? ProbeResult::SEARCHED : ProbeResult::COMBAT;   // fight start: entered later
             if (goldToTake(g.gc)) { *only = takeGoldBits; return ProbeResult::FORCED; }
             gacts = oocActions(g.gc, g.forceKeys);
             if (gacts.empty()) return ProbeResult::NO_ACTION;
@@ -2181,6 +2183,7 @@ namespace sts::azbench {
             g.heartStart.reset();
             g.heartJob = -1;
             ++wk.st.runsStarted;
+            if (probe >= 0 && cfg.probeOnePerEdge && g.gc.screenState == ScreenState::BATTLE) enterBattle(g);
             if (fightRoot >= 0) {   // fight root: the state is at a fight's start
                 if (g.gc.screenState != ScreenState::BATTLE || g.gc.outcome != GameOutcome::UNDECIDED) {
                     recordFightRoot(g, 4);
@@ -2850,8 +2853,12 @@ namespace sts::azbench {
             if (!g.rootUnder.empty())   // exploreAmber: every under-target item is a candidate on top of the usual ones
                 for (int i = m; i < k; ++i)
                     if (order[i] < static_cast<int>(g.rootUnder.size()) && g.rootUnder[order[i]]) g.cand.push_back(order[i]);
+            if (g.probe >= 0 && cfg.probeOnePerEdge) {   // probe children: every action once, one phase
+                g.cand = order;
+                g.budget = k;
+            }
             const int mc = static_cast<int>(g.cand.size());
-            g.phasesLeft = mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
+            g.phasesLeft = g.probe >= 0 && cfg.probeOnePerEdge ? 1 : mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
             if (g.probe >= 0 || edgeSums) {   // per-edge sums of the simulations' leaves
                 g.probeDist.assign(static_cast<std::size_t>(k) * kOutcomeClasses, 0.0);
                 g.probeHp.assign(k, 0.0);
@@ -3052,6 +3059,22 @@ namespace sts::azbench {
                     pe.qCompleted = q[i];
                     pe.policy = z[i] / sum;
                     pe.score = rootScore(g, root, i, sigma, q);
+                    if (cfg.probeOnePerEdge && root.combat) {
+                        pe.combat = true;
+                        pe.chance = x.chance;
+                        if (!x.chance && x.child >= 0 && g.pool[x.child].combat && g.pool[x.child].bc && root.bc) {
+                            const BattleContext &a = *root.bc, &b = *g.pool[x.child].bc;
+                            auto monHp = [](const BattleContext &s) {
+                                int t = 0;
+                                for (int m = 0; m < s.monsters.monsterCount; ++m)
+                                    if (!s.monsters.arr[m].isDeadOrEscaped()) t += s.monsters.arr[m].curHp;
+                                return t;
+                            };
+                            pe.enemyHpRemoved = monHp(a) - monHp(b);
+                            pe.blockGained = b.player.block - a.player.block;
+                            pe.hpChange = b.player.curHp - a.player.curHp;
+                        }
+                    }
                     const int c = g.probeCnt[i];
                     if (c > 0) {
                         pe.dist.resize(kOutcomeClasses);

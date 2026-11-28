@@ -679,6 +679,11 @@ namespace sts::azbench {
         // ends when the fight ends; FightRootResult records it (takeFightResults). No probe roots or Heart arms.
         std::vector<std::shared_ptr<const GameContext>> fightRoots;
         bool probeNoise = false;
+        // Probe children (2026-11-28, research, default off; WORKPLAN-2 X3): each probe root's search gets one
+        // simulation per legal action (every action a candidate, budget = their count, one halving phase), so an
+        // edge's recorded leaf is its child's own net evaluation (a deterministic action) or one sampled outcome
+        // (ProbeEdge::chance). Fight starts (screen BATTLE) are probe roots too: the fight is entered first.
+        bool probeOnePerEdge = false;
         // Out-of-combat state capture (2026-11-21, diagnostic, default 0 = off): each searched out-of-combat root
         // of a normal run is copied (takeCaptures) with this probability, decided by a hash of the run seed and the
         // move number (not the search RNG), so play is the same as without it.
@@ -905,6 +910,11 @@ namespace sts::azbench {
         std::vector<float> dist;   // [57]
         std::vector<float> hpf;    // utility AMBER / AMBER2: mean E[HP_f] / 255 of floors f = 1..56 [56] (0 before the root's floor)
         bool candidate = false;    // among the search's initial candidates
+        // combat root (probeOnePerEdge): the edge leads to a chance node; and, for a deterministic edge, the child's
+        // change of the monsters' total current HP (alive monsters; removed = before - after), the player's block
+        // and the player's HP, from the public view of root and child
+        bool chance = false, combat = false;
+        int enemyHpRemoved = 0, blockGained = 0, hpChange = 0;
     };
 
     struct ProbeResult {
@@ -912,6 +922,7 @@ namespace sts::azbench {
         std::int64_t probe = -1;   // index into RunConfig::probeRoots
         int status = SEARCHED;
         int floor = 0, act = 0, screen = 0, maxHp = 0, hp = 0;
+        int combatMoves = -1;         // probeOnePerEdge fight start: moves played in the fight before the probed decision
         std::uint32_t pickBits = 0;   // the search's pick (FORCED: the only action)
         int pick = -1;                // its index in edges / the sample's actions
         // The root's net evaluation: utility value, P(win) outcome head F (search value), expected HP at the end of

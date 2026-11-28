@@ -30020,3 +30020,47 @@ Not tested: whether the HP loss is a deliberate P(win) trade, larger budgets, th
 **Decision:** none (diagnostic). Combat strength of the Amber net is the open lever.
 Seeds: none new (§694's external expert seeds replayed; side bench on the fixed benchmark 160200000-160200999).
 **Knowledge impact:** this entry; the research tools above.
+
+## §TBD — X1 (WORKPLAN-2 item A): of the 98 net fewer losses that 1024 instead of 128 simulations give the 1.2M checkpoint 1755240 on the fixed bench, hallways hold 50 % [22 %, 90 %], elites + act bosses + Heart 47 % [7 %, 75 %] → by the fixed rule: recommend extending the identical-state comparison to hallway states (not started); logs only (PC, 2026-11-28)
+
+**Question:** in whole runs on the net's own decks, in which room class do the losses disappear that 1024 simulations remove?
+**Data:** `bench_curve_20261123/step_1755240` (128 sims, 37.5 %) and `sims1024_1755240` (1024 sims, 47.3 %), same
+checkpoint `ckpt_bench_1755240.pt` (sha256 85c5c488…), seeds 160200000-160200999; both have `deaths.jsonl`
+(sha256 fde978b8…, 485f1bf1…). Death room = the death log's last fight (every loss of both arms ended in a fight).
+Script `evidence/amber_combat_gap_20261127/x1_loss_table.py`, `results/x1_loss_table.json`; bootstrap over seeds.
+**Result:** deaths 128 → 1024: hallway 158 → 109, elite 193 → 168, act boss 193 → 167, Heart 69 → 74, other 12 → 9.
+Net reduction 98: hallway +49 (share 0.50 [0.22, 0.90]), elite +25 (0.26), boss +26 (0.27), Heart −5, other +3;
+elite + boss + Heart 0.47 [0.07, 0.75]. Hallway deaths fall in every act (39 → 22, 98 → 79, 21 → 8). Paired seeds:
+lost at 128 / won at 1024 = 220, the reverse 132.
+**Verdict (fixed rule):** hallways ≥ 40 % → recommend a hallway identical-state comparison; elite + boss + Heart
+< 60 %, so the combat reading of the Baalorlord entry does not carry over in full. Intervals are wide and the arms'
+runs diverge after the first differing decision (the classes are where each arm dies, not the same fights).
+Seeds: none new. **Knowledge impact:** this entry.
+
+## §TBD — X3 (WORKPLAN-2 item B): at the first decision of Baalorlord's fight starts the 1.2M net's 0.5 H term spans 0.13× the F range and changes the best action at 3.3 % of roots, U rises with enemy HP removed (+3.9e-5 per HP [+1.1e-5, +6.8e-5]); the per-floor HP head moves 0.11 HP [0.10, 0.13] per HP actually lost inside a fight → undecided by the fixed rule (PC CPU, 2026-11-28)
+
+**Question:** is the slow, HP-losing combat play a property of the utility at this strength, or a poorly learned
+per-floor HP head?
+**Part 1 data:** the dumped fight starts of the Baalorlord entry (copy 0, 1,877 roots), `ckpt_1828683.pt`, the
+fixed-seed bench's input options, new research option `selfplay.py --probe-states` (RunConfig::probeOnePerEdge:
+every legal first action one simulation; a deterministic action's leaf is its child's own net evaluation; fight
+starts entered first; no game seeds advanced). Kept actions: not END_TURN, no chance edge, one visit; roots with
+≥ 2 kept: 1,742 roots, 10,122 actions (135 roots excluded with < 2). F = E[final floor] / 57, H = amberH, U =
+(F + 0.5 H) / 1.5. `x3_part1.py`, `results/x3_part1.json`, `results/x3_probe.jsonl.gz` (sha256 4986dd47…).
+**Part 1 result:** range over a root's actions of 0.5 H median 0.0027 (p10 0.0007, p90 0.0073), of F median 0.020
+(0.004, 0.062), ratio median 0.13 (0.09, 0.26); argmax(F + 0.5 H) ≠ argmax(F) at 3.3 % of roots. Pooled within-root
+slope of U on enemy HP removed +3.9e-5 per HP [+1.1e-5, +6.8e-5] (bootstrap over fights); on block gained
+−4.1e-4 per block [−5.0e-4, −3.3e-4].
+**Part 2 data:** the heads-audit UNSEEN slice of `backup_1p2m_20261127` (455 runs; npz sha256 e8c74f57…,
+0ddd04e8…), 45,634 pairs of consecutive kept combat rows of the same run and floor (14,248 with an HP change);
+current HP from the PLAYER token. `x3_part2.py`, `results/x3_part2_heads_unseen_{1828683,1805354}.json`.
+**Part 2 result (1828683):** slope of the change of predicted end-of-floor HP on the change of current HP 0.113
+[0.101, 0.126], correlation 0.23 [0.21, 0.25]; std(0.5 dH) / std(dF) = 0.12. Checkpoint 1805354 (clean on this
+slice): slope 0.110, correlation 0.22.
+**Verdict (fixed rule):** undecided. The HP prediction follows current HP (slope clearly positive) and 0.5 H changes
+the best action at < 5 % of roots, but U's slope on enemy HP removed is distinguishable from 0 (positive), so the
+"utility property" branch does not apply; the "HP head does not follow" branch does not apply either.
+**Inference (not the rule's verdict):** a head that tracked HP would move the end-of-floor prediction by close to 1 HP
+per HP lost mid-fight (end-of-fight heals are fixed amounts); 0.11 is an order of magnitude below that, and 0.5 H
+moves about a tenth as much as F. Together that is why HP rarely decides a move.
+Seeds: none (deterministic first actions on dumped states). **Knowledge impact:** this entry; research option above.

@@ -1654,6 +1654,14 @@ def main(argv=None):
                          "(STS_EXPERT_FIGHTS_DUMP=1, <out>.states); every dumped fight start is played once as its own "
                          "run that ends with the fight (RunConfig::fightRoots), the process stops when all are done. "
                          "Results go to --fight-log. Use with a frozen net (--min-replay above any sample count)")
+    ap.add_argument("--probe-states", default="", metavar="FILES",
+                    help="research (2026-11-28, default off; WORKPLAN-2 X3): comma-separated state dumps (as "
+                         "--fight-roots); each state of copy --probe-copy is a probe root whose search gives every "
+                         "legal action one simulation (RunConfig::probeOnePerEdge): per action its child's net "
+                         "outcome distribution and per-floor HP, chance flag, enemy HP removed, block gained. Nothing "
+                         "is played. Results to --probe-log; the process stops when all are done")
+    ap.add_argument("--probe-copy", type=int, default=0, help="--probe-states: the copy index to take")
+    ap.add_argument("--probe-log", default=None, metavar="PATH", help="--probe-states: JSON lines out")
     ap.add_argument("--fight-log", default=None, metavar="PATH",
                     help="--fight-roots: append one JSON record per fight root (file, floor, copy, status, won, entry "
                          "/ exit HP, turns, moves, potions drunk) to PATH")
@@ -2162,6 +2170,16 @@ def main(argv=None):
         if not args.fight_log:
             raise SystemExit("--fight-roots needs --fight-log")
         print(f"# fight roots: {len(fight_states)} fight starts from {args.fight_roots.count(',') + 1} files", flush=True)
+    probe_meta, probe_states = [], []
+    for path in [p for p in args.probe_states.split(",") if p]:
+        for floor, copy_i, st in az_bench_native.GameState.load_snapshots(path):
+            if int(copy_i) == args.probe_copy:
+                probe_meta.append({"file": os.path.basename(path), "floor": int(floor), "copy": int(copy_i)})
+                probe_states.append(st)
+    if args.probe_states:
+        if not probe_states or not args.probe_log:
+            raise SystemExit("--probe-states: no states, or no --probe-log")
+        print(f"# probe states: {len(probe_states)} roots (copy {args.probe_copy})", flush=True)
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
@@ -2204,7 +2222,8 @@ def main(argv=None):
         **({"root_target": {"policy": 1, "pick": 2}[args.root_target]} if args.root_target != "tree" else {}),
         **({"max_backup": args.max_backup} if args.max_backup else {}),
         **({"max_targets": True} if args.max_targets else {}),
-        **({"fight_roots": fight_states} if fight_states else {}))
+        **({"fight_roots": fight_states} if fight_states else {}),
+        **({"probe_roots": probe_states, "probe_one_per_edge": True} if probe_states else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
@@ -2246,6 +2265,30 @@ def main(argv=None):
         stall_logged[0] += len(recs)
     death_logged = [0]   # records (this process)
     fight_logged = [0]
+    probe_logged = [0]
+
+    def drain_probe_log():
+        if not probe_states:
+            return
+        recs = drv.take_probe_results()
+        if not recs:
+            return
+        with open(args.probe_log, "a") as f:
+            for r in recs:
+                o = {**probe_meta[r["probe"]], "status": r["status"], "floor_g": r["floor"], "act": r["act"],
+                     "hp": r["hp"], "max_hp": r["max_hp"], "combat_moves": r.get("combat_moves", -1)}
+                if r["status"] == "searched":
+                    o.update(root_value=float(r["root_value"]), root_dist=[float(x) for x in r["root_dist"]],
+                             bits=[int(x) for x in r["bits"]], n=[int(x) for x in r["n"]],
+                             logit=[float(x) for x in r["logit"]],
+                             dist=[[float(x) for x in row] for row in r["dist"]],
+                             hpf=[[float(x) for x in row] for row in r["hpf"]] if "hpf" in r else None,
+                             chance=[int(x) for x in r["chance"]] if "chance" in r else None,
+                             enemy_hp_removed=[int(x) for x in r["enemy_hp_removed"]] if "chance" in r else None,
+                             block_gained=[int(x) for x in r["block_gained"]] if "chance" in r else None,
+                             hp_change=[int(x) for x in r["hp_change"]] if "chance" in r else None)
+                f.write(json.dumps(o) + "\n")
+        probe_logged[0] += len(recs)
 
     def drain_fight_log():
         if not fight_states:
@@ -2807,6 +2850,7 @@ def main(argv=None):
             s = drv.stats()
             done = (max_runs >= 0 and s["runs_done"] >= max_runs) or now - t_start > args.hours * 3600 \
                 or (fight_states and drv.fights_done() >= len(fight_states)) \
+                or (probe_states and drv.probes_done() >= len(probe_states)) \
                 or os.path.exists(os.path.join(args.out_dir, "STOP"))
             if args.savescum and drv.savescum() and os.path.exists(os.path.join(args.out_dir, "SAVESCUM_OFF")):
                 drv.set_savescum(False)   # every run plays fair from its next searched move
@@ -3037,6 +3081,9 @@ def main(argv=None):
             if fight_states:
                 drain_fight_log()
                 row["fight_log"] = fight_logged[0]
+            if probe_states:
+                drain_probe_log()
+                row["probe_log"] = probe_logged[0]
             if args.heart_log > 0:
                 drain_heart_log()
                 row["heart_log"] = {"records": heart_logged[0], "kills": heart_logged[1]}
@@ -3069,6 +3116,7 @@ def main(argv=None):
         drain_stall_log()
         drain_death_log()
         drain_fight_log()
+        drain_probe_log()
         path, c = save_ckpt(counters["step"], drv.stats(), time.time())
         print(json.dumps({"final_checkpoint": path, "errors": errors, "counters": c}), flush=True)
         if args.replay_save:

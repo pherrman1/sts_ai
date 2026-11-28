@@ -137,7 +137,7 @@ namespace {
         o["probe"] = r.probe;
         o["status"] = kStatus[std::clamp(r.status, 0, 4)];
         o["floor"] = r.floor; o["act"] = r.act; o["screen"] = r.screen; o["hp"] = r.hp; o["max_hp"] = r.maxHp;
-        o["pick"] = r.pick; o["pick_bits"] = r.pickBits;
+        o["pick"] = r.pick; o["pick_bits"] = r.pickBits; o["combat_moves"] = r.combatMoves;
         if (r.status != azbench::ProbeResult::SEARCHED) return o;
         o["root_value"] = r.rootValue; o["root_f"] = r.rootF; o["root_ehp"] = r.rootEhp;
         o["root_dist"] = toArray(r.rootDist);
@@ -170,6 +170,16 @@ namespace {
         o["pwin"] = toArray(pwin); o["ehp"] = toArray(ehp); o["candidate"] = toArray(cand);
         o["dist"] = toArray(dist).reshape({static_cast<py::ssize_t>(k), static_cast<py::ssize_t>(azbench::kOutcomeClasses)});
         if (perFloor) o["hpf"] = toArray(hpf).reshape({static_cast<py::ssize_t>(k), static_cast<py::ssize_t>(azbench::kFloors)});
+        if (k && r.edges[0].combat) {   // probeOnePerEdge, combat root
+            std::vector<std::uint8_t> ch(k);
+            std::vector<std::int32_t> ehr(k), blk(k), hpc(k);
+            for (std::size_t i = 0; i < k; ++i) {
+                ch[i] = r.edges[i].chance ? 1 : 0; ehr[i] = r.edges[i].enemyHpRemoved;
+                blk[i] = r.edges[i].blockGained; hpc[i] = r.edges[i].hpChange;
+            }
+            o["chance"] = toArray(ch); o["enemy_hp_removed"] = toArray(ehr); o["block_gained"] = toArray(blk);
+            o["hp_change"] = toArray(hpc);
+        }
         o["sample"] = sampleDict(r.sample);
         return o;
     }
@@ -466,8 +476,10 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
                          double captureRate, bool stallLog, bool consequences, bool deathLog,
                          double wideningC, double wideningAlpha, int rootTarget, int maxBackup, bool maxTargets,
-                         bool evalCacheGen, bool lazyLeafState, const std::vector<GameStateHandle> &fightRoots) {
+                         bool evalCacheGen, bool lazyLeafState, const std::vector<GameStateHandle> &fightRoots,
+                         bool probeOnePerEdge) {
                  azbench::RunConfig c;
+                 c.probeOnePerEdge = probeOnePerEdge;
                  for (const auto &h : fightRoots) c.fightRoots.push_back(h.gc);
                  if (!(wideningC > 0)) throw std::invalid_argument("widening_c: want > 0");
                  if (!(wideningAlpha >= 0 && wideningAlpha <= 1)) throw std::invalid_argument("widening_alpha: want 0..1");
@@ -576,7 +588,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("widening_c") = 3.7028, py::arg("widening_alpha") = 0.52389,
              py::arg("root_target") = 0, py::arg("max_backup") = 0, py::arg("max_targets") = false,
              py::arg("eval_cache_gen") = false, py::arg("lazy_leaf_state") = false,
-             py::arg("fight_roots") = std::vector<GameStateHandle>{})
+             py::arg("fight_roots") = std::vector<GameStateHandle>{}, py::arg("probe_one_per_edge") = false)
         .def("take_fight_results",   // RunConfig::fightRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  py::list out;
